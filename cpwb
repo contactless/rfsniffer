@@ -1,7 +1,10 @@
 #!/bin/sh
 
-scp librf/.libs/librf.so.0 root@wirenboard:/usr/lib
-scp libutils/.libs/libutils.so.0 root@wirenboard:/usr/lib
-scp tests/.libs/rftest root@wirenboard:~
-scp rfsniffer/.libs/rfsniffer root@wirenboard:~
+#scp librf/.libs/librf.so.0 root@wirenboard:/usr/lib
+#scp libutils/.libs/libutils.so.0 root@wirenboard:/usr/lib
+scp tests/rftest root@wirenboard:~
+scp rfsniffer/rfsniffer root@wirenboard:~
+scp rfsniffer/rfsniffer.json root@wirenboard:~
+
+#ssh root@wirenboard ./rftest
 

@@ -1,8 +1,8 @@
 #include "stdafx.h"
-#include "../libutils/logging.h"
-#include "../libutils/Exception.h"
+#include "../libs/libutils/logging.h"
+#include "../libs/libutils/Exception.h"
 #include "mosquittopp.h"
-#include "../librf/WBDevice.h"
+#include "../libs/libwb/WBDevice.h"
 
 class TestMqttConnection
 :public mosqpp::mosquittopp

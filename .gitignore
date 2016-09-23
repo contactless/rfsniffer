@@ -27,3 +27,14 @@
 *.out
 *.app
 autom4te.cache/*
+
+#automake/autoconf
+Makefile
+*.m4
+*.in
+config.h
+config.status
+libtool
+stamp-h1
+
+

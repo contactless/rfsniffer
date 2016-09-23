@@ -1,6 +1,8 @@
 #include "mosquittopp.h"
-#include "../librf/WBDevice.h"
+#include "../libs/libwb/WBDevice.h"
+#include "../libs/librf/RFProtocolNooLite.h"
 
+class RFM69OOK;
 
 class CMqttConnection
 :public mosqpp::mosquittopp
@@ -9,9 +11,11 @@ class CMqttConnection
 	CLog *m_Log;
 	bool m_isConnected;
 	CWBDeviceMap m_Devices;
+    RFM69OOK *m_RFM;
+    CRFProtocolNooLite m_nooLite;
 
 public:
-	CMqttConnection(string Server, CLog* log);	
+	CMqttConnection(string Server, CLog* log, RFM69OOK *rfm);	
 	~CMqttConnection();	
 	void NewMessage(string message);
 

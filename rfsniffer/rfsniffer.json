@@ -1,0 +1,27 @@
+
+{
+  "radio": {
+    "lirc_device": "/dev/lirc0",
+    "spi_device": "/dev/spidev32766.0",
+    "rssi": -90,
+    //, "fixedThresh": 60
+    "rfm_irq": 38
+  },
+
+  "mqtt": {
+    "host": "localhost"
+  },
+
+  "debug":{
+    //"writePackets": 60,
+    "savePath": ".",
+
+    "Log": [{
+      "Name": "Main",
+      "FileName": "/run/rfsniffer.log",
+      "ConsoleLevel": 5,
+      "FileLevel": 3,
+      "LogTime": "yes"
+    }]
+  }
+}

@@ -2,16 +2,18 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include "../libutils/logging.h"
-#include "../libutils/Exception.h"
-#include "../librf/spidev_lib++.h"
-#include "../librf/RFM69OOKregisters.h"
-#include "../librf/RFM69OOK.h"
-#include "../librf/RFParser.h"
-#include "../librf/RFProtocolLivolo.h"
-#include "../librf/RFProtocolX10.h"
-#include "../librf/RFProtocolRST.h"
-#include "../librf/RFProtocolRaex.h"
+#include "../libs/libutils/logging.h"
+#include "../libs/libutils/Exception.h"
+#include "../libs/libutils/Config.h"
+#include "../libs/libutils/ConfigItem.h"
+#include "../libs/librf/spidev_lib++.h"
+#include "../libs/librf/RFM69OOKregisters.h"
+#include "../libs/librf/RFM69OOK.h"
+#include "../libs/librf/RFParser.h"
+#include "../libs/librf/RFProtocolLivolo.h"
+#include "../libs/librf/RFProtocolX10.h"
+#include "../libs/librf/RFProtocolRST.h"
+#include "../libs/librf/RFProtocolRaex.h"
 #include "MqttConnect.h"
 
 typedef uint32_t __u32;
@@ -61,125 +63,402 @@ int waitfordata(int fd, unsigned long maxusec)
 
 int main(int argc, char* argv[])
 {
-	bool bDebug = false;
+	bool bDebug = false, bDaemon = false, bDumpAllRegs = false;
+	string spiDevice = "/dev/spidev32766.0";
+	string lircDevice="/dev/lirc0";
+	string mqttHost="localhost";
+	string scannerParams;
+	string configName;
+	long spiSpeed = 500000;
+	int gpioInt = 38;
+	//long samplingFreq = 0;
+	int fixedThresh=0;
+	int rssi = 0;
+	int writePackets=0;
+	string savePath = ".";
 
-	if (argc>=2 && !strcmp(argv[1], "-D"))
+
+	char* irq = getenv("WB_GPIO_RFM_IRQ");
+	char* spiMajor = getenv("WB_RFM_SPI_MAJOR");
+	char* spiMinor = getenv("WB_RFM_SPI_MINOR");
+//	m_Log->Printf(0, "WB_GPIO_RFM_IRQ=%s", irq);
+//	m_Log->Printf(0, "WB_RFM_SPI_MAJOR=%s", spiMajor);
+//	m_Log->Printf(0, "WB_RFM_SPI_MINOR=%s", spiMinor);
+
+	if (spiMajor || spiMinor)
 	{
-		bDebug = true;
+		char buffer[256];
+		snprintf(buffer, sizeof(buffer), "/dev/spidev%s.%s", spiMajor?spiMajor:"32766", spiMinor?spiMinor:"0");
+		spiDevice = buffer;
 	}
 
-	CLog *m_Log = CLog::GetLog("Main");
-	m_Log->SetLogLevel(3);
-	m_Log->SetConsoleLogLevel(4);
+	if (irq && atoi(irq)>0)
+		gpioInt= atoi(irq);
+
+    int c;
+    //~ int digit_optind = 0;
+    //~ int aopt = 0, bopt = 0;
+    //~ char *copt = 0, *dopt = 0;
+    while ( (c = getopt(argc, argv, "Dds:m:l:S:f:r:tw:c:")) != -1) {
+        //~ int this_option_optind = optind ? optind : 1;
+        switch (c) {
+    	case 'D':
+	 		bDebug = true;
+            break;
+
+         case 'd':
+	 		bDaemon = true;
+         	break;
+
+         case 's':
+	         spiDevice = optarg;
+         	break;
+
+         case 'l':
+         	lircDevice = optarg;
+         	break;
+
+         case 'm':
+         	mqttHost = optarg;
+         	break;
+
+         case 'S':
+         	scannerParams = optarg;
+         	break;
+
+         case 'f':
+         	fixedThresh = atoi(optarg);
+         	break;
+
+         case 'r':
+         	rssi = atoi(optarg);
+         	break;
+
+         case 'g':
+         	gpioInt = atoi(optarg);
+         	break;
+
+         case 't':
+	 		bDumpAllRegs = true;
+         	break;
+
+         case 'w':
+	 		writePackets = atoi(optarg);
+         	break;
+
+     	case 'c':
+     		configName = optarg;
+         	break;
+
+        case '?':
+        	printf("Ussage: rfsniffer [params]\n");
+        	printf("-D - debug mode. Write good but not decoded packets to files\n");
+        	printf("-d - start daemon\n");
+        	printf("-g <DIO0 gpio> - set custom DIO0 GPIO number. Default %d\n", gpioInt);
+        	printf("-s <spi device> - set custom SPI device. Default %s\n", spiDevice.c_str());
+        	printf("-l <lirc device> - set custom lirc device. Default %s\n", lircDevice.c_str());
+        	printf("-m <mqtt host> - set custom mqtt host. Default %s\n", mqttHost.c_str());
+        	printf("-w <seconds> - write to file all packets for <secods> second and exit\n");
+
+        	printf("-S -<low level>..-<high level>/<seconds for step> - scan for noise. \n");
+        	printf("-r <RSSI> - reset RSSI Threshold after each packet. 0 - Disabled. Default %ld\n", rssi);
+        	printf("-f <fixed Threshold> - Use OokFixedThresh with fixed level. 0 - Disabled. Default %d\n", fixedThresh);
+//        	printf("-f <sampling freq> - set custom sampling freq. Default %d\n", samplingFreq);
+        	return 0;
+        default:
+            printf ("?? getopt returned character code 0%o ??\n", c);
+        	return 0;
+        }
+    }
+
+	try
+	{
+	    if (configName.length())
+	    {
+			CConfig config;
+			config.Load(configName);
+
+			CConfigItem radio = config.getNode("radio");
+			if (radio.isNode())
+			{				
+				lircDevice = radio.getStr("lirc_device", false, lircDevice);	
+				spiDevice = radio.getStr("spi_device", false, spiDevice);			
+				gpioInt = radio.getInt("rfm_irq", false, gpioInt);
+				rssi = radio.getInt("rssi", false, rssi);
+			}
+		
+			mqttHost = config.getStr("mqtt/host", false, mqttHost);
+		
+			CConfigItem debug = config.getNode("debug");
+			if (debug.isNode())
+			{				
+				savePath = debug.getStr("savePath", false, savePath);	
+				writePackets = debug.getInt("writePackets", false, writePackets);	
+				CLog::Init(&debug);
+			}
+	    }
+	}
+	catch (CHaException ex)
+	{
+		CLog *m_Log = CLog::Default();
+		m_Log->Printf(0, "Failed load config. Error: %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
+		return -1;
+	}
+
+	CLog *m_Log = CLog::Default();
+	m_Log->Printf(0, "Using SPI device %s, lirc device %s, mqtt on %s", spiDevice.c_str(), lircDevice.c_str(), mqttHost.c_str());
+
+	if (bDaemon)
+	{
+		printf ("Start daemon mode\n");
+		pid_t pid = fork();
+		if (pid < 0)
+		{
+			exit(EXIT_FAILURE);
+		}
+		else if (pid > 0)
+		{
+			exit(EXIT_SUCCESS);
+		}
+		fclose (stdout);
+	}
+	else if (configName.length()==0)
+	{
+		m_Log->SetConsoleLogLevel(4);
+	}
+
+	if (configName.length()==0)
+		m_Log->SetLogLevel(3);
+
+	const size_t BUFFER_SIZE = 1024 * 128;
+	lirc_t *data = new lirc_t[BUFFER_SIZE];
+	int fd = -1;
 
 	spi_config_t spi_config;
 	spi_config.mode=0;
-	spi_config.speed=500000;
+	spi_config.speed=spiSpeed;
 	spi_config.delay=0;
 	spi_config.bits_per_word=8;
-	SPI mySPI("/dev/spidev32766.0",&spi_config);
+	SPI mySPI(spiDevice.c_str(),&spi_config);
 	if (!mySPI.begin())
 	{
 		m_Log->Printf(0, "SPI init failed");
 		return 1;
 	}
 
-    RFM69OOK rfm(&mySPI);
+    RFM69OOK rfm(&mySPI, gpioInt);
     rfm.initialize();
-    rfm.receiveBegin();
 
-	CMqttConnection conn("localhost", m_Log);
-//	conn.NewMessage("X10:D10ON");
-	//conn.NewMessage("RST:id=1b00 h=37 t=27.2");
+	try
+	{
+	    if (bDumpAllRegs)
+	    {
+		    char *Buffer = (char*)data;
+		    char *BufferPtr = Buffer;
+		    size_t BufferSize = BUFFER_SIZE;
+	    	for (int i=0;i<=0x4F;i++)
+	    	{
+	    		byte cur = rfm.readReg(i);
+	    		BufferPtr+=snprintf(BufferPtr, BufferSize-(BufferPtr-Buffer), "Reg_%02X = %02x ", i, cur);
 
-	string m_lircDevice="/dev/lirc0";
-	int fd = open(m_lircDevice.c_str(), O_RDONLY);
-	if (fd == -1) {
-		m_Log->Printf(0, "error opening %s\n", m_lircDevice.c_str());
-		exit(EXIT_FAILURE);
-	};
+	    		if (i%4==3)
+	    		{
+	    			m_Log->Printf(3, "%s", Buffer);
+	    			BufferPtr = Buffer;
+	    		}
+	    	}
 
-	struct stat s;
-	__u32 mode = 2;
+    		if (BufferPtr!=Buffer)
+    		{
+    			m_Log->Printf(3, "%s", Buffer);
+    		}
 
-	if ((fstat(fd, &s) != -1) && (S_ISFIFO(s.st_mode))) {
-		/* can't do ioctls on a pipe */
-	}
-	else if ((fstat(fd, &s) != -1) && (!S_ISCHR(s.st_mode))) {
-		close(fd);
-		throw CHaException(CHaException::ErrBadParam,"%s is not a character device\n", m_lircDevice.c_str());
-	}
-	else if (ioctl(fd, LIRC_GET_REC_MODE, &mode) == -1) {
-		throw CHaException(CHaException::ErrBadParam,"This program is only intended for receivers supporting the pulse/space layer.");
-	}
+    		m_Log->Printf(0, "Reg_%02x = %02x Reg_%02x = %02x", 0x6F, rfm.readReg(0x6F), 0x71, rfm.readReg(0x71));
 
-	CRFParser m_parser(m_Log, bDebug?".":"");
-	m_parser.AddProtocol("All");
+	    	return 0;
+	    }
 
-	const size_t BUFFER_SIZE = 1024 * 1024;
-	lirc_t *data = new lirc_t[BUFFER_SIZE];
-	lirc_t *data_ptr = data;
-	time_t lastReport = 0, packetStart = time(NULL);
-	bool m_bExecute=true;
-	int lastRSSI = -1000, minGoodRSSI=0;
 
-	while (m_bExecute) {
-		int result;
-		usleep(10);
+		fd = open(lircDevice.c_str(), O_RDONLY);
+		if (fd == -1) {
+			m_Log->Printf(0, "Error opening device %s\n", lircDevice.c_str());
+			exit(EXIT_FAILURE);
+		};
 
-		size_t count = sizeof(lirc_t)*BUFFER_SIZE - (data_ptr - data)*sizeof(lirc_t);
+		struct stat s;
+		__u32 mode = 2;
 
-		if (count == 0)
-		{
-			m_Log->Printf(0, "RF buffer full");
-			data_ptr = data;
-			continue;
+		if ((fstat(fd, &s) != -1) && (S_ISFIFO(s.st_mode))) {
+			/* can't do ioctls on a pipe */
+			m_Log->Printf(0, "can't do ioctls on a pipe %s\n", lircDevice.c_str());
+		}
+		else if ((fstat(fd, &s) != -1) && (!S_ISCHR(s.st_mode))) {
+			close(fd);
+			throw CHaException(CHaException::ErrBadParam,"%s is not a character device\n", lircDevice.c_str());
+		}
+		else if (ioctl(fd, LIRC_GET_REC_MODE, &mode) == -1) {
+			throw CHaException(CHaException::ErrBadParam,"This program is only intended for receivers supporting the pulse/space layer.");
 		}
 
-		if (lastReport != time(NULL) && data_ptr - data>=32)
-		{
-			m_Log->Printf(4,"RF got data %ld bytes. RSSI=%d", data_ptr - data, lastRSSI);
-			lastReport = time(NULL);
-		}
+	    if (scannerParams.length()>0)
+	    {
+	    	int minLevel = 30;
+	    	int maxLevel = 60;
+	    	int scanTime = 15;
 
-		if (data_ptr == data)
-		{
-			packetStart = time(NULL);
-		}
-		else if (data_ptr - data<32)
-		{
+	    	int pos = scannerParams.find("..");
+	    	if (pos!=scannerParams.npos)
+	    	{
+	    		minLevel = atoi(scannerParams.substr(0, pos));
+	    		scannerParams = scannerParams.substr(pos+2);
 
-		}
-		else if (!waitfordata(fd, 300000) || data_ptr - data>10000 || time(NULL)-packetStart>2)
-		{
-			string parsedResult = m_parser.Parse(data, data_ptr - data);
-			if (parsedResult.length())
+				pos = scannerParams.find("/");
+		    	if (pos!=scannerParams.npos)
+		    	{
+		    		maxLevel = atoi(scannerParams.substr(0, pos));
+		    		scanTime = atoi(scannerParams.substr(pos+1));
+		    	}
+		    	else
+		    	{
+		    		maxLevel = atoi(scannerParams);
+		    	}
+	    	}
+	    	else
+	    	{
+	    		printf("Use -S <low level>..<high level>/<seconds for step>\n");
+	    		return 0;
+	    	}
+			
+	    	int curLevel = minLevel;
+
+	    	while (curLevel<maxLevel)
+	    	{
+		    	rfm.receiveEnd();
+		    	rfm.writeReg(REG_OOKPEAK, RF_OOKPEAK_THRESHTYPE_FIXED);
+		    	rfm.writeReg(REG_OOKFIX, curLevel);
+			    rfm.receiveBegin();
+	    		int pulses=0;
+	    		time_t startTime=time(NULL);
+
+	    		while (time(NULL)-startTime<scanTime)
+	    		{
+	    			if (!waitfordata(fd, 100)) 
+	    				continue;
+					size_t result = read(fd, (void *)data, BUFFER_SIZE);
+					if (result == 0) {
+						fprintf(stderr, "read() failed\n");
+						break;
+					}
+
+					for (size_t i=0;i<result;i++)
+					{
+						if (CRFProtocol::isPulse(data[i]))
+							pulses++;
+					}
+	    		}
+
+	    		m_Log->Printf(3, "Recv fixed level=%d pulses=%d", curLevel, pulses);
+	    		curLevel++;
+	    	}
+	    	return 0;
+	    }
+
+	    if (fixedThresh)
+	    {
+	    	rfm.writeReg(REG_OOKPEAK, RF_OOKPEAK_THRESHTYPE_FIXED);
+	    	rfm.writeReg(REG_OOKFIX, fixedThresh);
+	    }
+
+	    rfm.receiveBegin();
+		CMqttConnection conn(mqttHost, m_Log, &rfm);
+		CRFParser m_parser(m_Log, (bDebug || writePackets>0)?savePath:"");
+		m_parser.AddProtocol("All");
+
+		lirc_t *data_ptr = data;
+		time_t lastReport = 0, packetStart = time(NULL), startTime = time(NULL);
+		bool m_bExecute=true;
+		int lastRSSI = -1000, minGoodRSSI=0;
+
+		while (m_bExecute) {
+			if (writePackets>0 && time(NULL)-startTime>writePackets)
 			{
-				m_Log->Printf(3, "RF Recieved: %s. RSSI=%d (%d)", parsedResult.c_str(), lastRSSI, minGoodRSSI);
-				conn.NewMessage(parsedResult);
-				if (minGoodRSSI>lastRSSI)
-					minGoodRSSI=lastRSSI;
+				m_bExecute = false;
+				break;
 			}
-			else
+
+			int result;
+			usleep(10);
+
+			size_t count = sizeof(lirc_t)*BUFFER_SIZE - (data_ptr - data)*sizeof(lirc_t);
+
+			if (count == 0)
 			{
-				m_Log->Printf(4, "Recieved %ld signals. Not decoded\n", data_ptr - data);
+				m_Log->Printf(0, "RF buffer full");
+				data_ptr = data;
+				continue;
 			}
-			data_ptr = data;
-			packetStart = time(NULL);
-		}
 
-		result = read(fd, (void *)data_ptr, count);
-		if (result == 0) {
-			fprintf(stderr, "read() failed\n");
-			break;
-		}
-		lastRSSI = rfm.readRSSI();
+			if (lastReport != time(NULL) && data_ptr - data>=32)
+			{
+				m_Log->Printf(writePackets?3:4,"RF got data %ld bytes. RSSI=%d", data_ptr - data, lastRSSI);
+				lastReport = time(NULL);
+			}
 
-		data_ptr += result / sizeof(lirc_t);
-	};
+			if (data_ptr == data)
+			{
+				packetStart = time(NULL);
+			}
+			else if (data_ptr - data<32)
+			{
 
+			}
+			else if (!waitfordata(fd, 300000) || data_ptr - data>BUFFER_SIZE-10 || time(NULL)-packetStart>2)
+			{
+				if (writePackets>0)
+				{
+					m_parser.SaveFile(data, data_ptr - data);
+					m_Log->Printf(3, "Saved file RSSI=%d (%d)", lastRSSI, minGoodRSSI);
+				}
+
+				rfm.receiveEnd();
+				string parsedResult = m_parser.Parse(data, data_ptr - data);
+			    rfm.receiveBegin();
+				if (parsedResult.length())
+				{
+					m_Log->Printf(3, "RF Recieved: %s. RSSI=%d (%d)", parsedResult.c_str(), lastRSSI, minGoodRSSI);
+					conn.NewMessage(parsedResult);
+					if (minGoodRSSI>lastRSSI)
+						minGoodRSSI=lastRSSI;
+				}
+				else
+				{
+					m_Log->Printf(4, "Recieved %ld signals. Not decoded\n", data_ptr - data);
+				}
+				data_ptr = data;
+				packetStart = time(NULL);
+
+				if (rssi<0)
+					rfm.setRSSIThreshold(rssi);
+			}
+
+			result = read(fd, (void *)data_ptr, count);
+			if (result == 0) {
+				fprintf(stderr, "read() failed\n");
+				break;
+			}
+			lastRSSI = rfm.readRSSI();
+
+			data_ptr += result / sizeof(lirc_t);
+		};
+	} 
+	catch (CHaException ex)
+	{
+		m_Log->Printf(0, "Exception %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
+	}
+
+	rfm.receiveEnd();
 	delete []data;
-	close(fd);
-
-
+	
+	if (fd>0)
+		close(fd);
 }

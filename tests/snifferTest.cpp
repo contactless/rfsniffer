@@ -3,16 +3,16 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include "../libutils/logging.h"
-#include "../libutils/Exception.h"
-#include "../librf/spidev_lib++.h"
-#include "../librf/RFM69OOKregisters.h"
-#include "../librf/RFM69OOK.h"
-#include "../librf/RFParser.h"
-#include "../librf/RFProtocolLivolo.h"
-#include "../librf/RFProtocolX10.h"
-#include "../librf/RFProtocolRST.h"
-#include "../librf/RFProtocolRaex.h"
+#include "../libs/libutils/logging.h"
+#include "../libs/libutils/Exception.h"
+#include "../libs/librf/spidev_lib++.h"
+#include "../libs/librf/RFM69OOKregisters.h"
+#include "../libs/librf/RFM69OOK.h"
+#include "../libs/librf/RFParser.h"
+#include "../libs/librf/RFProtocolLivolo.h"
+#include "../libs/librf/RFProtocolX10.h"
+#include "../libs/librf/RFProtocolRST.h"
+#include "../libs/librf/RFProtocolRaex.h"
 
 typedef uint32_t __u32;
 #define LIRC_GET_REC_MODE              _IOR('i', 0x00000002, __u32)

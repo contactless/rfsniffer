@@ -1,6 +1,6 @@
 
 #include "stdafx.h"
-#include "../libutils/logging.h"
+#include "../libs/libutils/logging.h"
 
 void LogTest()
 {
