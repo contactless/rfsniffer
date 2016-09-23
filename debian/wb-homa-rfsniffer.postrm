@@ -1,0 +1,13 @@
+#!/bin/bash
+
+CONFFILE=/etc/wb-homa-gpio.conf
+
+if [ "$1" = "purge" ]; then
+    if [ -x /usr/bin/ucf ]; then
+        ucf  --purge /etc/wb-homa-gpio.conf
+    fi
+fi
+
+
+#DEBHELPER#
+

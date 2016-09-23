@@ -1,0 +1,49 @@
+#!/bin/bash
+. /etc/wb_env.sh
+
+CONFFILE=/etc/wb-homa-gpio.conf
+
+case "$WB_VERSION" in
+    "58" )
+        BOARD_CONF="/usr/share/wb-homa-gpio/wb-homa-gpio.conf.wb58"
+    ;;
+
+    "55" )
+        BOARD_CONF="/usr/share/wb-homa-gpio/wb-homa-gpio.conf.wb55"
+    ;;
+
+    "52" )
+        BOARD_CONF="/usr/share/wb-homa-gpio/wb-homa-gpio.conf.wb52"
+    ;;
+
+    "50" )
+        BOARD_CONF="/usr/share/wb-homa-gpio/wb-homa-gpio.conf.wbsh5"
+    ;;
+
+    "41" )
+        BOARD_CONF="/usr/share/wb-homa-gpio/wb-homa-gpio.conf.wbsh4"
+    ;;
+
+    "32" )
+        BOARD_CONF="/usr/share/wb-homa-gpio/wb-homa-gpio.conf.wbsh3"
+    ;;
+
+    "KMON1" )
+        BOARD_CONF="/usr/share/wb-homa-gpio/wb-homa-gpio.conf.mka3"
+    ;;
+
+    "CQC10" )
+        BOARD_CONF="/usr/share/wb-homa-gpio/wb-homa-gpio.conf.cqc10"
+    ;;
+
+    * )
+        BOARD_CONF="/usr/share/wb-homa-gpio/wb-homa-gpio.conf.default"
+    ;;
+esac
+
+
+ucf --debconf-ok $BOARD_CONF $CONFFILE
+
+
+#DEBHELPER#
+
