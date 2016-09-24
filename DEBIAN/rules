@@ -1,0 +1,46 @@
+#!/usr/bin/make -f
+
+config.status: configure
+        dh_testdir
+	#autoreconf -fvi
+        ./configure 
+	--build=$(DEB_BUILD_GNU_TYPE)
+        --prefix=/usr 
+        --mandir=\$${prefix}/share/man 
+        --infodir=\$${prefix}/share/info
+
+build: build-stamp
+
+build-stamp:  config.status
+        dh_testdir
+	
+clean:
+        dh_testdir
+        dh_testroot
+        rm -f build-stamp 
+
+        # Add here commands to clean up after the build process.
+        -$(MAKE) distclean
+        -test -r /usr/share/misc/config.sub && \
+          cp -f /usr/share/misc/config.sub config.sub
+        -test -r /usr/share/misc/config.guess && \
+          cp -f /usr/share/misc/config.guess config.guess
+
+
+        dh_clean
+
+install: build
+        dh_testdir
+        dh_testroot
+        dh_clean -k
+        dh_installdirs
+
+binary-indep: build install
+
+binary-arch: build install
+        dh_testdir
+        dh_testroot
+	dh_installinit
+	dh_shlibdeps
+	dh_md5sums	
+	dh_builddeb
