@@ -1,3 +1,25 @@
 #!/usr/bin/make -f
+
 %:
-	dh $@ --parallel
+	dh $@ --with autoreconf --parallel
+
+override_dh_autoreconf:
+	dh_autoreconf --as-needed
+
+DEB_HOST_MULTIARCH  ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+
+override_dh_auto_configure:
+	echo "CONFIGURE NOW" > /tmp/build_log.txt
+	dh_auto_configure -- --enable-static --enable-plugins --enable-doxygen
+
+override_dh_auto_install:
+	dh_auto_install
+
+override_dh_link:
+	dh_link
+
+override_dh_clean:
+	dh_clean
+
+override_dh_makeshlibs:
+	dh_makeshlibs -V
