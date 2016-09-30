@@ -9,7 +9,6 @@ override_dh_autoreconf:
 DEB_HOST_MULTIARCH  ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 override_dh_auto_configure:
-	echo "CONFIGURE NOW" > /tmp/build_log.txt
 	dh_auto_configure -- --enable-static --enable-plugins --enable-doxygen
 
 override_dh_auto_install:
