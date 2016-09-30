@@ -18,6 +18,12 @@ override_dh_link:
 	dh_link
 
 override_dh_clean:
+	rm -vf *.log
+	rm -vf compile
+	rm -vf haconfig.inc
+	rm -vf test-driver
+	rm -vf m4
+	dh_autoreconf_clean
 	dh_clean
 
 override_dh_makeshlibs:
