@@ -192,8 +192,8 @@ int main(int argc, char* argv[])
 			CConfigItem debug = config.getNode("debug");
 			if (debug.isNode())
 			{				
-				savePath = debug.getStr("savePath", false, savePath);	
-				writePackets = debug.getInt("writePackets", false, writePackets);	
+				savePath = debug.getStr("save_path", false, savePath);	
+				writePackets = debug.getInt("write_packets", false, writePackets);	
 				CLog::Init(&debug);
 			}
 	    }

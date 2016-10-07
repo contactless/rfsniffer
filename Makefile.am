@@ -3,4 +3,4 @@ AM_CXXFLAGS = -DRFSNIFFER
 
 SUBDIRS = libs/libutils libs/librf libs/libwb tests rfsniffer
 dist_doc_DATA = README.md
-TESTS = tests/rftest
+TESTS = tests/wb-homa-rfsniffer-test

@@ -1,27 +1,29 @@
-
+// Test configuration options
 {
-  "radio": {
-    "lirc_device": "/dev/lirc0",
-    "spi_device": "/dev/spidev32766.0",
-    "rfm_irq": 38
-    //, "rssi": 90
-    //, "fixedThresh": 60
-  },
+	"radio": {
+		"lirc_device": "/dev/lirc0",
+		"spi_device": "/dev/spidev32766.0",
+		"rfm_irq": 38
+		//, "rssi": 90
+		//, "fixedThresh": 60
+	},
 
-  "mqtt": {
-    "host": "localhost"
-  },
+	"mqtt": {
+		"host": "localhost"
+	},
 
-  "debug":{
-    "savePackets": "1",
-    "savePath": ".",
+	"debug":{
+		"save_packets": "1",
+		"save_path": ".",
 
-    "Log": [{
-      "Name": "Main",
-      "FileName": "/run/rfsniffer.log",
-      "ConsoleLevel": 5,
-      "FileLevel": 3,
-      "LogTime": "yes"
-    }]
-  }
+		"log": [
+			{
+				"name": "Main",
+				"file_name": "/run/rfsniffer.log",
+				"console_level": 5,
+				"file_level": 3,
+				"log_time": "yes"
+			}
+		]
+	}
 }

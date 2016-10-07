@@ -12,7 +12,7 @@ override_dh_auto_configure:
 	dh_auto_configure -- --enable-static --enable-plugins --enable-doxygen
 
 override_dh_auto_install:
-	dh_auto_install
+	#dh_auto_install
 
 override_dh_link:
 	dh_link
@@ -22,7 +22,7 @@ override_dh_clean:
 	rm -vf compile
 	rm -vf haconfig.inc
 	rm -vf test-driver
-	rm -vf m4
+	rm -vfr m4
 	dh_autoreconf_clean
 	dh_clean
 
