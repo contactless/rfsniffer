@@ -3,6 +3,8 @@
 	"type": "object",
 	"title": "RFM69 Driver Configuration",
 	
+	"propertyOrder" : 2,
+	
 	"configFile": {
 		"path": "/etc/wb-homa-rfsniffer.conf",
 		"service": "wb-homa-rfsniffer"
