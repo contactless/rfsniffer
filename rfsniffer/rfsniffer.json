@@ -19,7 +19,7 @@
 		"log": [
 			{
 				"name": "Main",
-				"file_name": "/run/rfsniffer.log",
+				"file_name": "/run/wb-homa-rfsniffer.log",
 				"console_level": 5,
 				"file_level": 3,
 				"log_time": "yes"

@@ -77,7 +77,7 @@
 							"file_name": {
 								"description": "File name",
 								"type": "string",
-								"default": "/run/rfsniffer.log"
+								"default": "/run/wb-homa-rfsniffer.log"
 							},
 							"console_level": {
 								"description": "Console level",
