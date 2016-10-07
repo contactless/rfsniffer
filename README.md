@@ -4,7 +4,7 @@
 Для сборки требуется Docker контейнер из http://contactless.ru/wiki/index.php/%D0%9A%D0%B0%D0%BA_%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%B0%D1%82%D1%8B%D0%B2%D0%B0%D1%82%D1%8C_%D0%9F%D0%9E_%D0%B4%D0%BB%D1%8F_Wiren_Board
 
 Сборка:
-(если контейнере нет пакетов dh-exec и dh_autoreconf, то устанавливаем (wbdev_additional_installs.sh)) 
+(если контейнере нет пакетов dh-exec и dh-autoreconf, то устанавливаем (wbdev_additional_installs.sh)) 
 - git submodule init
 - git submodule update --remote
 - autoreconf -fvi  
