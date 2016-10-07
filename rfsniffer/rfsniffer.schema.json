@@ -1,0 +1,103 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"type": "object",
+	"title": "RFM69 Driver Configuration",
+
+	"properties": {
+		"radio": {
+			"type": "object",
+			"title": "Device settings",
+			//"propertyOrder" : 2,
+			"properties" : {
+				"lirc_device": {
+					"description": "Adress of lirc device",
+					"type": "string",
+					"default": "/dev/lirc0"
+				},
+				"spi_device": {
+					"description": "Adress of SPI device",
+					"type": "string",
+					"default": "/dev/spidev32766.0"
+				},
+				"rssi": {
+					"description": "Received signal strength indicator(RSSI)",
+					"type": "number",
+					"maximum": 0,
+					"default": -90
+				},
+				//, "fixedThresh": 60
+				"rfm_irq": {
+					"description": "IRQ",
+					"type": "integer",
+					"minimum": 0,
+					"default": 38
+				}
+			}
+		},
+		"mqtt": {
+			"type": "object",
+			"title": "MQTT settings",
+			//"propertyOrder" : 2,
+			"properties" : {
+				"host": {
+					"description": "MQTT host",
+					"type": "string",
+					"default": "local host"
+				}
+			}
+		},
+		"debug": {
+			"type": "object",
+			"title": "DEBUG settings",
+			//"propertyOrder" : 2,
+			"properties": {
+				"save_path": {
+					"description": "Path to save debug info",
+					"type": "string",
+					"default": "."
+				},
+				"log": {
+					"type": "array",	
+					"title": "Logs",
+					"items": {
+						"type": "object",
+						"title": "Log",
+						"properties": {
+							"name": {
+								"description": "Name",
+								"type": "string",
+								"default": "Main"
+							},
+							"file_name": {
+								"description": "File name",
+								"type": "string",
+								"default": "/run/rfsniffer.log"
+							},
+							"console_level": {
+								"description": "Console level",
+								"type": "integer",
+								"default": 5,
+								"minimum": 0
+							},
+							"file_level": {
+								"description": "File level",
+								"type": "integer",
+								"default": 3,
+								"minimum": 0
+							},
+							"log_time": {
+								"description": "Log time",
+								"type": "string",
+								"default": "yes"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	"configFile": {
+		"path": "/etc/wb-homa-rfsniffer.conf",
+		"service": "wb-homa-rfsniffer"
+	}
+}
