@@ -1,8 +1,8 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides:          wb-homa-gpio
-# Default-Start:     2 3 4 5 ??
-# Default-Stop:      0 1 6 ??
+# Provides:          wb-homa-rfsniffer
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
 # Required-Start: $remote_fs mosquitto
 # Required-Stop: $remote_fs
 # Short-Description: MQTT Driver for RFM69
