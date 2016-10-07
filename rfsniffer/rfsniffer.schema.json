@@ -2,7 +2,11 @@
 	"$schema": "http://json-schema.org/draft-04/schema#",
 	"type": "object",
 	"title": "RFM69 Driver Configuration",
-
+	
+	"configFile": {
+		"path": "/etc/wb-homa-rfsniffer.conf",
+		"service": "wb-homa-rfsniffer"
+	},
 	"properties": {
 		"radio": {
 			"type": "object",
@@ -95,9 +99,5 @@
 				}
 			}
 		}
-	}
-	"configFile": {
-		"path": "/etc/wb-homa-rfsniffer.conf",
-		"service": "wb-homa-rfsniffer"
 	}
 }

@@ -4,15 +4,22 @@
 Для сборки требуется Docker контейнер из http://contactless.ru/wiki/index.php/%D0%9A%D0%B0%D0%BA_%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%B0%D1%82%D1%8B%D0%B2%D0%B0%D1%82%D1%8C_%D0%9F%D0%9E_%D0%B4%D0%BB%D1%8F_Wiren_Board
 
 Сборка:
+(если контейнере нет пакетов dh-exec и dh_autoreconf, то устанавливаем (wbdev_additional_installs.sh)) 
 - git submodule init
 - git submodule update --remote
 - autoreconf -fvi  
 - ./configure 
 - make
 
+
 В результате получается 2 нужных файла:
-- rftest (tests/rftest)
-- rfsniffer (rfsniffer/rfsniffer)
+- wb-homa-rfsniffer-test (tests/)
+- wb-homa-rfsniffer (rfsniffer/)
+
+
+Если речь идет о сборке deb-пакета, то:
+- #dpkg-buildpackage -rfakeroot -us -uc
+(или #build_deb.sh)
 
 Необходимо скопировать rftest и rfsniffer куда-либо на устройство
 
@@ -30,5 +37,3 @@ rfsniffer слушает эфир через RFM69 и
 - Работает передача команд от устройст Noolite TX 0xd61 (61, 63) из интерфейса wirenboard
 
 При необходимости могут быть добавлены почти любые устройства, использующие для обмена OOK модуляцию на частоте 433.92Mhz. 
-
-P.S. debian pkg и описание логики работы декодера сделаю чуть позднее. 

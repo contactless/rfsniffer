@@ -2,3 +2,4 @@ usr/bin
 etc
 etc/init.d
 usr/share/doc/wb-homa-rfsniffer
+usr/share/wb-mqtt-confed/schemas/
