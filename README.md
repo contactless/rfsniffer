@@ -16,12 +16,12 @@
 - wb-homa-rfsniffer-test (tests/)
 - wb-homa-rfsniffer (rfsniffer/)
 
+Необходимо скопировать wb-homa-rfsniffer и wb-homa-rfsniffer-test куда-либо на устройство
 
 Если речь идет о сборке deb-пакета, то:
 - #dpkg-buildpackage -rfakeroot -us -uc
 (или #build_deb.sh)
 
-Необходимо скопировать rftest и rfsniffer куда-либо на устройство
 
 Cейчас все настроено на работу с WB5 (RFM подключен к /dev/spidev32766.0, его DIO2 виден через /dev/lirc0, mqtt доступен без авторизации на localhost). При необходимости настройки можно изменить через параметры командной строки (./rfsniffer -?)
 
