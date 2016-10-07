@@ -8,6 +8,7 @@ Build-Depends: debhelper (>= 9), dh-autoreconf, pkg-config, g++, libjsoncpp-dev,
 Package: wb-homa-rfsniffer
 Architecture: any
 Depends: ${shlibs:Depend}, ${misc:Depends}, libjsoncpp0, libmosquittopp1, libmosquitto1, ucf, libwbmqtt  (>= 1.3.2)
+Conflicts: wb-homa-ism-radio
 Breaks: 
 Description: Wiren Board RFM69 driver 
  Wiren Board Smart Home MQTT RFM69 driver 
