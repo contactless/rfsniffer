@@ -1,3 +1,4 @@
 #!/bin/bash
 
 update-rc.d wb-homa-rfsniffer defaults
+invoke-rc.d wb-homa-rfsniffer start
