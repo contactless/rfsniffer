@@ -430,8 +430,11 @@ int main(int argc, char* argv[])
                     m_Log->Printf(3, "Saved file RSSI=%d (%d)", lastRSSI, minGoodRSSI);
                 }
 
-                // What is it? Why does he make it on and off?
+                // What is it? Why does he make it .reseiveEnd() and .receiveBegin?
                 // TODO. Erase it and test.
+                // Upd: It works without it, but it's safer to keep it as is.
+                // It's in not connected with kernel error:
+                // [  384.785198] lirc_pwm lirc-rfm69: wtf? value=0, last=351115718, now=384643156, delta=33527437
                 rfm.receiveEnd();
                 string parsedResult = m_parser.Parse(data, data_ptr - data);
                 rfm.receiveBegin();

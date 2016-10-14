@@ -20,9 +20,10 @@
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="MQTT RFM69 Driver"
+NAMEBIN=wb-homa-rfsniff
 NAME=wb-homa-rfsniffer
-DAEMON=/usr/bin/$NAME
-DAEMON_ARGS="-c /etc/${NAME}.conf"
+DAEMON=/usr/bin/$NAMEBIN
+DAEMON_ARGS="-c /etc/$NAME.conf"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 
@@ -71,7 +72,7 @@ do_stop()
 	#   1 if daemon was already stopped
 	#   2 if daemon could not be stopped
 	#   other if a failure occurred
-	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE --exec $NAME
+	start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE --name $NAMEBIN
 	RETVAL="$?"
 	[ "$RETVAL" = 2 ] && return 2
 	# Wait for children to finish too if this is a daemon that forks
@@ -96,7 +97,7 @@ do_reload() {
 	# restarting (for example, when it is sent a SIGHUP),
 	# then implement that here.
 	#
-	start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --exec $NAME
+	start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAMEBIN
 	return 0
 }
 
