@@ -38,7 +38,7 @@ int waitfordata(int fd, unsigned long maxusec)
     while (1) {
         FD_ZERO(&fds);
         FD_SET(fd, &fds);
-        do { 
+        do {
             do {
                 if (maxusec > 0) {
                     tv.tv_sec = maxusec / 1000000;
@@ -49,14 +49,12 @@ int waitfordata(int fd, unsigned long maxusec)
                 } else {
                     ret = select(fd + 1, &fds, NULL, NULL, NULL);
                 }
-            }
-            while (ret == -1 && errno == EINTR);
+            } while (ret == -1 && errno == EINTR);
             if (ret == -1) {
                 CLog::Default()->Printf(0, "RF select() failed\n");
                 continue;
             }
-        }
-        while (ret == -1);
+        } while (ret == -1);
 
         if (FD_ISSET(fd, &fds)) {
             /* we will read later */
@@ -68,12 +66,12 @@ int waitfordata(int fd, unsigned long maxusec)
 }
 
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     bool bDebug = false, bDaemon = false, bDumpAllRegs = false;
     string spiDevice = "/dev/spidev32766.0";
-    string lircDevice="/dev/lirc0";
-    string mqttHost="localhost";
+    string lircDevice = "/dev/lirc0";
+    string mqttHost = "localhost";
     string scannerParams;
     string configName;
     long spiSpeed = 500000;
@@ -82,19 +80,20 @@ int main(int argc, char* argv[])
     int rssi = 0;
     int writePackets = 0;
     string savePath = ".";
+    bool inverted = false;
 
 
-    char* irq = getenv("WB_GPIO_RFM_IRQ");
-    char* spiMajor = getenv("WB_RFM_SPI_MAJOR");
-    char* spiMinor = getenv("WB_RFM_SPI_MINOR");
-//  m_Log->Printf(0, "WB_GPIO_RFM_IRQ=%s", irq);
-//  m_Log->Printf(0, "WB_RFM_SPI_MAJOR=%s", spiMajor);
-//  m_Log->Printf(0, "WB_RFM_SPI_MINOR=%s", spiMinor);
+    char *irq = getenv("WB_GPIO_RFM_IRQ");
+    char *spiMajor = getenv("WB_RFM_SPI_MAJOR");
+    char *spiMinor = getenv("WB_RFM_SPI_MINOR");
+    //  m_Log->Printf(0, "WB_GPIO_RFM_IRQ=%s", irq);
+    //  m_Log->Printf(0, "WB_RFM_SPI_MAJOR=%s", spiMajor);
+    //  m_Log->Printf(0, "WB_RFM_SPI_MINOR=%s", spiMinor);
 
-    if (spiMajor || spiMinor)
-    {
+    if (spiMajor || spiMinor) {
         char buffer[256];
-        snprintf(buffer, sizeof(buffer), "/dev/spidev%s.%s", spiMajor ? spiMajor : "32766", spiMinor ? spiMinor : "0");
+        snprintf(buffer, sizeof(buffer), "/dev/spidev%s.%s", spiMajor ? spiMajor : "32766",
+                 spiMinor ? spiMinor : "0");
         spiDevice = buffer;
     }
 
@@ -105,131 +104,124 @@ int main(int argc, char* argv[])
     //~ int digit_optind = 0;
     //~ int aopt = 0, bopt = 0;
     //~ char *copt = 0, *dopt = 0;
-    while ( (c = getopt(argc, argv, "Dds:m:l:S:f:r:tw:c:")) != -1) {
+    while ( (c = getopt(argc, argv, "Dds:m:l:S:f:r:tw:c:i")) != -1) {
         //~ int this_option_optind = optind ? optind : 1;
         switch (c) {
-         case 'D':
-            bDebug = true;
-            break;
+            case 'D':
+                bDebug = true;
+                break;
+            case 'd':
+                bDaemon = true;
+                break;
 
-         case 'd':
-            bDaemon = true;
-            break;
+            case 's':
+                spiDevice = optarg;
+                break;
 
-         case 's':
-             spiDevice = optarg;
-            break;
+            case 'l':
+                lircDevice = optarg;
+                break;
 
-         case 'l':
-            lircDevice = optarg;
-            break;
+            case 'm':
+                mqttHost = optarg;
+                break;
 
-         case 'm':
-            mqttHost = optarg;
-            break;
+            case 'i':
+                inverted = true;
+                break;
 
-         case 'S':
-            scannerParams = optarg;
-            break;
+            case 'S':
+                scannerParams = optarg;
+                break;
 
-         case 'f':
-            fixedThresh = atoi(optarg);
-            break;
+            case 'f':
+                fixedThresh = atoi(optarg);
+                break;
 
-         case 'r':
-            rssi = atoi(optarg);
-            break;
+            case 'r':
+                rssi = atoi(optarg);
+                break;
 
-         case 'g':
-            gpioInt = atoi(optarg);
-            break;
+            case 'g':
+                gpioInt = atoi(optarg);
+                break;
 
-         case 't':
-            bDumpAllRegs = true;
-            break;
+            case 't':
+                bDumpAllRegs = true;
+                break;
 
-         case 'w':
-            writePackets = atoi(optarg);
-            break;
+            case 'w':
+                writePackets = atoi(optarg);
+                break;
 
-        case 'c':
-            configName = optarg;
-            break;
+            case 'c':
+                configName = optarg;
+                break;
 
-        case '?':
-            printf("Ussage: rfsniffer [params]\n");
-            printf("-D - debug mode. Write good but not decoded packets to files\n");
-            printf("-d - start daemon\n");
-            printf("-g <DIO0 gpio> - set custom DIO0 GPIO number. Default %d\n", gpioInt);
-            printf("-s <spi device> - set custom SPI device. Default %s\n", spiDevice.c_str());
-            printf("-l <lirc device> - set custom lirc device. Default %s\n", lircDevice.c_str());
-            printf("-m <mqtt host> - set custom mqtt host. Default %s\n", mqttHost.c_str());
-            printf("-w <seconds> - write to file all packets for <secods> second and exit\n");
+            case '?':
+                printf("Ussage: rfsniffer [params]\n");
+                printf("-D - debug mode. Write good but not decoded packets to files\n");
+                printf("-d - start daemon\n");
+                printf("-g <DIO0 gpio> - set custom DIO0 GPIO number. Default %d\n", gpioInt);
+                printf("-s <spi device> - set custom SPI device. Default %s\n", spiDevice.c_str());
+                printf("-l <lirc device> - set custom lirc device. Default %s\n", lircDevice.c_str());
+                printf("-m <mqtt host> - set custom mqtt host. Default %s\n", mqttHost.c_str());
+                printf("-w <seconds> - write to file all packets for <secods> second and exit\n");
 
-            printf("-S -<low level>..-<high level>/<seconds for step> - scan for noise. \n");
-            printf("-r <RSSI> - reset RSSI Threshold after each packet. 0 - Disabled. Default %d\n", (int)rssi);
-            printf("-f <fixed Threshold> - Use OokFixedThresh with fixed level. 0 - Disabled. Default %d\n", fixedThresh);
-//          printf("-f <sampling freq> - set custom sampling freq. Default %d\n", samplingFreq);
-            return 0;
-        default:
-            printf ("?? getopt returned character code 0%o ??\n", c);
-            return 0;
+                printf("-S -<low level>..-<high level>/<seconds for step> - scan for noise. \n");
+                printf("-r <RSSI> - reset RSSI Threshold after each packet. 0 - Disabled. Default %d\n", (int)rssi);
+                printf("-f <fixed Threshold> - Use OokFixedThresh with fixed level. 0 - Disabled. Default %d\n",
+                       fixedThresh);
+                //          printf("-f <sampling freq> - set custom sampling freq. Default %d\n", samplingFreq);
+                return 0;
+            default:
+                printf ("?? getopt returned character code 0%o ??\n", c);
+                return 0;
         }
     }
 
-    try
-    {
-        if (configName.length())
-        {
+    try {
+        if (configName.length()) {
             CConfig config;
             config.Load(configName);
 
             CConfigItem radio = config.getNode("radio");
-            if (radio.isNode())
-            {               
-                lircDevice = radio.getStr("lirc_device", false, lircDevice);    
-                spiDevice = radio.getStr("spi_device", false, spiDevice);           
+            if (radio.isNode()) {
+                lircDevice = radio.getStr("lirc_device", false, lircDevice);
+                spiDevice = radio.getStr("spi_device", false, spiDevice);
                 gpioInt = radio.getInt("rfm_irq", false, gpioInt);
                 rssi = radio.getInt("rssi", false, rssi);
             }
-        
+
             mqttHost = config.getStr("mqtt/host", false, mqttHost);
-        
+
             CConfigItem debug = config.getNode("debug");
-            if (debug.isNode())
-            {               
-                savePath = debug.getStr("save_path", false, savePath);  
-                writePackets = debug.getInt("write_packets", false, writePackets);  
+            if (debug.isNode()) {
+                savePath = debug.getStr("save_path", false, savePath);
+                writePackets = debug.getInt("write_packets", false, writePackets);
                 CLog::Init(&debug);
             }
         }
-    }
-    catch (CHaException ex)
-    {
+    } catch (CHaException ex) {
         CLog *m_Log = CLog::Default();
         m_Log->Printf(0, "Failed load config. Error: %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
         return -1;
     }
 
     CLog *m_Log = CLog::Default();
-    m_Log->Printf(0, "Using SPI device %s, lirc device %s, mqtt on %s", spiDevice.c_str(), lircDevice.c_str(), mqttHost.c_str());
+    m_Log->Printf(0, "Using SPI device %s, lirc device %s, mqtt on %s", spiDevice.c_str(),
+                  lircDevice.c_str(), mqttHost.c_str());
 
-    if (bDaemon)
-    {
+    if (bDaemon) {
         printf ("Start daemon mode\n");
         pid_t pid = fork();
-        if (pid < 0)
-        {
+        if (pid < 0) {
             exit(EXIT_FAILURE);
-        }
-        else if (pid > 0)
-        {
+        } else if (pid > 0) {
             exit(EXIT_SUCCESS);
         }
         fclose (stdout);
-    }
-    else if (configName.length() == 0)
-    {
+    } else if (configName.length() == 0) {
         m_Log->SetConsoleLogLevel(4);
     }
 
@@ -246,8 +238,7 @@ int main(int argc, char* argv[])
     spi_config.delay = 0;
     spi_config.bits_per_word = 8;
     SPI mySPI(spiDevice.c_str(), &spi_config);
-    if (!mySPI.begin())
-    {
+    if (!mySPI.begin()) {
         m_Log->Printf(0, "SPI init failed");
         return 1;
     }
@@ -255,31 +246,27 @@ int main(int argc, char* argv[])
     RFM69OOK rfm(&mySPI, gpioInt);
     rfm.initialize();
 
-    try
-    {
-        if (bDumpAllRegs)
-        {
-            char *Buffer = (char*)data;
+    try {
+        if (bDumpAllRegs) {
+            char *Buffer = (char *)data;
             char *BufferPtr = Buffer;
             size_t BufferSize = BUFFER_SIZE;
-            for (int i=0;i<=0x4F;i++)
-            {
+            for (int i = 0; i <= 0x4F; i++) {
                 byte cur = rfm.readReg(i);
-                BufferPtr+=snprintf(BufferPtr, BufferSize-(BufferPtr-Buffer), "Reg_%02X = %02x ", i, cur);
+                BufferPtr += snprintf(BufferPtr, BufferSize - (BufferPtr - Buffer), "Reg_%02X = %02x ", i, cur);
 
-                if (i % 4 == 3)
-                {
+                if (i % 4 == 3) {
                     m_Log->Printf(3, "%s", Buffer);
                     BufferPtr = Buffer;
                 }
             }
 
-            if (BufferPtr!=Buffer)
-            {
+            if (BufferPtr != Buffer) {
                 m_Log->Printf(3, "%s", Buffer);
             }
 
-            m_Log->Printf(0, "Reg_%02x = %02x Reg_%02x = %02x", 0x6F, rfm.readReg(0x6F), 0x71, rfm.readReg(0x71));
+            m_Log->Printf(0, "Reg_%02x = %02x Reg_%02x = %02x", 0x6F, rfm.readReg(0x6F), 0x71,
+                          rfm.readReg(0x71));
 
             return 0;
         }
@@ -287,77 +274,66 @@ int main(int argc, char* argv[])
         // Opening lirc device
         {
             fd = open(lircDevice.c_str(), O_RDONLY);
-            if (fd == -1) 
-            {
+            if (fd == -1) {
                 m_Log->Printf(0, "Error opening device %s\n", lircDevice.c_str());
                 exit(EXIT_FAILURE);
             }
 
             struct stat s;
-            if (fstat(fd, &s) == -1) 
-            {
+            if (fstat(fd, &s) == -1) {
                 m_Log->Printf(0, "fstat: Can't read file status! : %s\n", strerror(errno));
-                throw CHaException(CHaException::ErrBadParam, "fstat: Can't read file status! : %s\n", strerror(errno));
+                throw CHaException(CHaException::ErrBadParam, "fstat: Can't read file status! : %s\n",
+                                   strerror(errno));
             }
-            if (!S_ISCHR(s.st_mode)) 
-            {
+            if (!S_ISCHR(s.st_mode)) {
                 m_Log->Printf(0, "Lirc device is not character device! st_mode = %d\n", (int)s.st_mode);
-                throw CHaException(CHaException::ErrBadParam,"%s is not a character device\n", lircDevice.c_str());
+                throw CHaException(CHaException::ErrBadParam, "%s is not a character device\n", lircDevice.c_str());
             }
-            
+
             __u32 mode = 2;
-            if (ioctl(fd, LIRC_GET_REC_MODE, &mode) == -1) 
-            {
+            if (ioctl(fd, LIRC_GET_REC_MODE, &mode) == -1) {
                 m_Log->Printf(0, "This program is only intended for receivers supporting the pulse/space layer.\n");
-                throw CHaException(CHaException::ErrBadParam,"This program is only intended for receivers supporting the pulse/space layer.");
+                throw CHaException(CHaException::ErrBadParam,
+                                   "This program is only intended for receivers supporting the pulse/space layer.");
             }
         }
 
-        if (scannerParams.length() > 0)
-        {
+        if (scannerParams.length() > 0) {
             m_Log->Printf(0, "Scanner params are: \"%s\"\n", scannerParams.c_str());
             int minLevel = 30;
             int maxLevel = 60;
             int scanTime = 15;
 
             int pos = scannerParams.find("..");
-            if (pos != scannerParams.npos)
-            {
+            if (pos != scannerParams.npos) {
                 minLevel = atoi(scannerParams.substr(0, pos));
-                scannerParams = scannerParams.substr(pos+2);
+                scannerParams = scannerParams.substr(pos + 2);
 
                 pos = scannerParams.find("/");
-                if (pos != scannerParams.npos)
-                {
+                if (pos != scannerParams.npos) {
                     maxLevel = atoi(scannerParams.substr(0, pos));
-                    scanTime = atoi(scannerParams.substr(pos+1));
-                }
-                else
-                {
+                    scanTime = atoi(scannerParams.substr(pos + 1));
+                } else {
                     maxLevel = atoi(scannerParams);
                 }
-            }
-            else
-            {
+            } else {
                 m_Log->Printf(0, "Error in parsing scanner params." \
-                            "Use -S <low level>..<high level>/<seconds for step>\n");
+                              "Use -S <low level>..<high level>/<seconds for step>\n");
                 return -1;
             }
-            
+
             int curLevel = minLevel;
 
-            while (curLevel < maxLevel)
-            {
+            while (curLevel < maxLevel) {
                 rfm.receiveEnd();
                 rfm.writeReg(REG_OOKPEAK, RF_OOKPEAK_THRESHTYPE_FIXED);
                 rfm.writeReg(REG_OOKFIX, curLevel);
                 rfm.receiveBegin();
-                int pulses=0;
-                time_t startTime=time(NULL);
+                int pulses = 0;
+                time_t startTime = time(NULL);
 
-                while (time(NULL) - startTime < scanTime)
-                {
-                    if (!waitfordata(fd, 100)) 
+                while (time(NULL) - startTime < scanTime) {
+                    if (!waitfordata(fd, 100))
                         continue;
                     int result = read(fd, (void *)data, BUFFER_SIZE);
                     if (result == -1 && errno == EAGAIN)
@@ -366,8 +342,7 @@ int main(int argc, char* argv[])
                         m_Log->Printf(0, "read() failed\n");
                         break;
                     }
-                    for (size_t i = 0; i < result; i++)
-                    {
+                    for (size_t i = 0; i < result; i++) {
                         if (CRFProtocol::isPulse(data[i]))
                             pulses++;
                     }
@@ -379,8 +354,7 @@ int main(int argc, char* argv[])
             return 0;
         }
 
-        if (fixedThresh)
-        {
+        if (fixedThresh) {
             rfm.writeReg(REG_OOKPEAK, RF_OOKPEAK_THRESHTYPE_FIXED);
             rfm.writeReg(REG_OOKFIX, fixedThresh);
         }
@@ -397,35 +371,30 @@ int main(int argc, char* argv[])
         while (true) {
             if (writePackets > 0 && time(NULL) - startTime > writePackets)
                 break;
-            
+
             int result;
             usleep(10);
 
             size_t count = sizeof(lirc_t) * BUFFER_SIZE - (data_ptr - data) * sizeof(lirc_t);
 
-            if (count == 0)
-            {
+            if (count == 0) {
                 m_Log->Printf(0, "RF buffer full");
                 data_ptr = data;
                 continue;
             }
 
-            if (lastReport != time(NULL) && data_ptr - data >= 32)
-            {
-                m_Log->Printf(writePackets ? 3 : 4,"RF got data %ld bytes. RSSI=%d", data_ptr - data, lastRSSI);
+            if (lastReport != time(NULL) && data_ptr - data >= 32) {
+                m_Log->Printf(writePackets ? 3 : 4, "RF got data %ld bytes. RSSI=%d", data_ptr - data, lastRSSI);
                 lastReport = time(NULL);
             }
 
-            if (data_ptr == data)
-            {
+            if (data_ptr == data) {
                 packetStart = time(NULL);
             }
-            
-            if (data_ptr - data >= 32 && (!waitfordata(fd, 300000) 
-                    || data_ptr - data > BUFFER_SIZE - 10 || time(NULL) - packetStart > 2))
-            {
-                if (writePackets > 0)
-                {
+
+            if (data_ptr - data >= 32 && (!waitfordata(fd, 300000)
+                                          || data_ptr - data > BUFFER_SIZE - 10 || time(NULL) - packetStart > 2)) {
+                if (writePackets > 0) {
                     m_parser.SaveFile(data, data_ptr - data);
                     m_Log->Printf(3, "Saved file RSSI=%d (%d)", lastRSSI, minGoodRSSI);
                 }
@@ -438,21 +407,18 @@ int main(int argc, char* argv[])
                 rfm.receiveEnd();
                 string parsedResult = m_parser.Parse(data, data_ptr - data);
                 rfm.receiveBegin();
-                if (parsedResult.length())
-                {
+                if (parsedResult.length()) {
                     m_Log->Printf(3, "RF Recieved: %s. RSSI=%d (%d)", parsedResult.c_str(), lastRSSI, minGoodRSSI);
                     conn.NewMessage(parsedResult);
                     if (minGoodRSSI > lastRSSI)
                         minGoodRSSI = lastRSSI;
-                }
-                else
-                {
+                } else {
                     m_Log->Printf(4, "Recieved %ld signals. Not decoded\n", data_ptr - data);
                 }
                 data_ptr = data;
                 packetStart = time(NULL);
 
-                if (rssi<0)
+                if (rssi < 0)
                     rfm.setRSSIThreshold(rssi);
             }
 
@@ -465,15 +431,13 @@ int main(int argc, char* argv[])
 
             data_ptr += result / sizeof(lirc_t);
         }
-    } 
-    catch (CHaException ex)
-    {
+    } catch (CHaException ex) {
         m_Log->Printf(0, "Exception %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
     }
 
     rfm.receiveEnd();
     delete []data;
-    
+
     if (fd > 0)
         close(fd);
 }

@@ -156,6 +156,7 @@
     <ClCompile Include="RFProtocolOregon.cpp" />
     <ClCompile Include="RFProtocolRaex.cpp" />
     <ClCompile Include="RFProtocolRST.cpp" />
+    <ClCompile Include="RFProtocolRubitek.cpp" />
     <ClCompile Include="RFProtocolX10.cpp" />
     <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
@@ -172,6 +173,7 @@
     <ClInclude Include="RFProtocolOregon.h" />
     <ClInclude Include="RFProtocolRaex.h" />
     <ClInclude Include="RFProtocolRST.h" />
+    <ClInclude Include="RFProtocolRubitek.h" />
     <ClInclude Include="RFProtocolX10.h" />
     <ClInclude Include="spidev_lib++.h" />
     <ClInclude Include="stdafx.h" />

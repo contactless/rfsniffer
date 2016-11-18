@@ -41,6 +41,7 @@ public:
 */
 	CRFProtocol(range_array_type zeroLengths, range_array_type pulseLengths, int bits, int minRepeat, string PacketDelimeter );
 	virtual ~CRFProtocol();
+	void checkInverted(bool inverted){m_InvertPacket=inverted;};
 
 	// Раскодируем пакет
 	virtual string Parse(base_type*, size_t len);

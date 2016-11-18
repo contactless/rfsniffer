@@ -8,6 +8,7 @@
 #include "RFProtocolRaex.h"
 #include "RFProtocolOregon.h"
 #include "RFProtocolNooLite.h"
+#include "RFProtocolRubitek.h"
 #include "RFProtocolMotionSensor.h"
 #include "RFAnalyzer.h"
 
@@ -42,6 +43,8 @@ void CRFParser::AddProtocol(string protocol)
 		AddProtocol(new CRFProtocolOregon());
 	else if (protocol == "nooLite")
 		AddProtocol(new CRFProtocolNooLite());
+	else if (protocol == "Rubitek")
+		AddProtocol(new CRFProtocolRubitek());
 	else if (protocol == "MotionSensor")
 		AddProtocol(new CRFProtocolMotionSensor());
 	else if (protocol == "All")
@@ -52,6 +55,7 @@ void CRFParser::AddProtocol(string protocol)
 		AddProtocol(new CRFProtocolLivolo());
 		AddProtocol(new CRFProtocolOregon());
 		AddProtocol(new CRFProtocolNooLite());
+		AddProtocol(new CRFProtocolRubitek());
 		//AddProtocol(new CRFProtocolMotionSensor());
 	}
 	else

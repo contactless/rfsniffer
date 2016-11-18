@@ -21,6 +21,14 @@ static range_type g_timing_pulse[8] =
 };
 
 
+/*
+	00110011110100010001000 - A
+	00110011110100010010000 - B
+	00110011110100010111000 - C
+	00110011110100010101010 - D
+*/
+
+
 CRFProtocolLivolo::CRFProtocolLivolo()
 	:CRFProtocol(g_timing_pause, g_timing_pulse, 23, 2, "A")
 {

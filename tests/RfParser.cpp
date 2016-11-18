@@ -34,19 +34,31 @@ typedef pstr_pair *ppstr_pair;
 
 
 static const pstr_pair Tests[] = {
+	{ "capture-1311-190209.rcf", "Rubitek:0110111010111110000010110" },
+	{ "capture-1311-190019.rcf", "Rubitek:0110111010111110000011100" },
+	{ "capture-1311-190013.rcf", "Rubitek:0110111010111110000001110" },
+	{ "capture-1311-190018.rcf", "Rubitek:0110111010111110000011100" },
+	{ "capture-1311-190202.rcf", "" },
+	{ "capture-1311-190206.rcf", "" },
+	{ "capture-1311-190014.rcf", "Rubitek:0110111010111110000001110" },
+	{ "capture-1311-190019.rcf", "Rubitek:0110111010111110000011100" },
+	{ "capture-1311-190204.rcf", "Rubitek:0110111010111110000010110" },
+	{ "capture-1311-190209.rcf", "Rubitek:0110111010111110000010110" },
+
 	{ "capture-0307-215444.rcf", "nooLite:flip=1 cmd=4 addr=9a13 fmt=00 crc=76" },
 	{ "capture-0307-215449.rcf", "nooLite:flip=0 cmd=4 addr=9a13 fmt=00 crc=6a" },
 	{ "capture-2706-190620.rcf", "nooLite:flip=0 cmd=21 type=2 t=29.6 h=39 s3=ff bat=0 addr=1492 fmt=07 crc=ec"},
 	{ "capture-2706-143835.rcf", "nooLite:flip=1 cmd=21 type=2 t=30.3 h=43 s3=ff bat=0 addr=1492 fmt=07 crc=d3"},
-	{ "capture-2706-093124.rcf","nooLite:flip=1 cmd=5 addr=9a12 fmt=00 crc=e5" },
-	{ "capture-2706-093129.rcf","nooLite:flip=0 cmd=10 addr=9a12 fmt=00 crc=88" },
-	{ "capture-2706-093217.rcf","nooLite:flip=0 cmd=15 addr=9a11 fmt=00 crc=b4" },
-	{ "capture-2706-093128.rcf","nooLite:flip=1 cmd=5 addr=9a12 fmt=00 crc=e5" },
-	{ "capture-2706-093221.rcf","nooLite:flip=1 cmd=15 addr=9a11 fmt=00 crc=a8" },
-	{ "capture-2706-093205.rcf","nooLite:flip=0 cmd=15 addr=9a13 fmt=00 crc=fb" },
+	{ "capture-2706-093124.rcf", "nooLite:flip=1 cmd=5 addr=9a12 fmt=00 crc=e5" },
+	{ "capture-2706-093129.rcf", "nooLite:flip=0 cmd=10 addr=9a12 fmt=00 crc=88" },
+	{ "capture-2706-093217.rcf", "nooLite:flip=0 cmd=15 addr=9a11 fmt=00 crc=b4" },
+	{ "capture-2706-093128.rcf", "nooLite:flip=1 cmd=5 addr=9a12 fmt=00 crc=e5" },
+	{ "capture-2706-093221.rcf", "nooLite:flip=1 cmd=15 addr=9a11 fmt=00 crc=a8" },
+	{ "capture-2706-093205.rcf", "nooLite:flip=0 cmd=15 addr=9a13 fmt=00 crc=fb" },
 	//{ "","" },
 	{ "capture-2506-120004.rcf", "nooLite:flip=0 cmd=5 addr=9a13 fmt=00 crc=52"},
 	{ "capture-2506-115944.rcf", "nooLite:flip=1 cmd=5 addr=9a13 fmt=00 crc=4e" },
+	
 	//	{ "capture-0906-212933.rcf", "" },* /
 	{ "capture-0906-214352.rcf", "Oregon:type=1D20 id=15 ch=1 t=22.6 h=41" },
 	{ "capture-0906-214234.rcf", "Oregon:type=1D20 id=15 ch=1 t=22.6 h=41" },

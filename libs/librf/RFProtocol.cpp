@@ -10,9 +10,10 @@ string c2s(char c)
 }
 
 CRFProtocol::CRFProtocol(range_array_type zeroLengths, range_array_type pulseLengths, int bits, int minRepeat, string PacketDelimeter)
-:m_ZeroLengths(zeroLengths), m_PulseLengths(pulseLengths), m_Bits(bits), m_MinRepeat(minRepeat), m_PacketDelimeter(PacketDelimeter), m_InvertPacket(false)
+:m_ZeroLengths(zeroLengths), m_PulseLengths(pulseLengths), m_Bits(bits), m_MinRepeat(minRepeat), m_PacketDelimeter(PacketDelimeter), m_InvertPacket(true)
 {
-	m_Debug = true;
+	m_Debug = false;
+	m_InvertPacket = false;
 	m_Log = CLog::Default();
 }
 

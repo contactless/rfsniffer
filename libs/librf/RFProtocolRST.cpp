@@ -59,7 +59,11 @@ string CRFProtocolRST::DecodePacket(const string&packet)
 string CRFProtocolRST::DecodeData(const string &raw)
 {
 	char buffer[100];
-	float t = 0.1*bits2long(raw.substr(24));
+	short t0 = bits2long(raw.substr(24));
+	if (t0&0x800)
+		t0|=0xF000;
+
+	float t = 0.1*t0;
 	short h = (short)bits2long(raw.substr(16, 8));
 	unsigned short id = (unsigned short)bits2long(raw.substr(0, 16));
 

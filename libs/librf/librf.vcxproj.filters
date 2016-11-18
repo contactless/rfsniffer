@@ -51,6 +51,9 @@
     <ClCompile Include="RFProtocolMotionSensor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="RFProtocolRubitek.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RFAnalyzer.h">
@@ -99,6 +102,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="RFProtocolMotionSensor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RFProtocolRubitek.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
