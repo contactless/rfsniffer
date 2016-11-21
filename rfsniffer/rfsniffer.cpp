@@ -413,7 +413,14 @@ int main(int argc, char *argv[])
                     if (minGoodRSSI > lastRSSI)
                         minGoodRSSI = lastRSSI;
                 } else {
-                    m_Log->Printf(4, "Recieved %ld signals. Not decoded\n", data_ptr - data);
+                    static char buff[120000];
+                    char *buff_ptr = buff;
+                    for (long unsigned int *c = data; c < data_ptr; c++)
+                        buff_ptr += sprintf(buff_ptr, "%u ", (long unsigned int)*c);
+                    buff_ptr += sprintf(buff_ptr, "\n");
+                    *buff_ptr = 0;
+                    
+                    m_Log->Printf(4, "Recieved %ld signals. Not decoded(\n%s\n)\n", data_ptr - data, buff);
                 }
                 data_ptr = data;
                 packetStart = time(NULL);

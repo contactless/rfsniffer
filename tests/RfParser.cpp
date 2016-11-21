@@ -13,9 +13,9 @@
 
 #define MAX_SIZE 10000
 
-string DecodeFile(CRFParser* parser, CLog *log, const char *File)
+string DecodeFile(CRFParser* parser, CLog *log, const char *fileName)
 {
-	FILE *f = fopen(File, "rb");
+	FILE *f = fopen(fileName, "rb");
 	if (!f)
 		return "File not found";
 	
@@ -34,7 +34,7 @@ typedef pstr_pair *ppstr_pair;
 
 
 static const pstr_pair Tests[] = {
-	{ "capture-1311-190209.rcf", "Rubitek:0110111010111110000010110" },
+	/*{ "capture-1311-190209.rcf", "Rubitek:0110111010111110000010110" },
 	{ "capture-1311-190019.rcf", "Rubitek:0110111010111110000011100" },
 	{ "capture-1311-190013.rcf", "Rubitek:0110111010111110000001110" },
 	{ "capture-1311-190018.rcf", "Rubitek:0110111010111110000011100" },
@@ -43,7 +43,7 @@ static const pstr_pair Tests[] = {
 	{ "capture-1311-190014.rcf", "Rubitek:0110111010111110000001110" },
 	{ "capture-1311-190019.rcf", "Rubitek:0110111010111110000011100" },
 	{ "capture-1311-190204.rcf", "Rubitek:0110111010111110000010110" },
-	{ "capture-1311-190209.rcf", "Rubitek:0110111010111110000010110" },
+	{ "capture-1311-190209.rcf", "Rubitek:0110111010111110000010110" },*/
 
 	{ "capture-0307-215444.rcf", "nooLite:flip=1 cmd=4 addr=9a13 fmt=00 crc=76" },
 	{ "capture-0307-215449.rcf", "nooLite:flip=0 cmd=4 addr=9a13 fmt=00 crc=6a" },
@@ -60,16 +60,19 @@ static const pstr_pair Tests[] = {
 	{ "capture-2506-115944.rcf", "nooLite:flip=1 cmd=5 addr=9a13 fmt=00 crc=4e" },
 	
 	//	{ "capture-0906-212933.rcf", "" },* /
-	{ "capture-0906-214352.rcf", "Oregon:type=1D20 id=15 ch=1 t=22.6 h=41" },
-	{ "capture-0906-214234.rcf", "Oregon:type=1D20 id=15 ch=1 t=22.6 h=41" },
-	{ "capture-0906-212618.rcf", "Oregon:type=1D20 id=15 ch=1 t=22.7 h=41" },
-	{ "capture-0906-183444.rcf", "Oregon:type=1D20 id=15 ch=1 t=23.3 h=39" },
-	{ "capture-0906-165011.rcf", "Oregon:type=1D20 id=15 ch=1 t=24.2 h=40" },
-	{ "capture-0906-164649.rcf", "Oregon:type=1D20 id=15 ch=1 t=23.9 h=40" },
-	{ "capture-0706-211823.rcf", "Oregon:type=1D20 id=15 ch=1 t=24.7 h=46" },
-	{ "capture-0906-210412.rcf", "Oregon:type=1D20 id=15 ch=1 t=23.0 h=40" },
+	#define ROLLING_CODE "51" // or "15" as in original code
+	// for some reason in original code Rolling Code was read in ambigous way (either ascending order of nibbles or descending one)
+	// I prefer to read it in fixed way and just change tests
+	{ "capture-0906-214352.rcf", "Oregon:type=1D20 id="ROLLING_CODE" ch=1 t=22.6 h=41" },
+	{ "capture-0906-214234.rcf", "Oregon:type=1D20 id="ROLLING_CODE" ch=1 t=22.6 h=41" },
+	{ "capture-0906-212618.rcf", "Oregon:type=1D20 id="ROLLING_CODE" ch=1 t=22.7 h=41" },
+	{ "capture-0906-183444.rcf", "Oregon:type=1D20 id="ROLLING_CODE" ch=1 t=23.3 h=39" },
+	{ "capture-0906-165011.rcf", "Oregon:type=1D20 id="ROLLING_CODE" ch=1 t=24.2 h=40" },
+	{ "capture-0906-164649.rcf", "Oregon:type=1D20 id="ROLLING_CODE" ch=1 t=23.9 h=40" },
+	{ "capture-0706-211823.rcf", "Oregon:type=1D20 id="ROLLING_CODE" ch=1 t=24.7 h=46" },
+	{ "capture-0906-210412.rcf", "Oregon:type=1D20 id="ROLLING_CODE" ch=1 t=23.0 h=40" },
+	#undef ROLLING_CODE
 	
-
 	
 	{ "capture-2708-132748.rcf", "X10:D2ON" },
 	{ "capture-2708-132756.rcf", "X10:D2ON" },
@@ -125,23 +128,23 @@ void getAllTestFiles( string path, string_vector &result )
    DIR* dirFile = opendir( path.c_str() );
    if ( dirFile ) 
    {
-      struct dirent* hFile;
-      errno = 0;
-      while (( hFile = readdir( dirFile )) != NULL ) 
-      {
-         if ( !strcmp( hFile->d_name, "."  )) continue;
-         if ( !strcmp( hFile->d_name, ".." )) continue;
+	  struct dirent* hFile;
+	  errno = 0;
+	  while (( hFile = readdir( dirFile )) != NULL ) 
+	  {
+		 if ( !strcmp( hFile->d_name, "."  )) continue;
+		 if ( !strcmp( hFile->d_name, ".." )) continue;
 
-         // in linux hidden files all start with '.'
-         bool gIgnoreHidden = true;
-         if ( gIgnoreHidden && ( hFile->d_name[0] == '.' )) continue;
+		 // in linux hidden files all start with '.'
+		 bool gIgnoreHidden = true;
+		 if ( gIgnoreHidden && ( hFile->d_name[0] == '.' )) continue;
 
-         // dirFile.name is the name of the file. Do whatever string comparison 
-         // you want here. Something like:
-         if ( strstr( hFile->d_name, ".rcf" ))
-         	result.push_back(hFile->d_name);
-      } 
-      closedir( dirFile );
+		 // dirFile.name is the name of the file. Do whatever string comparison 
+		 // you want here. Something like:
+		 if ( strstr( hFile->d_name, ".rcf" ))
+		 	result.push_back(hFile->d_name);
+	  } 
+	  closedir( dirFile );
    }
 }
 
@@ -174,27 +177,62 @@ void RfParserTest(string path)
 
 	while (**test)
 	{
+		// expected values
+		string exp_type, exp_value;
+		string_map exp_values;
+	
+		// parsed values        
+		string res_type, res_value;
+		string_map res_values;
+	
+		// printf("Test #%d: %s\n", (int)(test - Tests), (*test)[1]);
+		
 		try
 		{
-			string type, value;
-			SplitPair((*test)[1], ':', type, value);
-			if (value.find(' ') != value.npos)
-			{
-				string_map values;
-				SplitValues(value, values);
-			}
+			SplitPair((*test)[1], ':', exp_type, exp_value);
+			if (exp_value.find(' ') != exp_value.npos)
+				SplitValues(exp_value, exp_values);
 		}
 		catch (CHaException ex)
 		{
 		}
 
 		string res = DecodeFile(&parser, log, (string("tests/testfiles/")+(*test)[0]).c_str());
-		if (res != (*test)[1])
+	 
+		
+		// Simple check for cases with not "a=1 b=2..." format 
+		if (res == (*test)[1])
 		{
-			printf("Failed! File:%s, result:%s, Expected: %s\n", (*test)[0], res.c_str(), (*test)[1]); 
+			test++;
+			continue;
+		}
+		
+		try
+		{
+			SplitPair(res, ':', res_type, res_value);
+			if (res_value.find(' ') != res_value.npos)
+				SplitValues(res_value, res_values);
+		}
+		catch (CHaException ex)
+		{
+			printf("Failed! Format is incorrect! File:%s, result:%s, Expected: %s\n", (*test)[0], res.c_str(), (*test)[1]); 
 			allPassed = false;
 		}
-
+		
+		if (res_type != exp_type) 
+		{
+			printf("Failed! Types mismatch! File:%s, result:%s, Expected: %s\n", (*test)[0], res.c_str(), (*test)[1]); 
+			allPassed = false;
+		}
+		// Compare values, extra values in parsed result are ignored
+		for (auto value_pair: exp_values) 
+			if (value_pair.second != res_values[value_pair.first]) {
+				printf("Failed! Filed\"%s\" mismatch! \n\tFile:%s, result:%s, Expected: %s\n", 
+						value_pair.second.c_str(), (*test)[0], res.c_str(), (*test)[1]); 
+				allPassed = false;
+				break;
+			}
+		
 		test++;
 	}
 
@@ -213,5 +251,5 @@ void RfParserTest(string path)
 	printf("Parser result:%s\n", result.c_str());*/
 
 	if (!allPassed)
-		    exit(1);
+			exit(1);
 }

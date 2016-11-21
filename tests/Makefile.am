@@ -7,5 +7,5 @@ wb_homa_rfsniffer_test_LDADD = $(top_builddir)/libs/libutils/libutils.la \
 	-lmosquitto  -lmosquittopp -lpthread
 
 AM_CFLAGS = -pthread
-AM_CXXFLAGS = -pthread
+AM_CXXFLAGS = -pthread -std=c++0x
 

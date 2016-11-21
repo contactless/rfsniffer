@@ -273,15 +273,17 @@ unsigned long CRFProtocol::bits2long(const string &raw)
 	return res;
 }
 
-string CRFProtocol::reverse(const string&s)
+string CRFProtocol::reverse(const string& s)
 {
-	string res;
-
-	for_each_const(string, s, i)
-	{
-		res = *i + res;
-	}
-
+	string res = s;
+    auto begin = res.begin(), end = res.end();
+    while (begin + 1 < end) {
+        --end;
+        auto c = *begin;
+        *begin = *end;
+        *end = c;
+        ++begin;
+    }
 	return res;
 }
 

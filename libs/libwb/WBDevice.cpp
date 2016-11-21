@@ -18,7 +18,10 @@ const char *g_Topics[] =
 	"rel_humidity",
 	"pressure",
 	"PrecipitationRate", //(rainfall rate)	rainfall	mm per hour	float
+	"PrecipitationTotal", //(rainfall total) mm
 	"WindSpeed", //	wind_speed	m / s	float
+	"WindAverageSpeed", //	wind_avg_speed	m / s	float
+	"WindDirection", // Wind direction in degrees float 0..360
 	"PowerPower", //	watt	float
 	"PowerConsumption", //	power_consumption	kWh	float
 	"VoltageVoltage", //	volts	float
@@ -26,7 +29,10 @@ const char *g_Topics[] =
 	"WaterTotal", // consumption	water_consumption	m ^ 3	float
 	"Resistance", //	resistance	Ohm	float
 	"GasConcentration", //	concentration	ppm	float(unsigned)
-
+	"BatteryLow", // Low battery level - 0 or 1
+	"UltravioletIndex", // integer
+	"Forecast", // weather forecast - string
+	"Comfort", // Level of comfort - string
 	"",
 };
 
@@ -78,6 +84,10 @@ void CWBDevice::Init(CConfigItem config)
 	}
 }
 #endif
+
+string CWBDevice::GetControlNameByType(CWBControl::ControlType Type) {
+	return g_Topics[Type];
+}
 
 void CWBDevice::AddControl(string Name, CWBControl::ControlType Type, bool ReadOnly, string Source, string SourceType)
 {

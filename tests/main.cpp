@@ -11,6 +11,8 @@ void MqttTest();
 
 int main(int argc, char* argv[])
 {
+    fprintf(stderr, "Begin tests\n");
+    
 	bool bTestLog = true, bTestParser = true, bTestRfm = false, bTestSniffer = false, bTestMqtt = false;
 	string path;
 

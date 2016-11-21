@@ -200,27 +200,57 @@ void CMqttConnection::NewMessage(string message)
 
         string_map values;
         SplitValues(value, values);
-        string sensorType = values["type"], id = values["id"], ch = values["ch"], t = values["t"],
-               h = values["h"];
-
+        string sensorType = values["type"], id = values["id"], ch = values["ch"];
+        // Fields of data from sensor
+        // Format is vector of pairs (key in input string, conforming CWBControl)
+        std::vector< std::pair<string, CWBControl::ControlType> > key_and_controls = {
+            {"t", CWBControl::Temperature},
+            {"h", CWBControl::RelativeHumidity},
+            {"battery_low", CWBControl::BatteryLow},
+            {"uv", CWBControl::UltravioletIndex},
+            {"rain_rate", CWBControl::PrecipitationRate},
+            {"rain_total", CWBControl::PrecipitationTotal},
+            {"wind_dir", CWBControl::WindDirection},
+            {"wind_speed", CWBControl::WindSpeed},
+            {"wind_avg_speed", CWBControl::WindAverageSpeed},
+            {"pressure", CWBControl::AtmosphericPressure},
+            {"forecast", CWBControl::Forecast},
+            {"comfort", CWBControl::Comfort}
+        };
+        // Getting values of fields
+        // Format is vector of pairs (value in input string, conforming CWBControl)
+        std::vector< std::pair<string, CWBControl::ControlType> > value_and_controls;
+        for (auto control_pair: key_and_controls) {
+            auto value_iterator = values.find(control_pair.first);
+            if (value_iterator != values.end())
+                value_and_controls.push_back({value_iterator->second, control_pair.second});
+        }
+    
         //oregon_rx_1d20_68_1
         string name = string("oregon_rx_") + sensorType + "_" + id + "_" + ch;
         CWBDevice *dev = m_Devices[name];
         if (!dev) {
             string desc = string("Oregon sensor [") + sensorType + "] (" + id + "-" + ch + ")";
             dev = new CWBDevice(name, desc);
+            
+            for (auto control_pair: value_and_controls) 
+                dev->AddControl(dev->GetControlNameByType(control_pair.second), control_pair.second, true);
+            
+            /*
             dev->AddControl("temperature", CWBControl::Temperature, true);
 
             if (h.length() > 0)
                 dev->AddControl("humidity", CWBControl::RelativeHumidity, true);
-
+            */
             CreateDevice(dev);
         }
-
+        for (auto control_pair: value_and_controls) 
+            dev->set(dev->GetControlNameByType(control_pair.second), control_pair.first);
+        /*
         dev->set("temperature", t);
         if (h.length() > 0)
             dev->set("humidity", h);
-
+        */
         m_Log->Printf(3, "Msg from Oregon %s", value.c_str());
     } else if (type == "X10") {
         CWBDevice *dev = m_Devices["X10"];

@@ -65,7 +65,7 @@ public:
 
 	unsigned long bits2long(const string&); 
 	unsigned long bits2long(const string&, size_t start, size_t len); 
-	string reverse(const string&);
+	static string reverse(const string&);
 	void setLog(CLog *log) { m_Log = log; };
 	void getMinMax(base_type* minPause, base_type* maxPause, base_type* minPulse, base_type* maxPulse);
 };
