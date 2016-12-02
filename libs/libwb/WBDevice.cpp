@@ -3,7 +3,7 @@
 #ifdef USE_CONFIG
 	#include "../libutils/ConfigItem.h"
 #endif
-
+/*
 const char *g_Topics[] =
 {
 	"error",
@@ -16,7 +16,10 @@ const char *g_Topics[] =
 	"value",
 	"temperature",
 	"rel_humidity",
-	"pressure",
+	"pressure", // Change to more readable
+    //"Temperature",
+	//"Humidity",
+	//"Pressure",
 	"PrecipitationRate", //(rainfall rate)	rainfall	mm per hour	float
 	"PrecipitationTotal", //(rainfall total) mm
 	"WindSpeed", //	wind_speed	m / s	float
@@ -29,12 +32,69 @@ const char *g_Topics[] =
 	"WaterTotal", // consumption	water_consumption	m ^ 3	float
 	"Resistance", //	resistance	Ohm	float
 	"GasConcentration", //	concentration	ppm	float(unsigned)
-	"BatteryLow", // Low battery level - 0 or 1
+	"Battery", // battery level - low or normal
 	"UltravioletIndex", // integer
 	"Forecast", // weather forecast - string
 	"Comfort", // Level of comfort - string
 	"",
+};*/
+
+struct TopicNames {
+   CWBControl::ControlType type;
+   string meta_type;
+   string user_read_name;  
 };
+
+const std::vector<TopicNames> topic_names = {
+    {CWBControl::ControlType::Error, "error", "Error"},
+    {CWBControl::ControlType::Switch, "switch", "Switch"},
+    {CWBControl::ControlType::Alarm, "alarm", "Alarm"},
+    {CWBControl::ControlType::PushButton, "pushbutton", "Push button"},
+    {CWBControl::ControlType::Range, "range", "Range"},
+    {CWBControl::ControlType::Rgb, "rgb", "RGB"},
+    {CWBControl::ControlType::Text, "text", "Text"},
+    {CWBControl::ControlType::Generic, "value", "Value"},
+    {CWBControl::ControlType::Temperature, "temperature", "Temperature"},
+    {CWBControl::ControlType::RelativeHumidity, "rel_humidity", "Humidity"},
+    {CWBControl::ControlType::AtmosphericPressure, "pressure", "Atmospheric pressure"}, 
+    {CWBControl::ControlType::PrecipitationRate, "rainfall", "Precipitation rate"}, 
+    {CWBControl::ControlType::PrecipitationTotal, "raintotal", "Precipitation total"}, 
+    {CWBControl::ControlType::WindSpeed, "wind_speed", "Wind speed"}, 
+    {CWBControl::ControlType::WindAverageSpeed, "wind_avg_speed", "Wind average speed"}, 
+    {CWBControl::ControlType::WindDirection, "wind_direction", "Wind direction"},
+    {CWBControl::ControlType::Power, "power", "Power"},
+    {CWBControl::ControlType::PowerConsumption, "power_consumption", "Power consumption"}, 
+    {CWBControl::ControlType::Voltage, "voltage", "Voltage"}, 
+    {CWBControl::ControlType::WaterFlow, "water_flow", "Water flow"},
+    {CWBControl::ControlType::WaterTotal, "water_consumption", "Water consumption"}, 
+    {CWBControl::ControlType::Resistance, "resistance", "Resistance"},
+    {CWBControl::ControlType::GasConcentration, "concentration", "Gas concentration"},
+    {CWBControl::ControlType::BatteryLow, "battery", "Battery"},
+    {CWBControl::ControlType::UltravioletIndex, "ultraviolet", "Ultraviolet"},
+    {CWBControl::ControlType::Forecast, "forecast", "Forecast"},
+    {CWBControl::ControlType::Comfort, "comfort_level", "Comfort level"}
+};
+
+string CWBDevice::GetControlMetaTypeByType(CWBControl::ControlType type) {
+    for (const TopicNames &tn : topic_names)
+        if (tn.type == type)
+            return tn.meta_type;
+	return GetControlMetaTypeByType(CWBControl::ControlType::Error);
+}
+
+CWBControl::ControlType CWBDevice::GetControlTypeByMetaType(string meta_type) {
+    for (const TopicNames &tn : topic_names)
+        if (tn.meta_type == meta_type)
+            return tn.type;
+	return CWBControl::ControlType::Error;
+}
+
+string CWBDevice::GetControlUserReadNameByType(CWBControl::ControlType type) {
+    for (const TopicNames &tn : topic_names)
+        if (tn.type == type)
+            return tn.user_read_name;
+	return GetControlUserReadNameByType(CWBControl::ControlType::Error);
+}
 
 CWBDevice::CWBDevice()
 {
@@ -69,8 +129,13 @@ void CWBDevice::Init(CConfigItem config)
 		Control->Source = (*control)->getStr("Source", false);
 		Control->SourceType = (*control)->getStr("SourceType", false);
 		Control->Readonly = (*control)->getInt("Readonly", false, 1) != 0;
-		string type = (*control)->getStr("Type");
-		Control->Type = CWBControl::Error;
+	
+    	//string type = (*control)->getStr("Type");
+		
+        Control->Type = GetControlTypeByMetaType((*control)->getStr("Type"));
+        
+        /*Control->Type = CWBControl::Error;
+        
 		for (int i = 0; g_Topics[i][0];i++)
 		{
 			if (type == g_Topics[i])
@@ -78,21 +143,17 @@ void CWBDevice::Init(CConfigItem config)
 				Control->Type = (CWBControl::ControlType)i;
 				break;
 			}
-		}
+		}*/
 
 		m_Controls[Control->Name] = Control;
 	}
 }
 #endif
 
-string CWBDevice::GetControlNameByType(CWBControl::ControlType Type) {
-	return g_Topics[Type];
-}
-
 void CWBDevice::AddControl(string Name, CWBControl::ControlType Type, bool ReadOnly, string Source, string SourceType)
 {
 	CWBControl *Control = new CWBControl;
-	Control->Name = Name;
+	Control->Name = (!Name.empty() ? Name : GetControlUserReadNameByType(Type));
 	Control->Source = Source;
 	Control->SourceType = SourceType;
 	Control->Readonly = ReadOnly;
@@ -100,6 +161,11 @@ void CWBDevice::AddControl(string Name, CWBControl::ControlType Type, bool ReadO
 	m_Controls[Control->Name] = Control;
 }
 
+
+void CWBDevice::set(CWBControl::ControlType Type, string Value)
+{
+    set(GetControlUserReadNameByType(Type), Value);
+}
 
 void CWBDevice::set(string Name, string Value)
 {
@@ -111,6 +177,11 @@ void CWBDevice::set(string Name, string Value)
 	i->second->fValue = (float)atof(Value);
 	i->second->sValue = Value;
 	i->second->Changed = true;
+}
+
+void CWBDevice::set(CWBControl::ControlType Type, float Value)
+{
+    set(GetControlUserReadNameByType(Type), Value);
 }
 
 void CWBDevice::set(string Name, float Value)
@@ -155,7 +226,7 @@ void CWBDevice::CreateDeviceValues(string_map &v)
 	{
 		v[base + "/meta/name"] = m_Description;
 		v[base + "/controls/" + i->first] = i->second->sValue;
-		v[base + "/controls/" + i->first +"/meta/type"] = g_Topics[i->second->Type];
+		v[base + "/controls/" + i->first +"/meta/type"] = GetControlMetaTypeByType(i->second->Type);
 		if (i->second->Readonly)
 			v[base + "/controls/" + i->first + "/meta/readonly"] = "1";
 	}

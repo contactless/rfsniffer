@@ -1,6 +1,42 @@
 #include "stdafx.h"
 #include "RFProtocolOregon.h"
 
+
+class BufferWriter {
+    std::vector <char> buff;
+    int offset;
+  public:
+    void clear() {
+        offset = 0;
+    }
+
+    std::string getString() {
+        return std::string(buff.data());
+    }
+
+    // consequently prints to buffer
+    int printf(const char *format, ...) {
+        while (true) {
+            va_list args;
+            va_start (args, format);
+            int written_length = vsnprintf(
+                    buff.data() + offset, buff.size() - offset - 1, format, args
+            );
+            va_end (args);
+            if (written_length < 0)
+                return written_length;
+            if (offset + written_length + 1 >= buff.size()) {
+                buff.resize(buff.size() * 2);
+                continue;
+            }
+            offset += written_length;
+            return written_length;
+        }
+    }
+
+    BufferWriter(): buff(2), offset(0) { }
+};
+
 // Class that extract fields of specified device 
 // from sequence that is decoded Oregon Protocol 
 class OregonRFDevice {
@@ -10,7 +46,6 @@ class OregonRFDevice {
 		US  // Imperial or US system of units
 	};
   private:
-  
 	std::vector<string> sensor_ids;
 	
 	// relative offsets from begin of sensor-specific data
@@ -86,7 +121,8 @@ class OregonRFDevice {
 		//fprintf(stderr, "Decode_data BEGIN\n");
 		packet = packet.substr(1, packet.size() - 1); // Shift to conform this article
 		// http://www.altelectronics.co.uk/wp-content/uploads/2011/05/OregonScientific-RF-Protocols.pdf
-		string sensor_id = packet.substr(0, 4); // Sensor ID
+		
+        string sensor_id = packet.substr(0, 4); // Sensor ID
 		//fprintf(stderr, "Sensor_id: %s\n", sensor_id.c_str());
 		if (!IsThere(sensor_id, sensor_ids.begin(), sensor_ids.end()))
 			return "";
@@ -97,13 +133,9 @@ class OregonRFDevice {
 		int flags = packet[7] - '0';
 		const int data_offset = 8;
 		
-		char buff[100], *buff_ptr = buff;
-		int written_length;
-		
-		snprintf(buff_ptr, sizeof(buff) - 1 - (buff_ptr - buff), 
-			"type=%s id=%02X ch=%d battery=%s%n", sensor_id.c_str(), rolling_code, 
-			channel, ((flags & 0x4) ? "low" : "normal"), &written_length);
-		buff_ptr += written_length;
+		BufferWriter buffered_writer;
+        buffered_writer.printf("type=%s id=%02X ch=%d battery=%s", 
+            sensor_id.c_str(), rolling_code, channel, ((flags & 0x4) ? "low" : "normal"));
 		
 		if (temperature_offset != -1) {
 			int offset = data_offset + temperature_offset;
@@ -111,27 +143,21 @@ class OregonRFDevice {
 				return "";
 			float temp = (float)0.1 * ExtractInt(packet, offset, 3) * 
 												(packet[offset + 3] == '0' ? 1 : -1);
-			snprintf(buff_ptr, sizeof(buff) - 1 - (buff_ptr - buff), 
-				" t=%.1f%n", temp, &written_length);
-			buff_ptr += written_length;
+			buffered_writer.printf(" t=%.1f", temp);
 		}
 		if (humidity_offset != -1) {
 			int offset = data_offset + humidity_offset;
 			if (offset + 2 > (int)packet.size())
 				return "";
 			int humidity = ExtractInt(packet, offset, 2);
-			snprintf(buff_ptr, sizeof(buff) - 1 - (buff_ptr - buff), 
-				" h=%d%n", humidity, &written_length);
-			buff_ptr += written_length;
+			buffered_writer.printf(" h=%d", humidity);
 		}
 		if (ultraviolet_offset != -1) {
 			int offset = data_offset + ultraviolet_offset;
 			if (offset + 2 > (int)packet.size())
 				return "";
 			int ultraviolet = ExtractInt(packet, offset, 2);
-			snprintf(buff_ptr, sizeof(buff) - 1 - (buff_ptr - buff), 
-				" uv=%d%n", ultraviolet, &written_length);
-			buff_ptr += written_length;
+			buffered_writer.printf(" uv=%d", ultraviolet);
 		}
 		if (rain_offset != -1) {
 			int offset = data_offset + rain_offset;
@@ -150,9 +176,7 @@ class OregonRFDevice {
 			float rain_rate = (float)ExtractInt(packet, offset, rain_rate_block_length) * rain_factor;
 			float rain_total = (float)ExtractInt(packet, offset + rain_rate_block_length, rain_total_block_length) * rain_factor;
 	  
-			snprintf(buff_ptr, sizeof(buff) - 1 - (buff_ptr - buff), 
-				" rain_rate=%0.2f rain_total=%0.2f%n", rain_rate, rain_total, &written_length);
-			buff_ptr += written_length;
+			buffered_writer.printf(" rain_rate=%0.2f rain_total=%0.2f", rain_rate, rain_total);
 		}
 		if (wind_offset != -1) {
 			int offset = data_offset + wind_offset;
@@ -161,19 +185,15 @@ class OregonRFDevice {
 			float direction = 22.5 + float(packet[offset] - '0');
 			float speed = (float)ExtractInt(packet, offset + 3, 3) * 0.1;
 			float average_speed = (float)ExtractInt(packet, offset + 6, 3) * 0.1;
-			snprintf(buff_ptr, sizeof(buff) - 1 - (buff_ptr - buff), 
-				" wind_dir=%0.2f wind_speed=%0.2f wind_avg_speed=%0.2f%n", 
-				direction, speed, average_speed, &written_length);
-			buff_ptr += written_length;
+			buffered_writer.printf(" wind_dir=%0.2f wind_speed=%0.2f wind_avg_speed=%0.2f", 
+				direction, speed, average_speed);
 		}
 		if (pressure_offset != -1) {
 			int offset = data_offset + pressure_offset;
 			if (offset + 2 > (int)packet.size())
 				return "";
 			int pressure = 856 + ExtractInt(packet, offset, 2);
-			snprintf(buff_ptr, sizeof(buff) - 1 - (buff_ptr - buff), 
-				" pressure=%d%n", pressure, &written_length);
-			buff_ptr += written_length;
+			buffered_writer.printf(" pressure=%d", pressure);
 		}
 		if (forecast_offset != -1) {
 			int offset = data_offset + forecast_offset;
@@ -186,9 +206,7 @@ class OregonRFDevice {
 				case '6': forecast = "partly_cloudy"; break;
 				case 'C': forecast = "sunny"; break;
 			}
-			snprintf(buff_ptr, sizeof(buff) - 1 - (buff_ptr - buff), 
-				" forecast=%s%n", forecast.c_str(), &written_length);
-			buff_ptr += written_length;
+			buffered_writer.printf(" forecast=%s", forecast.c_str());
 		}
 		if (comfort_offset != -1) {
 			int offset = data_offset + comfort_offset;
@@ -201,12 +219,10 @@ class OregonRFDevice {
 				case '8': comfort = "dry"; break;
 				case 'C': comfort = "wet"; break;
 			}
-			snprintf(buff_ptr, sizeof(buff) - 1 - (buff_ptr - buff), 
-				" comfort=%s%n", comfort.c_str(), &written_length);
-			buff_ptr += written_length;
+			buffered_writer.printf(" comfort=%s", comfort.c_str());
 		}
 		
-		return buff;
+		return buffered_writer.getString();
 	}
 	
 	OregonRFDevice(std::vector<string> sensor_ids_): 

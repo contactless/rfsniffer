@@ -68,7 +68,7 @@ void Rfm69Test()
     printf("Reg REG_IRQFLAGS1 = %x\n", rfm.readReg(REG_IRQFLAGS1));
     rfm.writeReg(REG_OPMODE, (rfm.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_SLEEP);
     printf("Reg REG_OPMODE = %x\n", rfm.readReg(REG_OPMODE));
-    printf("Bitrate = %ld\n", rfm.getBitrate());
+    printf("Bitrate = %ld\n", (long int)rfm.getBitrate());
 
     rfm.initialize();
 

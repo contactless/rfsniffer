@@ -72,6 +72,7 @@ static const pstr_pair Tests[] = {
 	{ "capture-0706-211823.rcf", "Oregon:type=1D20 id="ROLLING_CODE" ch=1 t=24.7 h=46" },
 	{ "capture-0906-210412.rcf", "Oregon:type=1D20 id="ROLLING_CODE" ch=1 t=23.0 h=40" },
 	#undef ROLLING_CODE
+	{ "ism-test-d41d8cd98f.rcf", "Oregon:type=1D20 ch=1 t=23.0 h=40" },
 	
 	
 	{ "capture-2708-132748.rcf", "X10:D2ON" },
@@ -227,7 +228,7 @@ void RfParserTest(string path)
 		// Compare values, extra values in parsed result are ignored
 		for (auto value_pair: exp_values) 
 			if (value_pair.second != res_values[value_pair.first]) {
-				printf("Failed! Filed\"%s\" mismatch! \n\tFile:%s, result:%s, Expected: %s\n", 
+				printf("Failed! Field\"%s\" mismatch! \n\tFile:%s, result:%s, Expected: %s\n", 
 						value_pair.second.c_str(), (*test)[0], res.c_str(), (*test)[1]); 
 				allPassed = false;
 				break;
@@ -235,20 +236,6 @@ void RfParserTest(string path)
 		
 		test++;
 	}
-
-	//_finddata_t findData;
-	//int handle = _findfirst("*rcf", &findData);
-	
-	/*
-	//FILE *f = fopen("capture-2902-213735.rcf", "r");
-	FILE *f = fopen("capture-2902-214441.rcf", "r");
-	base_type *data = new base_type[MAX_SIZE];
-	size_t dataSize = fread(data, sizeof(base_type), MAX_SIZE, f);
-	fclose(f);
-
-	string result = parser.Parse(data, dataSize);
-
-	printf("Parser result:%s\n", result.c_str());*/
 
 	if (!allPassed)
 			exit(1);

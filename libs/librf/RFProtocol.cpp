@@ -175,13 +175,13 @@ string CRFProtocol::DecodeRaw(base_type* data, size_t dataLen)
 		return decodedRaw;
 }
 
-bool CRFProtocol::SplitPackets(const string &rawData, string_vector& rawPackets)
+bool CRFProtocol::SplitPackets(const string &rawData, string_vector &rawPackets)
 {
 	SplitString(rawData, m_PacketDelimeter, rawPackets);
 	return rawPackets.size() > 1;
 }
 
-string CRFProtocol::DecodeBits(string_vector&rawPackets)
+string CRFProtocol::DecodeBits(string_vector &rawPackets)
 {
 	string res; int count = 0;
 
@@ -253,7 +253,7 @@ string CRFProtocol::DecodeData(const string &raw)
 	return raw;
 }
 
-unsigned long CRFProtocol::bits2long(const string& s, size_t start, size_t len)
+unsigned long CRFProtocol::bits2long(const string &s, size_t start, size_t len)
 {
 	return bits2long(s.substr(start, len));
 }
@@ -276,14 +276,14 @@ unsigned long CRFProtocol::bits2long(const string &raw)
 string CRFProtocol::reverse(const string& s)
 {
 	string res = s;
-    auto begin = res.begin(), end = res.end();
-    while (begin + 1 < end) {
-        --end;
-        auto c = *begin;
-        *begin = *end;
-        *end = c;
-        ++begin;
-    }
+	auto begin = res.begin(), end = res.end();
+	while (begin + 1 < end) {
+		--end;
+		auto c = *begin;
+		*begin = *end;
+		*end = c;
+		++begin;
+	}
 	return res;
 }
 

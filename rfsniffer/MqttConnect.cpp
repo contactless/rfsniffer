@@ -206,7 +206,7 @@ void CMqttConnection::NewMessage(string message)
         std::vector< std::pair<string, CWBControl::ControlType> > key_and_controls = {
             {"t", CWBControl::Temperature},
             {"h", CWBControl::RelativeHumidity},
-            {"battery_low", CWBControl::BatteryLow},
+            {"battery", CWBControl::BatteryLow},
             {"uv", CWBControl::UltravioletIndex},
             {"rain_rate", CWBControl::PrecipitationRate},
             {"rain_total", CWBControl::PrecipitationTotal},
@@ -234,7 +234,7 @@ void CMqttConnection::NewMessage(string message)
             dev = new CWBDevice(name, desc);
             
             for (auto control_pair: value_and_controls) 
-                dev->AddControl(dev->GetControlNameByType(control_pair.second), control_pair.second, true);
+                dev->AddControl("", control_pair.second, true);
             
             /*
             dev->AddControl("temperature", CWBControl::Temperature, true);
@@ -245,7 +245,7 @@ void CMqttConnection::NewMessage(string message)
             CreateDevice(dev);
         }
         for (auto control_pair: value_and_controls) 
-            dev->set(dev->GetControlNameByType(control_pair.second), control_pair.first);
+            dev->set(control_pair.second, control_pair.first);
         /*
         dev->set("temperature", t);
         if (h.length() > 0)

@@ -23,9 +23,9 @@ struct LIBWB_API CWBControl
 		WindSpeed, //	wind_speed	m / s	float
 		WindAverageSpeed, //	wind_avg_speed	m / s	float
 		WindDirection, // Wind direction in degrees float 0..360
-		PowerPower, //	watt	float
+		Power, //	watt	float
 		PowerConsumption, //	power_consumption	kWh	float
-		VoltageVoltage, //	volts	float
+		Voltage, //	volts	float
 		WaterFlow, //	water_flow	m ^ 3 / hour	float
 		WaterTotal, // consumption	water_consumption	m ^ 3	float
 		Resistance, //	resistance	Ohm	float
@@ -53,7 +53,10 @@ class LIBWB_API CWBDevice
 	string m_Description;
 	CControlMap m_Controls;
 
-
+    string GetControlMetaTypeByType(CWBControl::ControlType type);
+    CWBControl::ControlType GetControlTypeByMetaType(string meta_type);
+    string GetControlUserReadNameByType(CWBControl::ControlType type);
+    
 public:
 	CWBDevice(string Name, string Description);
 	CWBDevice();
@@ -64,10 +67,11 @@ public:
 #ifdef USE_CONFIG
 	void Init(CConfigItem config);
 #endif	
-	string GetControlNameByType(CWBControl::ControlType Type);
 	void AddControl(string Name, CWBControl::ControlType Type, bool ReadOnly, string Source="", string SourceType="");
 	bool sourceExists(string source);
 	void setBySource(string source, string sourceType, string Value);
+    void set(CWBControl::ControlType Type, string Value);
+    void set(CWBControl::ControlType Type, float Value);
 	void set(string Name, string Value);
 	void set(string Name, float Value);
 	float getF(string Name);
