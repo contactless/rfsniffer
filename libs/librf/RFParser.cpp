@@ -54,6 +54,7 @@ void CRFParser::AddProtocol(string protocol)
         AddProtocol(new CRFProtocolRaex());
         AddProtocol(new CRFProtocolLivolo());
         AddProtocol(new CRFProtocolOregon());
+        AddProtocol(new CRFProtocolOregonV3());
         AddProtocol(new CRFProtocolNooLite());
         AddProtocol(new CRFProtocolRubitek());
         //AddProtocol(new CRFProtocolMotionSensor());

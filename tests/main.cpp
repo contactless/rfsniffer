@@ -1,3 +1,5 @@
+#include "../libs/librf/DebugPrintf.h"
+
 #include "stdafx.h"
 
 #include "../libs/libutils/strutils.h"
@@ -11,6 +13,9 @@ void MqttTest();
 
 int main(int argc, char *argv[])
 {
+    // activate function-debug output
+    DPrintf::globallyEnable();
+    
     fprintf(stderr, "Begin tests\n");
 
     bool bTestLog = true, bTestParser = true, bTestRfm = false, bTestSniffer = false, bTestMqtt = false;

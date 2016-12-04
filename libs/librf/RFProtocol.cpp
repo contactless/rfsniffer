@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "RFProtocol.h"
 
-#include "../libutils/DebugPrintf.h"
+#include "DebugPrintf.h"
 
 string c2s(char c)
 {
@@ -34,13 +34,10 @@ void CRFProtocol::SetTransmitTiming(const uint16_t *timings)
 
 /*
 	Декодирование происходит в три этапа
-
-
 */
 string CRFProtocol::Parse(base_type *data, size_t dataLen)
 {
-    //DPrintf dprintf = DPrintf().disabled();
-#define dprintf(...) 42
+    DPrintf dprintf = DPrintf().enabled(false);
 
     Clean();
     // 	Декодирование происходит в три этапа
@@ -88,7 +85,6 @@ string CRFProtocol::Parse(base_type *data, size_t dataLen)
         m_DumpPacket = true;
 
     return "";
-#undef dprintf
 }
 
 string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)

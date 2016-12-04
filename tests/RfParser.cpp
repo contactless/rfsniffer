@@ -80,13 +80,11 @@ static const std::vector<string_pair> Tests = {
     // Tests ported from ism-radio
     { "ism-test-3b374d96c9.rcf", "Oregon:type=1D20 id=12 ch=4 battery=low t=26.3 h=35" },
     { "ism-test-ca09da62af.rcf", "Oregon:type=1D20 id=85 ch=2 battery=low t=25.6 h=43"},
-    { "ism-test-0f10660dd1.rcf", "Oregon:SMTH"},
-    { "ism-test-d66b21c765.rcf", "Oregon:SMTH"},
-    { "ism-test-41d890077f.rcf", "Oregon:SMTH"},
-    { "ism-test-df05ec91e6.rcf", "Oregon:SMTH"},
-    { "ism-test-7031d3158b.rcf", "Oregon:SMTH"},
-    { "ism-test-7b8d00e86c.rcf", "Oregon:SMTH"},
-    { "ism-test-7b8d00e86c.rcf", "Oregon:SMTH"},
+    { "ism-test-d66b21c765.rcf", "Oregon:type=F824 id=42 ch=1 battery=normal t=26.9 h=39"},
+    { "ism-test-41d890077f.rcf", "Oregon:type=F824 id=42 ch=1 battery=normal t=26.7 h=39"},
+    { "ism-test-df05ec91e6.rcf", "Oregon:type=F824 id=42 ch=1 battery=normal t=26.6 h=39"},
+    { "ism-test-7031d3158b.rcf", "Oregon:type=F824 id=42 ch=1 battery=normal t=26.4 h=39"},
+    { "ism-test-7b8d00e86c.rcf", "Oregon:type=F824 id=42 ch=1 battery=normal t=26.3 h=40"},
 
     { "capture-2708-132748.rcf", "X10:D2ON" },
     { "capture-2708-132756.rcf", "X10:D2ON" },
@@ -221,8 +219,8 @@ void RfParserTest(string path)
     //parser.AddProtocol(new CRFProtocolLivolo());
     //parser.AddProtocol(new CRFProtocolX10());
     //parser.AddProtocol(new CRFProtocolRaex());
-    parser.AddProtocol("Oregon");
-    //parser.AddProtocol("All");
+    //parser.AddProtocol("Oregon");
+    parser.AddProtocol("All");
 
     if (path.length()) {
         string_vector files;

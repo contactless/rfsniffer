@@ -2,6 +2,8 @@
 #include "RFProtocolOregon.h"
 
 
+#include "DebugPrintf.h"
+
 class BufferWriter
 {
     std::vector <char> buff;
@@ -30,7 +32,7 @@ class BufferWriter
             if (written_length < 0)
                 return written_length;
             if (offset + written_length + 1 >= buff.size()) {
-                buff.resize(buff.size() * 2);
+                buff.resize((offset + written_length + 1) * 2);
                 continue;
             }
             offset += written_length;
@@ -323,6 +325,8 @@ CRFProtocolOregon::~CRFProtocolOregon()
 
 string CRFProtocolOregon::DecodePacket(const string &raw_)
 {
+    DPrintf dprintf = DPrintf().enabled(false);
+    
     string raw = raw_;
 
     if (raw.length() < 10)
@@ -338,7 +342,7 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
         if (apos != string::npos)
             raw.resize(apos);
     }
-    printf("Oregon decodePacket: %s\n", raw.c_str());
+    dprintf("Oregon decodePacket: %s\n", raw.c_str());
 
     std::vector <char> isPulse(raw.size());
     for (int i = 0; i < (int)raw.size(); i++)
@@ -404,7 +408,7 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
     string hexPacket = "";
 
     if (packet.length() < 48) {
-        m_Log->Printf(3, "Too short packet %s", packet.c_str());
+        m_Log->Printf(3, "Oregon: (only warning: it may be other protocol) Too short packet %s", packet.c_str());
         return "";
     }
 
@@ -429,12 +433,12 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
     }
 
     if (crc != originalCRC) {
-        m_Log->Printf(3, "Bad CRC for %s", packet.c_str());
+        m_Log->Printf(3, "Oregon: (only warning: it may be other protocol) Bad CRC for %s", packet.c_str());
         return "";
     }
 
     if (hexPacket[0] != 'A') {
-        m_Log->Printf(4, "First nibble is not 'A'. Data: %s", hexPacket.c_str());
+        m_Log->Printf(4, "Oregon: First nibble is not 'A'. Data: %s", hexPacket.c_str());
         return "";
     }
 

@@ -2,7 +2,7 @@
 #include "RFProtocolOregonV3.h"
 
 
-#include "../libutils/DebugPrintf.h"
+#include "DebugPrintf.h"
 
 static range_type g_timing_pause[7] = {
     { 40000, 47000 },
@@ -34,13 +34,11 @@ CRFProtocolOregonV3::~CRFProtocolOregonV3()
 
 string CRFProtocolOregonV3::DecodePacket(const string &raw_)
 {
-    //DPrintf dprintf = DPrintf().disabled();
-#define dprintf(...) 42
+    DPrintf dprintf = DPrintf().enabled(false);
     string raw = raw_;
 
     if (raw.length() < 10)
         return "";
-
 
     // truncate by 'a', '?' (it's the end of the packet)
     {
@@ -51,7 +49,7 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
         if (apos != string::npos)
             raw.resize(apos);
     }
-    dprintf("OregonV3 decodePacket: %s\n", raw.c_str());
+    dprintf("OregonV3: decodePacket: %s\n", raw.c_str());
 
     std::vector <char> isPulse(raw.size());
     for (int i = 0; i < (int)raw.size(); i++)
@@ -102,7 +100,7 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
     string hexPacket = "";
 
     if (packet.length() < 48) {
-        m_Log->Printf(3, "Too short packet %s", packet.c_str());
+        m_Log->Printf(3, "OregonV3: (only warning: it may be other protocol) Too short packet %s", packet.c_str());
         return "";
     }
 
@@ -132,18 +130,16 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
     dprintf("    OregonV3 decodedData: %s\n", hexPacket.c_str());
 
     if (crc != originalCRC) {
-        m_Log->Printf(3, "Bad CRC (received %d != %d original) for %s", crc, originalCRC, packet.c_str());
+        m_Log->Printf(3, "OregonV3: (only warning: it may be other protocol) Bad CRC (calculated %d != %d told) for %s", crc, originalCRC, packet.c_str());
         return "";
     }
 
 
     if (hexPacket[0] != 'A') {
-        m_Log->Printf(4, "First nibble is not 'A'. Data: %s", hexPacket.c_str());
+        m_Log->Printf(4, "OregonV3: First nibble is not 'A'. Data: %s", hexPacket.c_str());
         return "";
     }
 
     return hexPacket;
-
-#undef dprintf
 }
 
