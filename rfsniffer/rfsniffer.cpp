@@ -375,7 +375,8 @@ int main(int argc, char *argv[])
             int result;
             usleep(10);
 
-            size_t count = sizeof(lirc_t) * BUFFER_SIZE - (data_ptr - data) * sizeof(lirc_t);
+            // count of lirc_t values in data
+            size_t count = BUFFER_SIZE - (data_ptr - data);
 
             if (count == 0) {
                 m_Log->Printf(0, "RF buffer full");
@@ -428,7 +429,7 @@ int main(int argc, char *argv[])
                     rfm.setRSSIThreshold(rssi);
             }
 
-            result = read(fd, (void *)data_ptr, count);
+            result = read(fd, (void *)data_ptr, count * sizeof(lirc_t));
             if (result == 0) {
                 m_Log->Printf(0, "read() failed\n");
                 break;
