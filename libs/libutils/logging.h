@@ -31,7 +31,7 @@ typedef map<string, LogParam> LIBUTILS_API CLogsParamMap;
 class LIBUTILS_API CLog
 {
 	CLock lock;
-	char* m_FileName;
+	string m_FileName;
 	FILE *m_File;
 	bool m_bTimeLog;
 	int m_iConsoleLogLevel, m_iLogLevel;

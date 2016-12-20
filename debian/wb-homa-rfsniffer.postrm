@@ -1,1 +1,9 @@
 #!/bin/bash
+
+CONFFILE="/etc/wb-homa-rfsniffer.conf"
+
+if [ "$1" = "purge" ]; then
+    if [ -x /usr/bin/ucf ]; then
+        ucf --purge $CONFFILE
+    fi
+fi

@@ -7,7 +7,7 @@
 		//, "fixedThresh": 60
 		"rfm_irq": 38
 	},
-
+	
 	"mqtt": {
 		"host": "localhost"
 	},

@@ -1,5 +1,6 @@
 #!/usr/bin/dh-exec
 
-rfsniffer/rfsniffer.schema.json => usr/share/wb-mqtt-confed/schemas/wb-homa-rfsniffer.schema.json
-rfsniffer/rfsniffer.json => etc/wb-homa-rfsniffer.conf
+configs/wb-homa-rfsniffer.schema.json => usr/share/wb-mqtt-confed/schemas/wb-homa-rfsniffer.schema.json
 rfsniffer/wb-homa-rfsniffer => usr/bin/wb-homa-rfsniff
+
+configs/wb-homa-rfsniffer.conf.* usr/share/wb-homa-rfsniffer/

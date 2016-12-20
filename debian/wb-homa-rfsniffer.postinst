@@ -1,4 +1,54 @@
 #!/bin/bash
 
+# put config in the right place
+.   /etc/wb_env.sh
+
+CONFFILE="/etc/wb-homa-rfsniffer.conf"
+
+case "$WB_VERSION" in
+    "58" )
+        SUFFIX="wb58"
+    ;;
+
+    "55" )
+        SUFFIX="wb55"
+    ;;
+
+    "52" )
+        SUFFIX="wb52"
+    ;;
+
+    "50" )
+        SUFFIX="wbsh5"
+    ;;
+
+    "41" )
+        SUFFIX="wbsh4"
+    ;;
+
+    "32" )
+        SUFFIX="wbsh3"
+    ;;
+
+    "KMON1" )
+        SUFFIX="mka3"
+    ;;
+
+    "CQC10" )
+        SUFFIX="cqc10"
+    ;;
+
+    * )
+        SUFFIX="default"
+    ;;
+esac
+
+BOARD_CONF="/usr/share/wb-homa-rfsniffer/wb-homa-rfsniffer.conf.${SUFFIX}"
+
+ucf --debconf-ok $BOARD_CONF $CONFFILE
+
+
+# launch driver
+
 update-rc.d wb-homa-rfsniffer defaults
 invoke-rc.d wb-homa-rfsniffer start

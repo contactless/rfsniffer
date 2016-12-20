@@ -1,0 +1,28 @@
+// This file is template or was generated automatically, see for generate_configs.py
+// Configuration options for cqc10
+{
+	"radio": {
+		"lirc_device": "/dev/lirc0",
+		"spi_device": "/dev/spidev32766.0",
+		"rssi": -90,
+		"rfm_irq": 38
+	},
+
+	"mqtt": {
+		"host": "localhost"
+	},
+
+	"debug":{
+		"save_path": ".",
+
+		"log": [
+			{
+				"name": "Main",
+				"file_name": "/run/wb-homa-rfsniffer.log",
+				"console_level": 5,
+				"file_level": 3,
+				"log_time": "yes"
+			}
+		]
+	}
+}

@@ -7,6 +7,7 @@
 #endif
 #include "Exception.h"
 
+
 LogParam::LogParam()
 {
 	FileName = "";
@@ -18,10 +19,10 @@ LogParam::LogParam()
 #ifdef USE_CONFIG
 LogParam::LogParam(CConfigItem node)
 {
-	FileName = node.getStr("FileName");
-	LogTime = (node.getStr("LogTime", false, "yes")=="yes")?true:false;
-	ConsoleLevel = node.getInt("ConsoleLevel", false, -1);
-	FileLevel = node.getInt("FileLevel", false, 0);
+	FileName = node.getStr("file_name");
+	LogTime = (node.getStr("log_time", false, "yes")=="yes")?true:false;
+	ConsoleLevel = node.getInt("console_level", false, -1);
+	FileLevel = node.getInt("file_level", false, 0);
 }
 #endif
 
@@ -41,7 +42,7 @@ CLog* CLog::Default()
 
 CLog* CLog::GetLog(string Name)
 {
-	CLog *log  = m_Logs[Name];
+	CLog *log = m_Logs[Name];
 
 	if (log)
 		return log;
@@ -49,7 +50,7 @@ CLog* CLog::GetLog(string Name)
 #else
 #endif
 
-	m_Logs[Name] = log  = new CLog();
+	m_Logs[Name] = log = new CLog();
 
 	if (Name=="nul")
 		return log;
@@ -84,7 +85,7 @@ CLog* CLog::GetLog(string Name)
 	{
 		LogParam node = m_LogsCfg[Name];
 
-		if (node.FileName.length())
+		if (!node.FileName.empty())
 			log->Open(&node);
 	}
 #endif
@@ -111,11 +112,11 @@ void CLog::CloseAll()
 void CLog::Init(CConfigItem *Config)
 {
 	CConfigItemList nodes;
-	Config->getList("Log", nodes);
+	Config->getList("log", nodes);
 	
 	for(CConfigItemList::iterator i=nodes.begin();i!=nodes.end();i++)
 	{
-		m_LogsCfg[(*i)->getStr("Name")] = LogParam(**i);
+		m_LogsCfg[(*i)->getStr("name")] = LogParam(**i);
 	}
 }
 #endif
@@ -123,7 +124,7 @@ void CLog::Init(CConfigItem *Config)
 CLog::CLog()
 {
 	m_File = NULL;
-	m_FileName = NULL;
+	m_FileName = "";
 	m_bTimeLog = false;
 	m_iConsoleLogLevel = m_iLogLevel = -1;
 }
@@ -132,9 +133,6 @@ CLog::~CLog()
 {
 	if (m_File)
 		fclose(m_File);
-
-	if (m_FileName)
-		delete m_FileName;
 }
 
 #if defined(WIN32)
@@ -170,12 +168,12 @@ void CLog::VPrintf(int level, const char *Format, va_list marker)
 	{
 		if (!m_File)
 		{
-			if (m_FileName)
+			if (!m_FileName.empty())
 			{
 #if defined(WIN32) && !defined (_WIN32_WCE)
-				m_File = _fsopen(m_FileName, "a+", _SH_DENYWR);
+				m_File = _fsopen(m_FileName.c_str(), "a+", _SH_DENYWR);
 #else
-				m_File = fopen(m_FileName, "a+");
+				m_File = fopen(m_FileName.c_str(), "a+");
 #endif
 				if (!m_File)
 					return;
@@ -207,7 +205,7 @@ void CLog::VPrintf(int level, const char *Format, va_list marker)
 			printf("%s", Buffer);
 	}
 
-	if (m_iConsoleLogLevel>=level  && !m_DisableConsole)
+	if (m_iConsoleLogLevel>=level && !m_DisableConsole)
 	{
 		vprintf(Format, marker);
 
@@ -313,25 +311,25 @@ void CLog::Open(LogParam *Config)
 	if (GetPath(FileName).length()==0)
 		FileName = m_BasePath + string(FOLDER_DELIMETER_STR) + FileName;
 
-	m_FileName = strnew(FileName.c_str());
+	m_FileName = FileName;
 
 	m_bTimeLog = Config->LogTime;
 	m_iConsoleLogLevel = Config->ConsoleLevel;
 	m_iLogLevel = Config->FileLevel;
 
-	printf("Open log file %s\n", m_FileName);
+	printf("Open log file %s\n", m_FileName.c_str());
 	Printf(m_iLogLevel, "************************************** started **********************************************\n");
 }
 
 void CLog::Open(const char *FileName)
 {
-	m_FileName = strnew(FileName);
+	m_FileName = FileName;
 	m_bTimeLog = true;
 	m_iConsoleLogLevel = m_iLogLevel = 100;
 }
 
 bool CLog::isOpen()
 {
-	return this==NULL?false:m_FileName!=NULL;
+	return (this == NULL ? false : !m_FileName.empty());
 }
 

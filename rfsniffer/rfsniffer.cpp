@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <dirent.h>
 #include <unistd.h>
 #include "../libs/libutils/logging.h"
 #include "../libs/libutils/Exception.h"
@@ -81,24 +82,32 @@ int main(int argc, char *argv[])
     int writePackets = 0;
     string savePath = ".";
     bool inverted = false;
+    
+    
 
+    // Read environment variables
+    {
+        char *irq = getenv("WB_GPIO_RFM_IRQ");
+        char *spiMajor = getenv("WB_RFM_SPI_MAJOR");
+        char *spiMinor = getenv("WB_RFM_SPI_MINOR");
+        
+        fprintf(stderr, "Managed to read env variables WB_GPIO_RFM_IRQ=%s  "
+                         "WB_RFM_SPI_MAJOR=%s  WB_RFM_SPI_MINOR=%s\n", 
+                         (irq ? irq : "<no_info>"), 
+                         (spiMajor ? spiMajor : "<no_info>"), 
+                         (spiMinor ? spiMinor : "<no_info>"));     
+        if (spiMajor || spiMinor) {
+            char buffer[256];
+            snprintf(buffer, sizeof(buffer), "/dev/spidev%d.%d", 
+                     spiMajor ? atoi(spiMajor) + 1 : 32766, // plus 1 because of very strange setting of WB_RFM_SPI_MAJOR
+                                                            // it's somehow connected with python driver
+                     spiMinor ? atoi(spiMinor) : 0);
+            spiDevice = buffer;
+        }
 
-    char *irq = getenv("WB_GPIO_RFM_IRQ");
-    char *spiMajor = getenv("WB_RFM_SPI_MAJOR");
-    char *spiMinor = getenv("WB_RFM_SPI_MINOR");
-    //  m_Log->Printf(0, "WB_GPIO_RFM_IRQ=%s", irq);
-    //  m_Log->Printf(0, "WB_RFM_SPI_MAJOR=%s", spiMajor);
-    //  m_Log->Printf(0, "WB_RFM_SPI_MINOR=%s", spiMinor);
-
-    if (spiMajor || spiMinor) {
-        char buffer[256];
-        snprintf(buffer, sizeof(buffer), "/dev/spidev%s.%s", spiMajor ? spiMajor : "32766",
-                 spiMinor ? spiMinor : "0");
-        spiDevice = buffer;
+        if (irq && atoi(irq) > 0)
+            gpioInt = atoi(irq);
     }
-
-    if (irq && atoi(irq) > 0)
-        gpioInt = atoi(irq);
 
     int c;
     //~ int digit_optind = 0;
@@ -159,7 +168,7 @@ int main(int argc, char *argv[])
                 break;
 
             case '?':
-                printf("Ussage: rfsniffer [params]\n");
+                printf("Usage: rfsniffer [params]\n");
                 printf("-D - debug mode. Write good but not decoded packets to files\n");
                 printf("-d - start daemon\n");
                 printf("-g <DIO0 gpio> - set custom DIO0 GPIO number. Default %d\n", gpioInt);
@@ -203,11 +212,10 @@ int main(int argc, char *argv[])
             }
         }
     } catch (CHaException ex) {
-        CLog *m_Log = CLog::Default();
-        m_Log->Printf(0, "Failed load config. Error: %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
+        fprintf(stderr, "Failed load config. Error: %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
         return -1;
     }
-
+    
     CLog *m_Log = CLog::Default();
     m_Log->Printf(0, "Using SPI device %s, lirc device %s, mqtt on %s", spiDevice.c_str(),
                   lircDevice.c_str(), mqttHost.c_str());
@@ -239,7 +247,22 @@ int main(int argc, char *argv[])
     spi_config.bits_per_word = 8;
     SPI mySPI(spiDevice.c_str(), &spi_config);
     if (!mySPI.begin()) {
-        m_Log->Printf(0, "SPI init failed");
+        m_Log->Printf(0, "SPI init failed (probably no such device)");
+        DIR *dir;
+        struct dirent *ent;     
+        if ((dir = opendir ("/dev/")) != NULL) {
+            /* print all the files and directories within directory */
+            while ((ent = readdir (dir)) != NULL) {
+                string name = ent->d_name;
+                if (name.substr(0, 6) == "spidev") {        
+                    m_Log->Printf(0, "\tCandidate is: /dev/%s", ent->d_name);
+                }
+            }
+            closedir (dir);
+        } else {
+            m_Log->Printf(0, "\tAnd couldn't see in /dev for spidev*");
+        }
+        m_Log->Printf(0, "Please contact developers");
         return 1;
     }
 
@@ -414,13 +437,15 @@ int main(int argc, char *argv[])
                     if (minGoodRSSI > lastRSSI)
                         minGoodRSSI = lastRSSI;
                 } else {
-                    static char buff[120000];
-                    char *buff_ptr = buff;
-                    for (long unsigned int *c = data; c < data_ptr && buff_ptr + 20 < buff + sizeof(buff); c++)
-                        buff_ptr += sprintf(buff_ptr, "%u ", (long unsigned int)*c);
-                    *buff_ptr = 0;
-                    
-                    m_Log->Printf(4, "Recieved %ld signals. Not decoded(\n%s\n)\n", data_ptr - data, buff);
+                    m_Log->Printf(4, "Recieved %ld signals. Not decoded");
+                    if (writePackets > 0) {
+                        static char buff[120000];
+                        char *buff_ptr = buff;
+                        for (long unsigned int *c = data; c < data_ptr && buff_ptr + 20 < buff + sizeof(buff); c++)
+                            buff_ptr += sprintf(buff_ptr, "%u ", (unsigned int)*c);
+                        *buff_ptr = 0;
+                        m_Log->Printf(4, "(\n%s\n)\n", data_ptr - data, buff);
+                    } 
                 }
                 data_ptr = data;
                 packetStart = time(NULL);
