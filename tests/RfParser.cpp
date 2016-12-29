@@ -64,7 +64,7 @@ static const std::vector<string_pair> Tests = {
     { "capture-2506-120004.rcf", "nooLite:flip=0 cmd=5 addr=9a13 fmt=00 crc=52"},
     { "capture-2506-115944.rcf", "nooLite:flip=1 cmd=5 addr=9a13 fmt=00 crc=4e" },
 
-    //	{ "capture-0906-212933.rcf", "" },* /
+    //  { "capture-0906-212933.rcf", "" },* /
 #define ROLLING_CODE "51" // or "15" as in original code
     // for some reason in original code Rolling Code was read in ambigous way (either ascending order of nibbles or descending one)
     // I prefer to read it in fixed way and just change tests
@@ -123,7 +123,7 @@ static const std::vector<string_pair> Tests = {
     { "capture-1004-105819.rcf", "RST:id=1b10 h=82 t=29.1" },
 
     // Inverted
-    //	{ "capture-0804-094607.rcf", "?" },
+    //  { "capture-0804-094607.rcf", "?" },
     { "capture-0904-091533.rcf", ""}, //RST:id=1b10 h=20 t=26.7" },
     { "capture-0904-091545.rcf", ""}, //RST:id=1b10 h=20 t=26.9" },
     { "capture-1004-121901.rcf", ""}, //RST:id=1b10 h=34 t=27.2"},

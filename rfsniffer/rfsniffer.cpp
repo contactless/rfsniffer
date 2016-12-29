@@ -69,7 +69,7 @@ int waitfordata(int fd, unsigned long maxusec)
 
 int main(int argc, char *argv[])
 {
-    bool bDebug = false, bDaemon = false, bDumpAllRegs = false;
+    bool bDebug = false, bDaemon = false, bDumpAllRegs = false, bLircPedantic = true;
     string spiDevice = "/dev/spidev32766.0";
     string lircDevice = "/dev/lirc0";
     string mqttHost = "localhost";
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     //~ int digit_optind = 0;
     //~ int aopt = 0, bopt = 0;
     //~ char *copt = 0, *dopt = 0;
-    while ( (c = getopt(argc, argv, "Dds:m:l:S:f:r:tw:c:i")) != -1) {
+    while ( (c = getopt(argc, argv, "Dds:m:l:LS:f:r:tw:c:i")) != -1) {
         //~ int this_option_optind = optind ? optind : 1;
         switch (c) {
             case 'D':
@@ -129,6 +129,10 @@ int main(int argc, char *argv[])
 
             case 'l':
                 lircDevice = optarg;
+                break;
+
+            case 'L':
+                bLircPedantic = false;
                 break;
 
             case 'm':
@@ -181,6 +185,9 @@ int main(int argc, char *argv[])
                 printf("-r <RSSI> - reset RSSI Threshold after each packet. 0 - Disabled. Default %d\n", (int)rssi);
                 printf("-f <fixed Threshold> - Use OokFixedThresh with fixed level. 0 - Disabled. Default %d\n",
                        fixedThresh);
+                     
+                printf("-L - disable pedantic check of lirc character device (may use pipe instead)");
+                printf("-c configfile - specify config file");
                 //          printf("-f <sampling freq> - set custom sampling freq. Default %d\n", samplingFreq);
                 return 0;
             default:
@@ -302,22 +309,24 @@ int main(int argc, char *argv[])
                 exit(EXIT_FAILURE);
             }
 
-            struct stat s;
-            if (fstat(fd, &s) == -1) {
-                m_Log->Printf(0, "fstat: Can't read file status! : %s\n", strerror(errno));
-                throw CHaException(CHaException::ErrBadParam, "fstat: Can't read file status! : %s\n",
-                                   strerror(errno));
-            }
-            if (!S_ISCHR(s.st_mode)) {
-                m_Log->Printf(0, "Lirc device is not character device! st_mode = %d\n", (int)s.st_mode);
-                throw CHaException(CHaException::ErrBadParam, "%s is not a character device\n", lircDevice.c_str());
-            }
+            if (bLircPedantic) {
+                struct stat s;
+                if (fstat(fd, &s) == -1) {
+                    m_Log->Printf(0, "fstat: Can't read file status! : %s\n", strerror(errno));
+                    throw CHaException(CHaException::ErrBadParam, "fstat: Can't read file status! : %s\n",
+                                       strerror(errno));
+                }
+                if (!S_ISCHR(s.st_mode)) {
+                    m_Log->Printf(0, "Lirc device is not character device! st_mode = %d\n", (int)s.st_mode);
+                    throw CHaException(CHaException::ErrBadParam, "%s is not a character device\n", lircDevice.c_str());
+                }
 
-            __u32 mode = 2;
-            if (ioctl(fd, LIRC_GET_REC_MODE, &mode) == -1) {
-                m_Log->Printf(0, "This program is only intended for receivers supporting the pulse/space layer.\n");
-                throw CHaException(CHaException::ErrBadParam,
-                                   "This program is only intended for receivers supporting the pulse/space layer.");
+                __u32 mode = 2;
+                if (ioctl(fd, LIRC_GET_REC_MODE, &mode) == -1) {
+                    m_Log->Printf(0, "This program is only intended for receivers supporting the pulse/space layer.\n");
+                    throw CHaException(CHaException::ErrBadParam,
+                                       "This program is only intended for receivers supporting the pulse/space layer.");
+                }
             }
         }
 
@@ -361,8 +370,8 @@ int main(int argc, char *argv[])
                     int result = read(fd, (void *)data, BUFFER_SIZE);
                     if (result == -1 && errno == EAGAIN)
                         result = 0;
-                    if (result == 0) {
-                        m_Log->Printf(0, "read() failed\n");
+                    if (result == 0 && bLircPedantic) {
+                        m_Log->Printf(0, "read() failed [during opening lirc device part]\n");    
                         break;
                     }
                     for (size_t i = 0; i < result; i++) {
@@ -455,8 +464,8 @@ int main(int argc, char *argv[])
             }
 
             result = read(fd, (void *)data_ptr, count * sizeof(lirc_t));
-            if (result == 0) {
-                m_Log->Printf(0, "read() failed\n");
+            if (result == 0 && bLircPedantic) {
+                m_Log->Printf(0, "read() failed [during endless cycle]\n");  
                 break;
             }
             lastRSSI = rfm.readRSSI();

@@ -39,7 +39,9 @@ struct LIBWB_API CWBControl
 	};
 
 	ControlType Type;
-	string Name, Source, SourceType;
+	// Name is a name of control in mqtt tree and also description in web interface
+	// MetaType is the type that will be written into .../meta/type
+	string Name, MetaType, Source, SourceType;
 	bool Readonly, Changed;
 	string sValue;
 	float fValue;
@@ -49,21 +51,23 @@ typedef map<string, CWBControl*> CControlMap;
 
 class LIBWB_API CWBDevice
 {
-	string m_Name;
-	string m_Description;
-	CControlMap m_Controls;
+	string deviceName;
+	string deviceDescription;
+	CControlMap deviceControls;
 
     string GetControlMetaTypeByType(CWBControl::ControlType type);
     CWBControl::ControlType GetControlTypeByMetaType(string meta_type);
     string GetControlUserReadNameByType(CWBControl::ControlType type);
     
 public:
-	CWBDevice(string Name, string Description);
+	// Name is the name in mqtt tree
+	// Description will be written into .../meta/name
+	CWBDevice(string DeviceName, string DeviceDescription);
 	CWBDevice();
 	~CWBDevice();
 
-	string getName(){return m_Name;};
-	string getDescription(){return m_Description;};
+	string getName(){return deviceName;};
+	string getDescription(){return deviceDescription;};
 #ifdef USE_CONFIG
 	void Init(CConfigItem config);
 #endif	
@@ -78,7 +82,7 @@ public:
 	string getS(string Name);
 	void CreateDeviceValues(string_map &);
 	void UpdateValues(string_map &);
-	const CControlMap *getControls(){return &m_Controls;};
+	const CControlMap *getControls(){return &deviceControls;};
 	string getTopic(string Control);
 
 };

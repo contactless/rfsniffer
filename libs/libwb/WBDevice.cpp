@@ -102,29 +102,29 @@ CWBDevice::CWBDevice()
 }
 
 CWBDevice::CWBDevice(string Name, string Description)
-:m_Name(Name), m_Description(Description)
+		:deviceName(Name), deviceDescription(Description)
 {
-
 }
 
 
 CWBDevice::~CWBDevice()
 {
-	for_each(CControlMap, m_Controls, i)
+	for_each(CControlMap, deviceControls, i)
 		delete i->second;
 }
 
 #ifdef USE_CONFIG
 void CWBDevice::Init(CConfigItem config)
 {
-	m_Name = config.getStr("Name");
-	m_Description = config.getStr("Description");
+	deviceName = config.getStr("Name");
+	deviceDescription = config.getStr("Description");
 
 	CConfigItemList controls;
 	config.getList("Control", controls);
 	for_each(CConfigItemList, controls, control)
 	{
 		CWBControl *Control = new CWBControl;
+		Control->MetaType = (*control)->getStr("Type");
 		Control->Name = (*control)->getStr("Name");
 		Control->Source = (*control)->getStr("Source", false);
 		Control->SourceType = (*control)->getStr("SourceType", false);
@@ -132,7 +132,7 @@ void CWBDevice::Init(CConfigItem config)
 	
     	//string type = (*control)->getStr("Type");
 		
-        Control->Type = GetControlTypeByMetaType((*control)->getStr("Type"));
+        Control->Type = GetControlTypeByMetaType(Control->MetaType);
         
         /*Control->Type = CWBControl::Error;
         
@@ -145,7 +145,7 @@ void CWBDevice::Init(CConfigItem config)
 			}
 		}*/
 
-		m_Controls[Control->Name] = Control;
+		deviceControls[Control->MetaType] = Control;
 	}
 }
 #endif
@@ -154,11 +154,12 @@ void CWBDevice::AddControl(string Name, CWBControl::ControlType Type, bool ReadO
 {
 	CWBControl *Control = new CWBControl;
 	Control->Name = (!Name.empty() ? Name : GetControlUserReadNameByType(Type));
+	Control->MetaType = GetControlMetaTypeByType(Type);
 	Control->Source = Source;
 	Control->SourceType = SourceType;
 	Control->Readonly = ReadOnly;
 	Control->Type = Type;
-	m_Controls[Control->Name] = Control;
+	deviceControls[Control->Name] = Control;
 }
 
 
@@ -169,9 +170,9 @@ void CWBDevice::set(CWBControl::ControlType Type, string Value)
 
 void CWBDevice::set(string Name, string Value)
 {
-	CControlMap::iterator i = m_Controls.find(Name);
+	CControlMap::iterator i = deviceControls.find(Name);
 
-	if (i == m_Controls.end())
+	if (i == deviceControls.end())
 		throw CHaException(CHaException::ErrBadParam, Name);
 
 	i->second->fValue = (float)atof(Value);
@@ -186,9 +187,9 @@ void CWBDevice::set(CWBControl::ControlType Type, float Value)
 
 void CWBDevice::set(string Name, float Value)
 {
-	CControlMap::iterator i = m_Controls.find(Name);
+	CControlMap::iterator i = deviceControls.find(Name);
 
-	if (i == m_Controls.end())
+	if (i == deviceControls.end())
 		throw CHaException(CHaException::ErrBadParam, Name);
 
 	i->second->fValue = Value;
@@ -199,9 +200,9 @@ void CWBDevice::set(string Name, float Value)
 
 float CWBDevice::getF(string Name)
 {
-	CControlMap::iterator i = m_Controls.find(Name);
+	CControlMap::iterator i = deviceControls.find(Name);
 
-	if (i == m_Controls.end())
+	if (i == deviceControls.end())
 		throw CHaException(CHaException::ErrBadParam, Name);
 
 	return i->second->fValue;
@@ -209,9 +210,9 @@ float CWBDevice::getF(string Name)
 
 string CWBDevice::getS(string Name)
 {
-	CControlMap::iterator i = m_Controls.find(Name);
+	CControlMap::iterator i = deviceControls.find(Name);
 
-	if (i == m_Controls.end())
+	if (i == deviceControls.end())
 		throw CHaException(CHaException::ErrBadParam, Name);
 
 	return i->second->sValue;
@@ -219,29 +220,28 @@ string CWBDevice::getS(string Name)
 
 void CWBDevice::CreateDeviceValues(string_map &v)
 {
-	string base = "/devices/" + m_Name;
-	v[base + "/meta/name"] = m_Description;
+	string base = "/devices/" + deviceName;
+	v[base + "/meta/name"] = deviceDescription;
 
-	for_each(CControlMap, m_Controls, i)
+	for_each(CControlMap, deviceControls, i)
 	{
-		v[base + "/meta/name"] = m_Description;
-		v[base + "/controls/" + i->first] = i->second->sValue;
-		v[base + "/controls/" + i->first +"/meta/type"] = GetControlMetaTypeByType(i->second->Type);
+		const string controlBase = base + "/controls/" + i->second->Name;
+		v[controlBase] = i->second->sValue;
+		v[controlBase + "/meta/type"] = GetControlMetaTypeByType(i->second->Type);
 		if (i->second->Readonly)
-			v[base + "/controls/" + i->first + "/meta/readonly"] = "1";
+			v[controlBase + "/meta/readonly"] = "1";
 	}
-	//UpdateValues(v);
 }
 
 void CWBDevice::UpdateValues(string_map &v)
 {
-	string base = "/devices/" + m_Name;
+	string base = "/devices/" + deviceName;
 
-	for_each(CControlMap, m_Controls, i)
+	for_each(CControlMap, deviceControls, i)
 	{
 		if (i->second->Changed)
 		{
-			v[base + "/controls/" + i->first] = i->second->sValue;
+			v[base + "/controls/" + i->second->Name] = i->second->sValue;
 			i->second->Changed = false;
 		}
 	}
@@ -249,13 +249,13 @@ void CWBDevice::UpdateValues(string_map &v)
 
 string CWBDevice::getTopic(string Control)
 {
-	string base = "/devices/" + m_Name;
+	string base = "/devices/" + deviceName;
 	return base + "/controls/" + Control;
 }
 
 bool CWBDevice::sourceExists(string source)
 {
-	for_each(CControlMap, m_Controls, i)
+	for_each(CControlMap, deviceControls, i)
 	{
 		if (i->second->Source == source)
 			return true;
@@ -269,7 +269,7 @@ void CWBDevice::setBySource(string source, string sourceType, string Value)
 	if (sourceType=="X10")
 		Value = (Value==("ON"?"1":"0"));
 
-	for_each(CControlMap, m_Controls, i)
+	for_each(CControlMap, deviceControls, i)
 	{
 		if (i->second->Source == source)
 			set(i->first, Value);

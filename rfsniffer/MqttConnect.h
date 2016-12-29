@@ -7,17 +7,17 @@ class RFM69OOK;
 class CMqttConnection
 :public mosqpp::mosquittopp
 {
-	string m_Server;
-	CLog *m_Log;
-	bool m_isConnected;
-	CWBDeviceMap m_Devices;
+    string m_Server;
+    CLog *m_Log;
+    bool m_isConnected;
+    CWBDeviceMap m_Devices;
     RFM69OOK *m_RFM;
     CRFProtocolNooLite m_nooLite;
 
 public:
-	CMqttConnection(string Server, CLog* log, RFM69OOK *rfm);	
-	~CMqttConnection();	
-	void NewMessage(string message);
+    CMqttConnection(string Server, CLog* log, RFM69OOK *rfm);   
+    ~CMqttConnection(); 
+    void NewMessage(string message);
 
 private:
     virtual void on_connect(int rc);

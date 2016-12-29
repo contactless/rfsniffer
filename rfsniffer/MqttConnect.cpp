@@ -162,17 +162,17 @@ void CMqttConnection::NewMessage(string message)
             if (!dev) {
                 string desc = string("Noolite Sensor 0x") + id;
                 dev = new CWBDevice(name, desc);
-                dev->AddControl("temperature", CWBControl::Temperature, true);
+                dev->AddControl("Temperature", CWBControl::Temperature, true);
 
                 if (h.length() > 0)
-                    dev->AddControl("humidity", CWBControl::RelativeHumidity, true);
+                    dev->AddControl("Humidity", CWBControl::RelativeHumidity, true);
 
                 CreateDevice(dev);
             }
 
-            dev->set("temperature", t);
+            dev->set("Temperature", t);
             if (h.length() > 0)
-                dev->set("humidity", h);
+                dev->set("Humidity", h);
         } else if (cmd == "0" || cmd == "4" || cmd == "2") {
             //noolite_rx_0x1492
             string name = string("noolite_rx_0x") + id;
@@ -180,30 +180,29 @@ void CMqttConnection::NewMessage(string message)
             if (!dev) {
                 string desc = string("Noolite Sensor 0x") + id;
                 dev = new CWBDevice(name, desc);
-                dev->AddControl("state", CWBControl::Switch, true);
+                dev->AddControl("State", CWBControl::Switch, true);
 
                 CreateDevice(dev);
             }
 
             if (cmd == "0")
-                dev->set("state", "0");
+                dev->set("State", "0");
             else if (cmd == "2")
-                dev->set("state", "1");
+                dev->set("State", "1");
             else if (cmd == "4")
-                dev->set("state", dev->getS("state") == "1" ? "0" : "1");
+                dev->set("State", dev->getS("State") == "1" ? "0" : "1");
             else
-                dev->set("state", "0");
+                dev->set("State", "0");
         }
         m_Log->Printf(3, "Msg from nooLite %s", value.c_str());
     } else if (type == "Oregon") {
-        // Oregon:type=1D20 id=51 ch=1 t=23.2 h=39. RSSI=-106 (-106)
-
         string_map values;
         SplitValues(value, values);
-        string sensorType = values["type"], id = values["id"], ch = values["ch"];
+        const string sensorType = values["type"], id = values["id"], ch = values["ch"];
         // Fields of data from sensor
         // Format is vector of pairs (key in input string, conforming CWBControl)
-        std::vector< std::pair<string, CWBControl::ControlType> > key_and_controls = {
+        // keys are taken from RFProtocolOregon (in librf)
+        const static std::vector< std::pair<string, CWBControl::ControlType> > key_and_controls = {
             {"t", CWBControl::Temperature},
             {"h", CWBControl::RelativeHumidity},
             {"battery", CWBControl::BatteryLow},
@@ -218,39 +217,28 @@ void CMqttConnection::NewMessage(string message)
             {"comfort", CWBControl::Comfort}
         };
         // Getting values of fields
-        // Format is vector of pairs (value in input string, conforming CWBControl)
-        std::vector< std::pair<string, CWBControl::ControlType> > value_and_controls;
+        // Format is vector of pairs (type of control conforming CWBControl, value in input string)
+        std::vector< std::pair<CWBControl::ControlType, string> > control_and_value;
         for (auto control_pair: key_and_controls) {
             auto value_iterator = values.find(control_pair.first);
             if (value_iterator != values.end())
-                value_and_controls.push_back({value_iterator->second, control_pair.second});
+                control_and_value.push_back({control_pair.second, value_iterator->second});
         }
     
-        //oregon_rx_1d20_68_1
-        string name = string("oregon_rx_") + sensorType + "_" + id + "_" + ch;
+        const string name = string("oregon_rx_") + sensorType + "_" + id + "_" + ch;
         CWBDevice *dev = m_Devices[name];
         if (!dev) {
-            string desc = string("Oregon sensor [") + sensorType + "] (" + id + "-" + ch + ")";
+            const string desc = string("Oregon sensor [") + sensorType + "] (" + id + "-" + ch + ")";
             dev = new CWBDevice(name, desc);
             
-            for (auto control_pair: value_and_controls) 
-                dev->AddControl("", control_pair.second, true);
+            for (auto control_pair: control_and_value) 
+                dev->AddControl("", control_pair.first, true);
             
-            /*
-            dev->AddControl("temperature", CWBControl::Temperature, true);
-
-            if (h.length() > 0)
-                dev->AddControl("humidity", CWBControl::RelativeHumidity, true);
-            */
             CreateDevice(dev);
         }
-        for (auto control_pair: value_and_controls) 
-            dev->set(control_pair.second, control_pair.first);
-        /*
-        dev->set("temperature", t);
-        if (h.length() > 0)
-            dev->set("humidity", h);
-        */
+        for (auto control_pair: control_and_value) 
+            dev->set(control_pair.first, control_pair.second);
+  
         m_Log->Printf(3, "Msg from Oregon %s", value.c_str());
     } else if (type == "X10") {
         CWBDevice *dev = m_Devices["X10"];
