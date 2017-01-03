@@ -1,3 +1,8 @@
+/* This is separate one-source-file program
+ * Converter of tests given in discrete format (as in ism-radio)
+ * to format that is given by lirc devices
+ * */
+
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
@@ -54,6 +59,15 @@ std::vector <int> bitsToIntervals(std::vector <int> bits, int discr_len, int mas
 
 int main(int argc, char *argv[])
 {
+    // Lirc format is
+    // (length | (1 << 24)) for pulse
+    // and just (length) for pause
+
+    // ism-radio format is bits, every bit corresponds to an interval of 500 usec
+    // and bit is 1 for high and 0 for low signal =)
+    // bits are united in bytes which are encoded by hex string 10bca2...
+    // (every to chars set one byte)
+
     const int mask_one = (1 << 24), discr_freq = 500;
 
     bool flagVerbose = false;

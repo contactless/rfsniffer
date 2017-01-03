@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# use ismTestConverter to convert tests
+# from ism-radio format to lirc format
+#
+
 converter=./ism-test-converter
 log=./ism-test-converter.log
 

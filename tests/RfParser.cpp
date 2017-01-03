@@ -1,4 +1,7 @@
-
+/* An automatical test of parsers of different protocols
+ * It pushes dumps (may be artificial) of messages to parser
+ * and compares result with given
+ * */
 #include <algorithm>
 
 #include "stdafx.h"

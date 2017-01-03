@@ -7,21 +7,21 @@
 
 
 #ifdef WIN32
-	#include "targetver.h"
-	#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
-// Windows Header Files:
-	#include <windows.h>
-	#include <winsock2.h>
-	#include <io.h>
-//	#define snprintf sprintf_s
+    #include "targetver.h"
+    #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
+    // Windows Header Files:
+    #include <windows.h>
+    #include <winsock2.h>
+    #include <io.h>
+    //	#define snprintf sprintf_s
 #else
-	#include <pthread.h>
-	#include <sys/types.h>
-	#include <sys/socket.h>
-	#include <netinet/in.h>
-	#include <arpa/inet.h>
-	#include <unistd.h>
-	#include <errno.h>
+    #include <pthread.h>
+    #include <sys/types.h>
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
+    #include <unistd.h>
+    #include <errno.h>
 #endif
 
 #include <stdarg.h>
