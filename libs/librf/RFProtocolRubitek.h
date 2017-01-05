@@ -1,13 +1,16 @@
 #pragma once
 #include "RFProtocol.h"
 class RFLIB_API CRFProtocolRubitek :
-	public CRFProtocol
+    public CRFProtocol
 {
-public:
-	CRFProtocolRubitek();
-	~CRFProtocolRubitek();
+  public:
+    CRFProtocolRubitek();
+    ~CRFProtocolRubitek();
 
-	virtual string getName() { return "Rubitek"; };
-	virtual string DecodePacket(const string&);
+    virtual string getName()
+    {
+        return "Rubitek";
+    };
+    virtual string DecodePacket(const string &);
 };
 

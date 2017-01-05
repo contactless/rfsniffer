@@ -218,26 +218,26 @@ void CMqttConnection::NewMessage(string message)
         // Getting values of fields
         // Format is vector of pairs (type of control conforming CWBControl, value in input string)
         std::vector< std::pair<CWBControl::ControlType, string> > control_and_value;
-        for (auto control_pair: key_and_controls) {
+        for (auto control_pair : key_and_controls) {
             auto value_iterator = values.find(control_pair.first);
             if (value_iterator != values.end())
                 control_and_value.push_back({control_pair.second, value_iterator->second});
         }
-    
+
         const string name = string("oregon_rx_") + sensorType + "_" + id + "_" + ch;
         CWBDevice *dev = m_Devices[name];
         if (!dev) {
             const string desc = string("Oregon sensor [") + sensorType + "] (" + id + "-" + ch + ")";
             dev = new CWBDevice(name, desc);
-            
-            for (auto control_pair: control_and_value) 
+
+            for (auto control_pair : control_and_value)
                 dev->addControl("", control_pair.first, true);
-            
+
             CreateDevice(dev);
         }
-        for (auto control_pair: control_and_value) 
+        for (auto control_pair : control_and_value)
             dev->set(control_pair.first, control_pair.second);
-  
+
         m_Log->Printf(3, "Msg from Oregon %s", value.c_str());
     } else if (type == "X10") {
         CWBDevice *dev = m_Devices["X10"];
@@ -267,11 +267,13 @@ void CMqttConnection::NewMessage(string message)
     SendUpdate();
 }
 
-void CMqttConnection::publishString(const string &path, const string &value) {
+void CMqttConnection::publishString(const string &path, const string &value)
+{
     publish(NULL, path.c_str(), value.size(), value.c_str(), 0, true);
 }
 
-void CMqttConnection::publishStringMap(const CWBDevice::StringMap &values) {
+void CMqttConnection::publishStringMap(const CWBDevice::StringMap &values)
+{
     for (auto i : values) {
         publishString(i.first, i.second);
         m_Log->Printf(5, "publish %s=%s", i.first.c_str(), i.second.c_str());
@@ -289,7 +291,7 @@ void CMqttConnection::SendUpdate()
     }
 
     // do these changes in mqtt
-    
+
     publishStringMap(valuesForUpdate);
     /*for (auto i : valuesForUpdate) {
         publishString(i->first, i->second);

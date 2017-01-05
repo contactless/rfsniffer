@@ -5,9 +5,9 @@
 class RFM69OOK;
 
 class CMqttConnection
-:public mosqpp::mosquittopp
+    : public mosqpp::mosquittopp
 {
-    typedef CWBDevice::CWBDeviceMap CWBDeviceMap; 
+    typedef CWBDevice::CWBDeviceMap CWBDeviceMap;
     string m_Server;
     CLog *m_Log;
     bool m_isConnected;
@@ -15,12 +15,12 @@ class CMqttConnection
     RFM69OOK *m_RFM;
     CRFProtocolNooLite m_nooLite;
 
-public:
-    CMqttConnection(string Server, CLog* log, RFM69OOK *rfm);   
-    ~CMqttConnection(); 
+  public:
+    CMqttConnection(string Server, CLog *log, RFM69OOK *rfm);
+    ~CMqttConnection();
     void NewMessage(string message);
 
-private:
+  private:
     virtual void on_connect(int rc);
     virtual void on_disconnect(int rc);
     virtual void on_publish(int mid);
@@ -34,5 +34,5 @@ private:
     void publishStringMap(const CWBDevice::StringMap &values);
 
     void SendUpdate();
-    void CreateDevice(CWBDevice* dev);
+    void CreateDevice(CWBDevice *dev);
 };

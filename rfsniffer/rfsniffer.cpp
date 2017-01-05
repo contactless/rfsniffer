@@ -6,24 +6,24 @@ RFSniffer::RFSnifferArgs::RFSnifferArgs():
     bDebug(false),
     bDumpAllRegs(false),
     bLircPedantic(false),
-        
+
     spiDevice("/dev/spidev32766.0"),
     spiSpeed(500000),
     gpioInt(38),
-        
+
     fixedThresh(0),
     rssi(0),
-        
+
     lircDevice("/dev/lirc0"),
-        
+
     mqttHost("localhost"),
-        
+
     scannerParams(""),
     writePackets(0),
     savePath("."),
     inverted(false)
 {
-    
+
 }
 
 bool RFSniffer::waitForData(int fd, unsigned long maxusec)
@@ -33,7 +33,7 @@ bool RFSniffer::waitForData(int fd, unsigned long maxusec)
     struct timeval tv;
     tv.tv_sec = maxusec / 1000000;
     tv.tv_usec = maxusec % 1000000;
-    
+
     while (1) {
         FD_ZERO(&fds);
         FD_SET(fd, &fds);
@@ -76,15 +76,16 @@ std::string RFSniffer::composeString(const char *format, ...)
 }
 
 // usual call is showCandidates("/dev/", "spidev") - shows all files in path and beginning from filePrefix
-void RFSniffer::showCandidates(const string &path, const string &filePrefix) {
+void RFSniffer::showCandidates(const string &path, const string &filePrefix)
+{
     const size_t len = filePrefix.length();
     DIR *dir;
-    struct dirent *ent;     
+    struct dirent *ent;
     if ((dir = opendir(path.c_str())) != NULL) {
         /* print all the files and directories within directory */
         while ((ent = readdir(dir)) != NULL) {
             string name = ent->d_name;
-            if (name.length() >= len && name.substr(0, len) == filePrefix)    
+            if (name.length() >= len && name.substr(0, len) == filePrefix)
                 m_Log->Printf(0, "\tCandidate is: /dev/%s", ent->d_name);
         }
         closedir(dir);
@@ -93,16 +94,17 @@ void RFSniffer::showCandidates(const string &path, const string &filePrefix) {
     }
 }
 
-void RFSniffer::readEnvironmentVariables() {
+void RFSniffer::readEnvironmentVariables()
+{
     char *irq = getenv("WB_GPIO_RFM_IRQ");
     char *spiMajor = getenv("WB_RFM_SPI_MAJOR");
     char *spiMinor = getenv("WB_RFM_SPI_MINOR");
-   
+
     if (spiMajor || spiMinor) {
         char buffer[256];
         // plus 1 because of very strange setting of WB_RFM_SPI_MAJOR
         // it's somehow connected with python driver
-        int spiMajorVal = spiMajor ? atoi(spiMajor) + 1 : 32766; 
+        int spiMajorVal = spiMajor ? atoi(spiMajor) + 1 : 32766;
         int spiMinorVal = spiMinor ? atoi(spiMinor) : 0;
         args.spiDevice = composeString("/dev/spidev%d.%d", spiMajorVal, spiMinorVal);
     }
@@ -111,14 +113,15 @@ void RFSniffer::readEnvironmentVariables() {
         args.gpioInt = atoi(irq);
 }
 
-void RFSniffer::readCommandLineArguments(int argc, char** argv) {
+void RFSniffer::readCommandLineArguments(int argc, char **argv)
+{
     // I don't know why, but signed is essential (though it should by by default??)
     for (signed char c = ' '; c != -1; c = getopt(argc, argv, "Ds:m:l:LS:f:r:tw:c:i")) {
         switch (c) {
             case ' ':
                 // just nothing, for first iteration to avoid repetitive getopt
                 break;
-                
+
             case 'D':
                 args.bDebug = true;
                 break;
@@ -181,10 +184,11 @@ void RFSniffer::readCommandLineArguments(int argc, char** argv) {
                 printf("-w <seconds> - write to file all packets for <secods> second and exit\n");
 
                 printf("-S -<low level>..-<high level>/<seconds for step> - scan for noise. \n");
-                printf("-r <RSSI> - reset RSSI Threshold after each packet. 0 - Disabled. Default %d\n", (int)args.rssi);
+                printf("-r <RSSI> - reset RSSI Threshold after each packet. 0 - Disabled. Default %d\n",
+                       (int)args.rssi);
                 printf("-f <fixed Threshold> - Use OokFixedThresh with fixed level. 0 - Disabled. Default %d\n",
                        args.fixedThresh);
-                     
+
                 printf("-L - disable pedantic check of lirc character device (may use pipe instead)\n");
                 printf("-c configfile - specify config file\n");
                 //          printf("-f <sampling freq> - set custom sampling freq. Default %d\n", samplingFreq);
@@ -196,7 +200,8 @@ void RFSniffer::readCommandLineArguments(int argc, char** argv) {
     }
 }
 
-void RFSniffer::tryReadConfigFile() {
+void RFSniffer::tryReadConfigFile()
+{
     if (args.configName.empty())
         return;
     try {
@@ -219,7 +224,7 @@ void RFSniffer::tryReadConfigFile() {
             args.writePackets = debug.getInt("write_packets", false, args.writePackets);
             CLog::Init(&debug);
         }
-    
+
     } catch (CHaException ex) {
         fprintf(stderr, "Failed load config. Error: %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
         exit(-1);
@@ -228,7 +233,8 @@ void RFSniffer::tryReadConfigFile() {
 
 
 
-void RFSniffer::initSPI() {
+void RFSniffer::initSPI()
+{
     spi_config_t spi_config;
     spi_config.mode = 0;
     spi_config.speed = args.spiSpeed;
@@ -244,10 +250,11 @@ void RFSniffer::initSPI() {
     }
 }
 
-void RFSniffer::initRFM() {
+void RFSniffer::initRFM()
+{
     rfm.init(&mySPI, args.gpioInt);
     rfm.initialize();
-    
+
     if (args.bDumpAllRegs) {
         char *Buffer = (char *)data;
         char *BufferPtr = Buffer;
@@ -272,7 +279,8 @@ void RFSniffer::initRFM() {
     }
 }
 
-void RFSniffer::openLirc() throw(CHaException) {
+void RFSniffer::openLirc() throw(CHaException)
+{
     lircFD = open(args.lircDevice.c_str(), O_RDONLY);
     if (lircFD == -1) {
         m_Log->Printf(0, "Error opening device %s\n", args.lircDevice.c_str());
@@ -289,7 +297,8 @@ void RFSniffer::openLirc() throw(CHaException) {
         }
         if (!S_ISCHR(s.st_mode)) {
             m_Log->Printf(0, "Lirc device is not character device! st_mode = %d\n", (int)s.st_mode);
-            throw CHaException(CHaException::ErrBadParam, "%s is not a character device\n", args.lircDevice.c_str());
+            throw CHaException(CHaException::ErrBadParam, "%s is not a character device\n",
+                               args.lircDevice.c_str());
         }
 
         uint32_t mode = 2;
@@ -301,12 +310,13 @@ void RFSniffer::openLirc() throw(CHaException) {
     }
 }
 
-void RFSniffer::tryJustScan() throw(CHaException) {
+void RFSniffer::tryJustScan() throw(CHaException)
+{
     string scannerParams = args.scannerParams;
-    
+
     if (scannerParams.length() == 0)
         return;
-     
+
     m_Log->Printf(0, "Scanner params are: \"%s\"\n", scannerParams.c_str());
     int minLevel = 30;
     int maxLevel = 60;
@@ -347,7 +357,7 @@ void RFSniffer::tryJustScan() throw(CHaException) {
             if (result == -1 && errno == EAGAIN)
                 result = 0;
             if (result == 0 && args.bLircPedantic) {
-                m_Log->Printf(0, "read() failed [during opening lirc device part]\n");    
+                m_Log->Printf(0, "read() failed [during opening lirc device part]\n");
                 break;
             }
             for (size_t i = 0; i < result; i++) {
@@ -363,7 +373,8 @@ void RFSniffer::tryJustScan() throw(CHaException) {
     exit(0);
 }
 
-void RFSniffer::tryFixThresh() throw(CHaException) {
+void RFSniffer::tryFixThresh() throw(CHaException)
+{
     if (args.fixedThresh) {
         rfm.writeReg(REG_OOKPEAK, RF_OOKPEAK_THRESHTYPE_FIXED);
         rfm.writeReg(REG_OOKFIX, args.fixedThresh);
@@ -371,68 +382,69 @@ void RFSniffer::tryFixThresh() throw(CHaException) {
 }
 
 
-void RFSniffer::receiveForever() throw(CHaException) {
+void RFSniffer::receiveForever() throw(CHaException)
+{
     m_Log->Printf(3, "RF Reciever begins");
-    
+
     rfm.receiveBegin();
     CMqttConnection conn(args.mqttHost, m_Log, &rfm);
     CRFParser m_parser(m_Log, (args.bDebug || args.writePackets > 0) ? args.savePath : "");
     m_parser.AddProtocol("All");
-    
+
     time_t lastReport = 0, packetStartTime = time(NULL), startTime = time(NULL);
     int lastRSSI = -1000, minGoodRSSI = 0;
 
     bool readSmthNew = false;
-    
+
     while (true) {
         // notice that writePackets is 0 if corresponding command line argument is not set
         if (args.writePackets > 0 && time(NULL) - startTime > args.writePackets)
             break;
-        
+
         // try recognize packets
         while (readSmthNew && readDataCount() > 0) {
             size_t parsedLength;
             string parsedResult = m_parser.ParseRepetitive(dataBegin, readDataCount(), &parsedLength);
             if (parsedResult.length() > 0) {
-                m_Log->Printf(3, "RF Recieved: %s (parsed from %u lirc_t). RSSI=%d (%d)", 
-                    parsedResult.c_str(), parsedLength, lastRSSI, minGoodRSSI);
+                m_Log->Printf(3, "RF Recieved: %s (parsed from %u lirc_t). RSSI=%d (%d)",
+                              parsedResult.c_str(), parsedLength, lastRSSI, minGoodRSSI);
                 conn.NewMessage(parsedResult);
                 if (minGoodRSSI > lastRSSI)
                     minGoodRSSI = lastRSSI;
-                    
+
                 // copy [dataBegin + parsedLength, dataPtr) to [dataBegin, dataPtr - parsedLength)
                 for (lirc_t *p = data; p < dataPtr - parsedLength; p++)
                     *p = *(p + parsedLength);
                 // and shift pointer
-                dataPtr -= parsedLength;   
-            }
-            else {
+                dataPtr -= parsedLength;
+            } else {
                 if (readDataCount() > maxMessageLength) {
                     dataPtr = dataBegin; // clean buffer
-                    m_Log->Printf(3, "RF Recieved too long message or just a lot of trash RSSI=%d (%d)", lastRSSI, minGoodRSSI);
+                    m_Log->Printf(3, "RF Recieved too long message or just a lot of trash RSSI=%d (%d)", lastRSSI,
+                                  minGoodRSSI);
                 }
                 break;
             }
-            
+
         }
         readSmthNew = false;
-        
+
         // try get more data and sleep if fail
         if (waitForData(lircFD, 300000)) {
-            int resultBytes = read(lircFD, (void*)dataPtr, remainingDataCount() * sizeof(lirc_t));
+            int resultBytes = read(lircFD, (void *)dataPtr, remainingDataCount() * sizeof(lirc_t));
             // I hope this never happen
             while (resultBytes % sizeof(lirc_t) != 0) {
                 m_Log->Printf(3, "Bad amount (amount % 4 != 0) of bytes read from lirc");
                 usleep(1000000);
                 int remainBytes = 4 - resultBytes % sizeof(lirc_t);
-                int readTailBytes = read(lircFD, (void*)((char*)dataPtr + resultBytes), remainBytes);
+                int readTailBytes = read(lircFD, (void *)((char *)dataPtr + resultBytes), remainBytes);
                 if (readTailBytes != -1)
                     resultBytes += readTailBytes;
             }
-            
+
             int result = resultBytes / sizeof(lirc_t);
             dataPtr += result;
-            
+
             if (result != 0) {
                 readSmthNew = true;
                 packetStartTime = time(NULL);
@@ -441,95 +453,97 @@ void RFSniffer::receiveForever() throw(CHaException) {
                     lastReport = time(NULL);
                 }
             }
-            
+
             if (result == 0 && args.bLircPedantic) {
-                m_Log->Printf(0, "read() failed [during endless cycle]\n");  
+                m_Log->Printf(0, "read() failed [during endless cycle]\n");
                 break;
             }
             lastRSSI = rfm.readRSSI();
         }
-        
+
 
 
         if (args.rssi < 0)
             rfm.setRSSIThreshold(args.rssi);
-        
-/*
-        if (readCount >= 32 && 
-                (!waitForData(fd, 300000) 
-                 || remainedCount < 10 
-                 || time(NULL) - packetStartTime > 2)) {
-            if (writePackets > 0) {
-                m_parser.SaveFile(data, data_ptr - data);
-                m_Log->Printf(3, "Saved file RSSI=%d (%d)", lastRSSI, minGoodRSSI);
-            }
 
-            // What is it? Why does he make it .reseiveEnd() and .receiveBegin?
-            // TODO. Erase it and test.
-            // Upd: It works without it, but it's safer to keep it as is.
-            // It's in not connected with kernel error:
-            // [  384.785198] lirc_pwm lirc-rfm69: wtf? value=0, last=351115718, now=384643156, delta=33527437
-            rfm.receiveEnd();
-            // How many lirc_t were read
-            size_t parsedLength;
-            string parsedResult = m_parser.ParseRepetitive(data, data_ptr - data, &parsedLength);
-            rfm.receiveBegin();
-            if (parsedResult.length()) {
-                m_Log->Printf(3, "RF Recieved: %s (parsed from %u lirc_t). RSSI=%d (%d)", 
-                    parsedResult.c_str(), parsedLength, lastRSSI, minGoodRSSI);
-                conn.NewMessage(parsedResult);
-                if (minGoodRSSI > lastRSSI)
-                    minGoodRSSI = lastRSSI;
-            } else {
-                m_Log->Printf(4, "Recieved %ld signals. Not decoded");
-                if (writePackets > 0) {
-                    vector <char> buff_data(12000);
-                    char *buff = buff_data.data();
-                    char *buff_ptr = buff;
-                    for (long unsigned int *c = data; c < data_ptr && buff_ptr + 20 < buff + buff_data.size(); c++)
-                        buff_ptr += sprintf(buff_ptr, "%u ", (unsigned int)*c);
-                    *buff_ptr = 0;
-                    m_Log->Printf(4, "(\n%s\n)\n", data_ptr - data, buff);
-                } 
-            }
-            
-            
-            if (parsedLength != 0) {
-                
-            }
-            else
-                data_ptr = data;
-                
-            packetStartTime = time(NULL);
+        /*
+                if (readCount >= 32 &&
+                        (!waitForData(fd, 300000)
+                         || remainedCount < 10
+                         || time(NULL) - packetStartTime > 2)) {
+                    if (writePackets > 0) {
+                        m_parser.SaveFile(data, data_ptr - data);
+                        m_Log->Printf(3, "Saved file RSSI=%d (%d)", lastRSSI, minGoodRSSI);
+                    }
 
-            if (rssi < 0)
-                rfm.setRSSIThreshold(rssi);
-        }
+                    // What is it? Why does he make it .reseiveEnd() and .receiveBegin?
+                    // TODO. Erase it and test.
+                    // Upd: It works without it, but it's safer to keep it as is.
+                    // It's in not connected with kernel error:
+                    // [  384.785198] lirc_pwm lirc-rfm69: wtf? value=0, last=351115718, now=384643156, delta=33527437
+                    rfm.receiveEnd();
+                    // How many lirc_t were read
+                    size_t parsedLength;
+                    string parsedResult = m_parser.ParseRepetitive(data, data_ptr - data, &parsedLength);
+                    rfm.receiveBegin();
+                    if (parsedResult.length()) {
+                        m_Log->Printf(3, "RF Recieved: %s (parsed from %u lirc_t). RSSI=%d (%d)",
+                            parsedResult.c_str(), parsedLength, lastRSSI, minGoodRSSI);
+                        conn.NewMessage(parsedResult);
+                        if (minGoodRSSI > lastRSSI)
+                            minGoodRSSI = lastRSSI;
+                    } else {
+                        m_Log->Printf(4, "Recieved %ld signals. Not decoded");
+                        if (writePackets > 0) {
+                            vector <char> buff_data(12000);
+                            char *buff = buff_data.data();
+                            char *buff_ptr = buff;
+                            for (long unsigned int *c = data; c < data_ptr && buff_ptr + 20 < buff + buff_data.size(); c++)
+                                buff_ptr += sprintf(buff_ptr, "%u ", (unsigned int)*c);
+                            *buff_ptr = 0;
+                            m_Log->Printf(4, "(\n%s\n)\n", data_ptr - data, buff);
+                        }
+                    }
 
-   */
+
+                    if (parsedLength != 0) {
+
+                    }
+                    else
+                        data_ptr = data;
+
+                    packetStartTime = time(NULL);
+
+                    if (rssi < 0)
+                        rfm.setRSSIThreshold(rssi);
+                }
+
+           */
     }
 }
 
-void RFSniffer::closeConnections() {
-    rfm.receiveEnd();    
+void RFSniffer::closeConnections()
+{
+    rfm.receiveEnd();
     if (lircFD > 0)
         close(lircFD);
 
 }
 
-void RFSniffer::run(int argc, char** argv) {
+void RFSniffer::run(int argc, char **argv)
+{
     readEnvironmentVariables();
     readCommandLineArguments(argc, argv);
     tryReadConfigFile();
-    
-    
+
+
     // important to initialize m_Log after reading config file
     m_Log = CLog::Default();
     m_Log->Printf(0, "Using SPI device %s, lirc device %s, mqtt on %s", args.spiDevice.c_str(),
                   args.lircDevice.c_str(), args.mqttHost.c_str());
     if (args.configName.length() == 0)
         m_Log->SetLogLevel(3);
-        
+
     try {
         initSPI();
         initRFM();
@@ -540,7 +554,7 @@ void RFSniffer::run(int argc, char** argv) {
     } catch (CHaException ex) {
         m_Log->Printf(0, "Exception %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
     }
-    
+
     closeConnections();
 }
 
@@ -550,7 +564,7 @@ RFSniffer::RFSniffer():
     dataEnd(data + dataSize),
     dataPtr(data)
 {
-    
+
 }
 
 RFSniffer rfsniffer;

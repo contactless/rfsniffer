@@ -1,14 +1,17 @@
 #pragma once
 #include "RFProtocol.h"
 class RFLIB_API CRFProtocolLivolo :
-	public CRFProtocol
+    public CRFProtocol
 {
-public:
-	CRFProtocolLivolo();
-	virtual ~CRFProtocolLivolo();
+  public:
+    CRFProtocolLivolo();
+    virtual ~CRFProtocolLivolo();
 
-	virtual string getName() { return "Livolo"; };
-	virtual string DecodePacket(const string&);
+    virtual string getName()
+    {
+        return "Livolo";
+    };
+    virtual string DecodePacket(const string &);
 
 };
 

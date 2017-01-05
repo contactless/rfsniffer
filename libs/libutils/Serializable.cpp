@@ -5,5 +5,5 @@
 
 void CSerializable::Dump(CLog *log)
 {
-	log->Printf(1, "CSerializable::Dump");
+    log->Printf(1, "CSerializable::Dump");
 }

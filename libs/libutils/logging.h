@@ -12,21 +12,20 @@
 #include "locks.h"
 
 class CLog;
-typedef std::map<std::string, CLog*> LIBUTILS_API CLogsMap;
+typedef std::map<std::string, CLog *> LIBUTILS_API CLogsMap;
 
 #ifdef USE_CONFIG
-	class CConfigItem;
+    class CConfigItem;
 #endif
 
-struct LogParam
-{
-	std::string FileName;
-	bool LogTime;
-	int ConsoleLevel;
-	int FileLevel;
-	LogParam();
+struct LogParam {
+    std::string FileName;
+    bool LogTime;
+    int ConsoleLevel;
+    int FileLevel;
+    LogParam();
 #ifdef USE_CONFIG
-	LogParam(CConfigItem node);
+    LogParam(CConfigItem node);
 #endif
 };
 
@@ -35,44 +34,65 @@ typedef std::map<std::string, LogParam> LIBUTILS_API CLogsParamMap;
 
 class LIBUTILS_API CLog
 {
-	CLock lock;
-	std::string m_FileName;
-	FILE *m_File;
-	bool m_bTimeLog;
-	int m_iConsoleLogLevel, m_iLogLevel;
-	static CLogsMap m_Logs;
-	static std::string m_BasePath;
-	static bool m_DisableConsole;
+    CLock lock;
+    std::string m_FileName;
+    FILE *m_File;
+    bool m_bTimeLog;
+    int m_iConsoleLogLevel, m_iLogLevel;
+    static CLogsMap m_Logs;
+    static std::string m_BasePath;
+    static bool m_DisableConsole;
 #ifdef USE_CONFIG
-	static CLogsParamMap m_LogsCfg;
+    static CLogsParamMap m_LogsCfg;
 #endif
 
-public:
-	CLog();
-	~CLog();	
-	void Open(const char *FileName);
-	void Open(LogParam *Config);
+  public:
+    CLog();
+    ~CLog();
+    void Open(const char *FileName);
+    void Open(LogParam *Config);
 
 #ifdef USE_CONFIG
-	static void Init(CConfigItem *Config);
+    static void Init(CConfigItem *Config);
 #endif
 
-	static CLog* GetLog(std::string Name);
-	static CLog* Default();
-	static void CloseAll();
-	static void DisableConsole(bool bDisable){m_DisableConsole = bDisable;};
-	void Printf(int level, const char *Format, ...);
-	void VPrintf(int level, const char *Format, va_list argptr);
-	void PrintBufferEx(int level, char* Preffix, const char *Buffer, int BufferSize){PrintBufferEx(level, Preffix, (unsigned char*)Buffer, BufferSize);};
-	void PrintBufferEx(int level, char* Preffix, const unsigned char *Buffer, int BufferSize);
-	void PrintBuffer(int level, const char *Buffer, int BufferSize){PrintBuffer(level, (unsigned char*)Buffer, BufferSize);};
-	void PrintBuffer(int level, const unsigned char *Buffer, int BufferSize){PrintBufferEx(level, NULL, Buffer, BufferSize);};
-	
-	void SetLogTime(bool bTimeLog = true){m_bTimeLog = bTimeLog;};
-	void SetLogLevel(int level){m_iLogLevel = level;};
-	void SetConsoleLogLevel(int level){m_iConsoleLogLevel = level;};
+    static CLog *GetLog(std::string Name);
+    static CLog *Default();
+    static void CloseAll();
+    static void DisableConsole(bool bDisable)
+    {
+        m_DisableConsole = bDisable;
+    };
+    void Printf(int level, const char *Format, ...);
+    void VPrintf(int level, const char *Format, va_list argptr);
+    void PrintBufferEx(int level, char *Preffix, const char *Buffer, int BufferSize)
+    {
+        PrintBufferEx(level, Preffix, (unsigned char *)Buffer, BufferSize);
+    };
+    void PrintBufferEx(int level, char *Preffix, const unsigned char *Buffer, int BufferSize);
+    void PrintBuffer(int level, const char *Buffer, int BufferSize)
+    {
+        PrintBuffer(level, (unsigned char *)Buffer, BufferSize);
+    };
+    void PrintBuffer(int level, const unsigned char *Buffer, int BufferSize)
+    {
+        PrintBufferEx(level, NULL, Buffer, BufferSize);
+    };
 
-	bool isOpen();
+    void SetLogTime(bool bTimeLog = true)
+    {
+        m_bTimeLog = bTimeLog;
+    };
+    void SetLogLevel(int level)
+    {
+        m_iLogLevel = level;
+    };
+    void SetConsoleLogLevel(int level)
+    {
+        m_iConsoleLogLevel = level;
+    };
+
+    bool isOpen();
 };
 
 #endif

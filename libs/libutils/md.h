@@ -1,11 +1,11 @@
 #ifndef __mymd_md_h__
 #define __mymd_md_h__
 
-const int FILEREAD_BUFSIZE = 16*1024*1024;
+const int FILEREAD_BUFSIZE = 16 * 1024 * 1024;
 #ifdef _MSC_VER
-	#pragma once
-	#include <vector>
-	using std::vector;
+    #pragma once
+    #include <vector>
+    using std::vector;
 #endif
 
 enum {
@@ -20,18 +20,18 @@ typedef unsigned long ui32;
 typedef unsigned short ui16;
 
 #ifdef WIN32
-	//typedef __int64 i64;
-	#define i386
-	#define LITTLE_ENDIAN   1234    /* LSB first: i386, vax */
-	#define BIG_ENDIAN      4321    /* MSB first: 68000, ibm, net */
-	#define PDP_ENDIAN      3412    /* LSB first in word, MSW first in long */
-	#define BYTE_ORDER  LITTLE_ENDIAN
-	//#ifndef WIN32
-	//#define WIN32 _WIN32
-	//#endif
+    //typedef __int64 i64;
+    #define i386
+    #define LITTLE_ENDIAN   1234    /* LSB first: i386, vax */
+    #define BIG_ENDIAN      4321    /* MSB first: 68000, ibm, net */
+    #define PDP_ENDIAN      3412    /* LSB first in word, MSW first in long */
+    #define BYTE_ORDER  LITTLE_ENDIAN
+    //#ifndef WIN32
+    //#define WIN32 _WIN32
+    //#endif
 #endif
 
-const int aaa=BYTE_ORDER;
+const int aaa = BYTE_ORDER;
 
 #define SHA_CBLOCK      64
 #define SHA_LBLOCK      16
@@ -41,10 +41,10 @@ const int aaa=BYTE_ORDER;
 #define SHA_DIGEST_LENGTH 20
 
 struct SHA_CTX {
-        ui32 h0, h1, h2, h3, h4;
-        ui32 Nl, Nh;
-        ui32 data[SHA_LBLOCK];
-        int num;
+    ui32 h0, h1, h2, h3, h4;
+    ui32 Nl, Nh;
+    ui32 data[SHA_LBLOCK];
+    int num;
 };
 #define SHA1_CTX        SHA_CTX
 

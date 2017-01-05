@@ -7,18 +7,18 @@
 
 
 #ifdef WIN32
-#	define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
-#	include "targetver.h"
-// Windows Header Files:
-#	include <windows.h>
-#	include <winsock2.h>
+    #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
+    #include "targetver.h"
+    // Windows Header Files:
+    #include <windows.h>
+    #include <winsock2.h>
 #else
-#	include <pthread.h>
-#	include <sys/types.h>
-#	include <sys/socket.h>
-#	include <netinet/in.h>
-#	include <arpa/inet.h>
-#	include <unistd.h>
+    #include <pthread.h>
+    #include <sys/types.h>
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
+    #include <unistd.h>
 #endif
 
 #include <stdarg.h>

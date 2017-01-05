@@ -53,7 +53,7 @@ void Rfm69Test()
 
 
         //writeReg(REG_OPMODE, (self.readReg(REG_OPMODE) & 0xE3) | RF_OPMODE_TRANSMITTER)
-        //	self.spi.write_then_read([addr | 0x80, value], 0)
+        //  self.spi.write_then_read([addr | 0x80, value], 0)
 
         sprintf((char*)tx_buffer,"hello world");
         printf("sending %s, to spidev2.0 in full duplex \n ",(char*)tx_buffer);

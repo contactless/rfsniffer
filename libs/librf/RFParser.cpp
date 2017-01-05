@@ -68,7 +68,7 @@ void CRFParser::AddProtocol(CRFProtocol *p)
 {
     p->setLog(m_Log);
     m_Protocols.push_back(p);
-    //	setMinMax();
+    //  setMinMax();
 }
 
 // 1,2,3,1,100,1,1,2,3
@@ -77,12 +77,13 @@ void CRFParser::AddProtocol(CRFProtocol *p)
 // If data was recognised then returned string have non-zero length,
 // otherwise returned string is empty.
 // In every case read length (or just skipped) will be written to "readLength"
-string CRFParser::ParseRepetitive(base_type *data, size_t length, size_t *readLength) {
+string CRFParser::ParseRepetitive(base_type *data, size_t length, size_t *readLength)
+{
     base_type *data2 = data;
     size_t length2 = length;
     string ret = Parse(&data2, &length2);
     *readLength = data2 - data;
-    if (*readLength > length) {        
+    if (*readLength > length) {
         m_Log->Printf(4, "Error! (*readLength > length)");
         *readLength = length;
     }

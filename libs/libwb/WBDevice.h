@@ -5,24 +5,23 @@
 #include <string>
 
 #ifdef USE_CONFIG
-	#include "../libutils/ConfigItem.h"
+    #include "../libutils/ConfigItem.h"
 #endif
 
 class LIBWB_API CWBControl
 {
     // Using std::string without namespace
     typedef std::string string;
-    
+
   public:
-    
-    enum ControlType
-    {
-        Error=0,
+
+    enum ControlType {
+        Error = 0,
         Switch,  //0 or 1
-        Alarm, // 
+        Alarm, //
         PushButton, // 1
         Range, // 0..255 [TODO] - max value
-        Rgb, 
+        Rgb,
         Text,
         Generic,
         Temperature, // temperature °C float
@@ -46,28 +45,28 @@ class LIBWB_API CWBControl
         Comfort, // Level of comfort - string
         ControlTypeCount // amount of above-mentioned types, terminal item in enum
     };
-    
+
     struct ControlNames {
-       ControlType type;
-       string metaType;
-       string defaultName;  
+        ControlType type;
+        string metaType;
+        string defaultName;
     };
-    
+
   protected:
-  
+
     static std::vector<string> getControlTypeToMetaType(
-            const std::vector<ControlNames> &controlNamesList);
-            
+        const std::vector<ControlNames> &controlNamesList);
+
     static std::vector<string> getControlTypeToDefaultName(
         const std::vector<ControlNames> &controlNamesList);
-    
+
   public:
-    
+
     const static std::vector<ControlNames> controlNamesList;
     // failed to do them const =(
     static std::vector<string> controlTypeToMetaType;
     static std::vector<string> controlTypeToDefaultName;
-    
+
     static ControlType getControlTypeByMetaType(const string &metaType);
 
     // "type" - type of control
@@ -82,17 +81,17 @@ class LIBWB_API CWBControl
     // "value" - value on control
     string value;
     string source, sourceType;
-    
+
     const string &metaType() const;
-    
+
     const string &stringValue() const;
     float floatValue() const;
-    
-    CWBControl &setSource(const string &source_); 
-    CWBControl &setSourceType(const string &sourceType_); 
+
+    CWBControl &setSource(const string &source_);
+    CWBControl &setSourceType(const string &sourceType_);
 
     CWBControl(const string &name, ControlType type, bool readonly = true);
-    CWBControl(); 
+    CWBControl();
 };
 
 
@@ -100,26 +99,32 @@ class LIBWB_API CWBDevice
 {
     // Using std::vector, std::string and std::unordered_map without namespace
     typedef std::string string;
-public:
+  public:
     typedef std::unordered_map<string, CWBControl> CControlMap;
-    typedef std::unordered_map<string, CWBDevice*> CWBDeviceMap;
+    typedef std::unordered_map<string, CWBDevice *> CWBDeviceMap;
     typedef std::unordered_map<string, string> StringMap;
-private:
+  private:
     string deviceName;
     string deviceDescription;
     CControlMap deviceControls;
-public:
+  public:
     // deviceName is the name in mqtt tree
     // deviceDescription will be written into .../meta/name
     CWBDevice();
     CWBDevice(const string &deviceName, const string &deviceDescription);
     ~CWBDevice();
 
-    const string &getName() {return deviceName;};
-    const string &sgetDescription() {return deviceDescription;};
+    const string &getName()
+    {
+        return deviceName;
+    };
+    const string &sgetDescription()
+    {
+        return deviceDescription;
+    };
 #ifdef USE_CONFIG
     void init(CConfigItem config);
-#endif  
+#endif
     void addControl(const CWBControl &device);
     void addControl(const string &name, CWBControl::ControlType type, bool readonly = true);
     bool sourceExists(const string &source);
@@ -132,7 +137,10 @@ public:
     const string &getString(const string &name);
     void createDeviceValues(StringMap &);
     void updateValues(StringMap &);
-    const CControlMap *getControls(){return &deviceControls;};
+    const CControlMap *getControls()
+    {
+        return &deviceControls;
+    };
     string getTopic(const string &control);
 
 };

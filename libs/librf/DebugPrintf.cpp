@@ -4,7 +4,7 @@
 
 
 bool DPrintf::isGloballyEnabled = false;
-FILE* DPrintf::defaultOutput = stderr;
+FILE *DPrintf::defaultOutput = stderr;
 
 
 
@@ -18,7 +18,8 @@ void DPrintf::globallyDisable()
     isGloballyEnabled = false;
 }
 
-bool DPrintf::isActive() {
+bool DPrintf::isActive()
+{
     return isEnabled && isGloballyEnabled && (defaultOutput != NULL);
 }
 
@@ -33,7 +34,8 @@ DPrintf &DPrintf::setOutputStream(FILE *outFile_)
     return *this;
 }
 
-void DPrintf::setDefaultOutputStream(FILE *defaultOutFile) {
+void DPrintf::setDefaultOutputStream(FILE *defaultOutFile)
+{
     defaultOutput = defaultOutFile;
 }
 

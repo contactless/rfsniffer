@@ -326,7 +326,7 @@ CRFProtocolOregon::~CRFProtocolOregon()
 string CRFProtocolOregon::DecodePacket(const string &raw_)
 {
     DPrintf dprintf = DPrintf().enabled(false);
-    
+
     string raw = raw_;
 
     if (raw.length() < 10)
@@ -408,7 +408,8 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
     string hexPacket = "";
 
     if (packet.length() < 48) {
-        m_Log->Printf(3, "Oregon: (only warning: it may be other protocol) Too short packet %s", packet.c_str());
+        m_Log->Printf(3, "Oregon: (only warning: it may be other protocol) Too short packet %s",
+                      packet.c_str());
         return "";
     }
 
@@ -463,37 +464,37 @@ string CRFProtocolOregon::DecodeData(const string &packet) // Преобразование бит
     // TODO: check if 1d30 is correct?
     if (type == "1D20" || type == "1D30" || type == "F824" || type == "F8B4") {
 
-    	//   ID   C RC F TTT - H  ? CRC
-    	// a 1d20 1 51 8 742 0 64 4 a3 0a
-    	// a 1d20 1 51 0 222 0 83 8 03 fb
+        //   ID   C RC F TTT - H  ? CRC
+        // a 1d20 1 51 8 742 0 64 4 a3 0a
+        // a 1d20 1 51 0 222 0 83 8 03 fb
 
-    	int channel = packet[5] - '0';
-    	int id = ((packet[7] - '0') << 4) + (packet[6] - '0');
-    	float temp = (float)0.1 * atoi(reverse(packet.substr(9, 3)));
-    	if (packet[12] != '0')
-    		temp *= -1;
-    	int hum = atoi(reverse(packet.substr(13, 2)));
-    	char buffer[40];
-    	snprintf(buffer, sizeof(buffer), "type=%s id=%02X ch=%d t=%.1f h=%d", type.c_str(), id, channel,
-    			 temp, hum);
-    	return buffer;
+        int channel = packet[5] - '0';
+        int id = ((packet[7] - '0') << 4) + (packet[6] - '0');
+        float temp = (float)0.1 * atoi(reverse(packet.substr(9, 3)));
+        if (packet[12] != '0')
+            temp *= -1;
+        int hum = atoi(reverse(packet.substr(13, 2)));
+        char buffer[40];
+        snprintf(buffer, sizeof(buffer), "type=%s id=%02X ch=%d t=%.1f h=%d", type.c_str(), id, channel,
+                 temp, hum);
+        return buffer;
     } else if (type == "EC40" || type == "C844" ) {
-    	int channel = packet[5] - '0';
-    	int id = ((packet[6] - '0') << 4) + (packet[7] - '0');
-    	float temp = (float)0.1 * atoi(reverse(packet.substr(9, 3)));
-    	if (packet[12] != '0')
-    		temp *= -1;
-    	char buffer[40];
-    	snprintf(buffer, sizeof(buffer), "type=%s id=%02X ch=%d t=%.1f", type.c_str(), id, channel, temp);
-    	return buffer;
+        int channel = packet[5] - '0';
+        int id = ((packet[6] - '0') << 4) + (packet[7] - '0');
+        float temp = (float)0.1 * atoi(reverse(packet.substr(9, 3)));
+        if (packet[12] != '0')
+            temp *= -1;
+        char buffer[40];
+        snprintf(buffer, sizeof(buffer), "type=%s id=%02X ch=%d t=%.1f", type.c_str(), id, channel, temp);
+        return buffer;
     } else {
-    	m_Log->Printf(4, "Unknown sensor type %s. Data: %s", type.c_str(), packet.c_str());
-    	return "raw:" + packet;
+        m_Log->Printf(4, "Unknown sensor type %s. Data: %s", type.c_str(), packet.c_str());
+        return "raw:" + packet;
     }
 
     return "";
     * /
-    /*	unsigned long l1 = bits2long(packet.substr(0, 32));
+    /*  unsigned long l1 = bits2long(packet.substr(0, 32));
     unsigned long l2 = bits2long(packet.substr(32, 32));
     unsigned long l3 = bits2long(packet.substr(64, 32));
 
@@ -513,5 +514,5 @@ string CRFProtocolOregon::DecodeData(const string &packet) // Преобразование бит
 bool CRFProtocolOregon::needDump(const string &rawData)
 {
     return rawData.find(m_PacketDelimeter) != rawData.npos;
-    //	return rawData.find("cCcCcCcC") != rawData.npos;
+    //  return rawData.find("cCcCcCcC") != rawData.npos;
 }

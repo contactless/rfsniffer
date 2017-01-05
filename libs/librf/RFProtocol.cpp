@@ -33,21 +33,21 @@ void CRFProtocol::SetTransmitTiming(const uint16_t *timings)
 }
 
 /*
-	Декодирование происходит в три этапа
+    Декодирование происходит в три этапа
 */
 string CRFProtocol::Parse(base_type *data, size_t dataLen)
 {
     DPrintf dprintf = DPrintf().enabled(false);
 
     Clean();
-    // 	Декодирование происходит в три этапа
+    //  Декодирование происходит в три этапа
 
     /*
-    	1 - разбиваем паузы и сигналы на группы в соответствии m_ZeroLengths и m_PulseLengths
-    		первое совпадение паузы с диапазоном из m_ZeroLengths декодируется как 'a', второе 'b' и т.д.
-    		первое совпадение сигнала с диапазоном из m_PulseLengths декодируется как 'A', второе 'A' и т.д.
-    		если не попали ни в один из диапазонов  - '?'
-    		результат работы этапа - строка вида "AaAbBaCc?d"
+        1 - разбиваем паузы и сигналы на группы в соответствии m_ZeroLengths и m_PulseLengths
+            первое совпадение паузы с диапазоном из m_ZeroLengths декодируется как 'a', второе 'b' и т.д.
+            первое совпадение сигнала с диапазоном из m_PulseLengths декодируется как 'A', второе 'A' и т.д.
+            если не попали ни в один из диапазонов  - '?'
+            результат работы этапа - строка вида "AaAbBaCc?d"
     */
 
     string decodedRaw = DecodeRaw(data, dataLen);
@@ -58,8 +58,8 @@ string CRFProtocol::Parse(base_type *data, size_t dataLen)
         return "";
 
     /*
-    	2 - разбиваем полученную строку на пакеты и пытаемся декодировать каждый пакет в набор бит
-    		результат работы функции - набор бит
+        2 - разбиваем полученную строку на пакеты и пытаемся декодировать каждый пакет в набор бит
+            результат работы функции - набор бит
     */
     string_vector rawPackets;
     SplitPackets(decodedRaw, rawPackets);
@@ -73,11 +73,11 @@ string CRFProtocol::Parse(base_type *data, size_t dataLen)
     dprintf("CRFProtocol::Parse - DecodeBits returns: %s\n", bits.c_str());
 
     if (bits.length()) {
-        //		3 - декодируем набор бит в осмысленные данные (команду, температуру etc)
+        //      3 - декодируем набор бит в осмысленные данные (команду, температуру etc)
         string res = getName() + ":" + DecodeData(bits);
-        //		uint8_t tmpBuffer[100];
-        //		size_t tmpBufferSize = sizeof(tmpBuffer);
-        //		EncodeData(res, 2000, tmpBuffer, tmpBufferSize);
+        //      uint8_t tmpBuffer[100];
+        //      size_t tmpBufferSize = sizeof(tmpBuffer);
+        //      EncodeData(res, 2000, tmpBuffer, tmpBufferSize);
         return res;
     }
 
@@ -272,13 +272,13 @@ string CRFProtocol::reverse(const string &s)
 }
 
 /*
-	Декодер манчестера:
-	raw - пакет
-	expectPulse - ожидаем первым сигналом пульс
-	shortPause - короткая пауза
-	longPause - длинная пауза
-	shortPulse - короткий сигнал
-	longPulse - длинный сигнал
+    Декодер манчестера:
+    raw - пакет
+    expectPulse - ожидаем первым сигналом пульс
+    shortPause - короткая пауза
+    longPause - длинная пауза
+    shortPulse - короткий сигнал
+    longPulse - длинный сигнал
 */
 
 string CRFProtocol::ManchesterDecode(const string &raw, bool expectPulse, char shortPause,
@@ -355,13 +355,13 @@ string replaceDouble(const string &src, char search, char replace)
 }
 
 /*
-	Енкодер манчестера:
-	raw - пакет
-	invert - инвертированный манчестер
-	shortPause - короткая пауза
-	longPause - длинная пауза
-	shortPulse - короткий сигнал
-	longPulse - длинный сигнал
+    Енкодер манчестера:
+    raw - пакет
+    invert - инвертированный манчестер
+    shortPause - короткая пауза
+    longPause - длинная пауза
+    shortPulse - короткий сигнал
+    longPulse - длинный сигнал
 */
 string CRFProtocol::ManchesterEncode(const string &bits, bool invert, char shortPause,
                                      char longPause, char shortPulse, char longPulse)

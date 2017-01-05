@@ -19,8 +19,8 @@
  */
 
 #ifndef _SPI_LIB_HPP
-#define _SPI_LIB_HPP
-#endif 
+    #define _SPI_LIB_HPP
+#endif
 
 #include <stdint.h>
 #ifdef __cplusplus
@@ -40,30 +40,31 @@ typedef struct {
 
 
 #ifdef __cplusplus
-class SPI{
+class SPI
+{
   private:
     char *m_spidev;
     int m_spifd;
     spi_config_t m_spiconfig;
     bool m_open;
   public:
-        SPI();
-        SPI(const char * p_spidev);
-        SPI(const char * p_spidev, spi_config_t *p_spi_config);
-        void init(const char * p_spidev);
-        void init(const char * p_spidev, spi_config_t *p_spi_config);
-        ~SPI();
-        void deinit();
-        bool begin();
-        bool end();
-        int read(uint8_t *p_rxbuffer,uint8_t p_rxlen);
-        int write(uint8_t *p_txbuffer,uint8_t p_txlen);
-        int xfer(uint8_t *p_txbuffer, uint8_t p_txlen, uint8_t *p_rxbuffer, uint8_t p_rxlen);
-        int xfer2(uint8_t *p_txbuffer, uint8_t p_txlen, uint8_t *p_rxbuffer, uint8_t p_rxlen);
-        bool setSpeed(uint32_t p_speed);
-        bool setMode(uint8_t p_mode);
-        bool setBitPerWord(uint8_t p_bit);
-	bool setConfig(spi_config_t *p_spi_config);
+    SPI();
+    SPI(const char *p_spidev);
+    SPI(const char *p_spidev, spi_config_t *p_spi_config);
+    void init(const char *p_spidev);
+    void init(const char *p_spidev, spi_config_t *p_spi_config);
+    ~SPI();
+    void deinit();
+    bool begin();
+    bool end();
+    int read(uint8_t *p_rxbuffer, uint8_t p_rxlen);
+    int write(uint8_t *p_txbuffer, uint8_t p_txlen);
+    int xfer(uint8_t *p_txbuffer, uint8_t p_txlen, uint8_t *p_rxbuffer, uint8_t p_rxlen);
+    int xfer2(uint8_t *p_txbuffer, uint8_t p_txlen, uint8_t *p_rxbuffer, uint8_t p_rxlen);
+    bool setSpeed(uint32_t p_speed);
+    bool setMode(uint8_t p_mode);
+    bool setBitPerWord(uint8_t p_bit);
+    bool setConfig(spi_config_t *p_spi_config);
 
 };
 

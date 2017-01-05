@@ -1,13 +1,16 @@
 #pragma once
 #include "RFProtocol.h"
 class CRFProtocolMotionSensor :
-	public CRFProtocol
+    public CRFProtocol
 {
-public:
-	CRFProtocolMotionSensor();
-	~CRFProtocolMotionSensor();
+  public:
+    CRFProtocolMotionSensor();
+    ~CRFProtocolMotionSensor();
 
-	virtual string getName() { return "MotionSensor"; };
+    virtual string getName()
+    {
+        return "MotionSensor";
+    };
 
 
 };

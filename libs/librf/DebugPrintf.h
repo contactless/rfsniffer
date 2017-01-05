@@ -5,9 +5,9 @@
  *  it may be enabled and disabled in every function by one modification
  *  in first line: DPrintf dprintf; or DPrintf dprintf = DPrintf().disabled();
  *  or for more complicated choose - DPrintf dprintf = DPrintf().enable(expression);
- * 
+ *
  *  Class is not made for logging, but for debugging.
- * 
+ *
  *  By default DPrintf is globally disabled, i. e. without DPrintf::globallyEnable();
  *  command in the beginning dprintf(...) does nothing
  */

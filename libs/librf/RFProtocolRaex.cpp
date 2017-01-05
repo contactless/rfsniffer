@@ -1,25 +1,23 @@
 #include "stdafx.h"
 #include "RFProtocolRaex.h"
 
-static range_type g_timing_pause[7] =
-{
-	{ 2500, 2700 },
-	{ 550, 750 },
-	{ 1200, 1400 },
-	{ 0,0 }
+static range_type g_timing_pause[7] = {
+    { 2500, 2700 },
+    { 550, 750 },
+    { 1200, 1400 },
+    { 0, 0 }
 };
 
-static range_type g_timing_pulse[8] =
-{
-	{ 2400, 2600 },
-	{ 450, 650 },
-	{ 110, 1300 },
-	{ 0,0 }
+static range_type g_timing_pulse[8] = {
+    { 2400, 2600 },
+    { 450, 650 },
+    { 110, 1300 },
+    { 0, 0 }
 };
 
 
 CRFProtocolRaex::CRFProtocolRaex()
-	:CRFProtocol(g_timing_pause, g_timing_pulse, 57, 2, "A")
+    : CRFProtocol(g_timing_pause, g_timing_pulse, 57, 2, "A")
 {
 }
 
@@ -29,12 +27,12 @@ CRFProtocolRaex::~CRFProtocolRaex()
 }
 
 
-string CRFProtocolRaex::DecodePacket(const string&raw)
+string CRFProtocolRaex::DecodePacket(const string &raw)
 {
-	if (raw.length() < 10 || raw[0] != 'a')
-		return "";
+    if (raw.length() < 10 || raw[0] != 'a')
+        return "";
 
-	return ManchesterDecode(raw.substr(1), true, 'b', 'c', 'B', 'C');
+    return ManchesterDecode(raw.substr(1), true, 'b', 'c', 'B', 'C');
 }
 
 /*
@@ -74,30 +72,29 @@ F0 7B F0 40 7F FF FF
 6 = 24
 */
 
-string CRFProtocolRaex::DecodeData(const string& packet)
+string CRFProtocolRaex::DecodeData(const string &packet)
 {
-	if (packet.length() != 57)
-		return "";
+    if (packet.length() != 57)
+        return "";
 
-	if (packet.substr(57-8)!="11111111")
-		return "";
+    if (packet.substr(57 - 8) != "11111111")
+        return "";
 
-	string raw;
+    string raw;
 
-	for (int i = 0; i < 7; i++)
-	{
-		unsigned char b = (unsigned char)bits2long(packet, 1 + i * 8, 8);
-		char buffer[10];
-		snprintf(buffer, sizeof(buffer), "%02X", b);
-		raw += buffer;
-	}
+    for (int i = 0; i < 7; i++) {
+        unsigned char b = (unsigned char)bits2long(packet, 1 + i * 8, 8);
+        char buffer[10];
+        snprintf(buffer, sizeof(buffer), "%02X", b);
+        raw += buffer;
+    }
 
-	string res = "raw=" + raw;
-	unsigned char ch = (unsigned char)bits2long(packet, 1, 8);
-	unsigned char cmd = (unsigned char)bits2long(packet, 25, 2);
-	char buffer[10];
-	snprintf(buffer, sizeof(buffer), "%02X", ch);
-	res += " ch=" + (string)buffer + " btn=" + itoa(cmd);
+    string res = "raw=" + raw;
+    unsigned char ch = (unsigned char)bits2long(packet, 1, 8);
+    unsigned char cmd = (unsigned char)bits2long(packet, 25, 2);
+    char buffer[10];
+    snprintf(buffer, sizeof(buffer), "%02X", ch);
+    res += " ch=" + (string)buffer + " btn=" + itoa(cmd);
 
-	return res;
+    return res;
 }

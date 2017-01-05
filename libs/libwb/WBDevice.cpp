@@ -21,17 +21,17 @@ const std::vector<ControlNames> CWBControl::controlNamesList = {
     {Generic, "value", "Value"},
     {Temperature, "temperature", "Temperature"},
     {RelativeHumidity, "rel_humidity", "Humidity"},
-    {AtmosphericPressure, "pressure", "Atmospheric pressure"}, 
-    {PrecipitationRate, "rainfall", "Precipitation rate"}, 
-    {PrecipitationTotal, "raintotal", "Precipitation total"}, 
-    {WindSpeed, "wind_speed", "Wind speed"}, 
-    {WindAverageSpeed, "wind_avg_speed", "Wind average speed"}, 
+    {AtmosphericPressure, "pressure", "Atmospheric pressure"},
+    {PrecipitationRate, "rainfall", "Precipitation rate"},
+    {PrecipitationTotal, "raintotal", "Precipitation total"},
+    {WindSpeed, "wind_speed", "Wind speed"},
+    {WindAverageSpeed, "wind_avg_speed", "Wind average speed"},
     {WindDirection, "wind_direction", "Wind direction"},
     {Power, "power", "Power"},
-    {PowerConsumption, "power_consumption", "Power consumption"}, 
-    {Voltage, "voltage", "Voltage"}, 
+    {PowerConsumption, "power_consumption", "Power consumption"},
+    {Voltage, "voltage", "Voltage"},
     {WaterFlow, "water_flow", "Water flow"},
-    {WaterTotal, "water_consumption", "Water consumption"}, 
+    {WaterTotal, "water_consumption", "Water consumption"},
     {Resistance, "resistance", "Resistance"},
     {GasConcentration, "concentration", "Gas concentration"},
     {BatteryLow, "battery", "Battery"},
@@ -42,7 +42,8 @@ const std::vector<ControlNames> CWBControl::controlNamesList = {
 
 
 std::vector<std::string> CWBControl::getControlTypeToMetaType(
-        const std::vector<ControlNames> &controlNamesList) {
+    const std::vector<ControlNames> &controlNamesList)
+{
     std::vector<string> res(ControlType::ControlTypeCount);
     for (const ControlNames &names : controlNamesList)
         res[names.type] = names.metaType;
@@ -50,21 +51,22 @@ std::vector<std::string> CWBControl::getControlTypeToMetaType(
 }
 
 std::vector<std::string> CWBControl::getControlTypeToDefaultName(
-        const std::vector<ControlNames> &controlNamesList) {
+    const std::vector<ControlNames> &controlNamesList)
+{
     std::vector<string> res(ControlType::ControlTypeCount);
     for (const ControlNames &names : controlNamesList)
         res[names.type] = names.defaultName;
     return res;
 }
 
-std::vector<std::string> CWBControl::controlTypeToMetaType = 
-        getControlTypeToMetaType(CWBControl::controlNamesList);
-std::vector<std::string> CWBControl::controlTypeToDefaultName = 
-        getControlTypeToDefaultName(CWBControl::controlNamesList);
+std::vector<std::string> CWBControl::controlTypeToMetaType =
+    getControlTypeToMetaType(CWBControl::controlNamesList);
+std::vector<std::string> CWBControl::controlTypeToDefaultName =
+    getControlTypeToDefaultName(CWBControl::controlNamesList);
 
 
 CWBControl::CWBControl(string_cref name_, ControlType type_, bool readonly_):
-        name(name_), type(type_), readonly(readonly_) 
+    name(name_), type(type_), readonly(readonly_)
 {
     if (name.empty())
         name = controlTypeToDefaultName[type];
@@ -72,31 +74,38 @@ CWBControl::CWBControl(string_cref name_, ControlType type_, bool readonly_):
 
 CWBControl::CWBControl(): name(""), type(ControlType::Error), readonly(false) {}
 
-string_cref CWBControl::metaType() const {
+string_cref CWBControl::metaType() const
+{
     return controlTypeToMetaType[type];
 }
-    
-string_cref CWBControl::stringValue() const { return value; }
 
-float CWBControl::floatValue() const {
+string_cref CWBControl::stringValue() const
+{
+    return value;
+}
+
+float CWBControl::floatValue() const
+{
     float res;
     sscanf(value.c_str(), "%f", &res);
     return res;
 }
 
 
-CWBControl &CWBControl::setSource(string_cref source_) { 
-    source = source_; 
+CWBControl &CWBControl::setSource(string_cref source_)
+{
+    source = source_;
     return *this;
 }
 
-CWBControl &CWBControl::setSourceType(string_cref sourceType_) { 
-    sourceType = sourceType_; 
+CWBControl &CWBControl::setSourceType(string_cref sourceType_)
+{
+    sourceType = sourceType_;
     return *this;
 }
 
 
-ControlType CWBControl::getControlTypeByMetaType(string_cref metaType) 
+ControlType CWBControl::getControlTypeByMetaType(string_cref metaType)
 {
     for (const ControlNames &controlNames : controlNamesList)
         if (controlNames.metaType == metaType)
@@ -109,7 +118,7 @@ ControlType CWBControl::getControlTypeByMetaType(string_cref metaType)
 CWBDevice::CWBDevice() { }
 
 CWBDevice::CWBDevice(string_cref Name, string_cref Description)
-		:deviceName(Name), deviceDescription(Description)
+    : deviceName(Name), deviceDescription(Description)
 { }
 
 
@@ -119,31 +128,32 @@ CWBDevice::~CWBDevice()
 #ifdef USE_CONFIG
 void CWBDevice::init(CConfigItem config)
 {
-	deviceName = config.getStr("Name");
-	deviceDescription = config.getStr("Description");
+    deviceName = config.getStr("Name");
+    deviceDescription = config.getStr("Description");
 
-	CConfigItemList controls;
-	config.getList("Control", controls);
-    
-	for(CConfigItem *control : controls)
-	{
-		CWBControl Control = CWBControl(
-                control->getStr("Name"), 
-                CWBControl::getControlTypeByMetaType(control->getStr("Type")), 
-                (control->getInt("Readonly", false, 1) != 0)
-        ).setSource(control->getStr("Source", false))
-         .setSourceType(control->getStr("SourceType", false));
-		
-		deviceControls[Control.name] = Control;
-	}
+    CConfigItemList controls;
+    config.getList("Control", controls);
+
+    for(CConfigItem *control : controls) {
+        CWBControl Control = CWBControl(
+                                 control->getStr("Name"),
+                                 CWBControl::getControlTypeByMetaType(control->getStr("Type")),
+                                 (control->getInt("Readonly", false, 1) != 0)
+                             ).setSource(control->getStr("Source", false))
+                             .setSourceType(control->getStr("SourceType", false));
+
+        deviceControls[Control.name] = Control;
+    }
 }
 #endif
 
-void CWBDevice::addControl(const CWBControl &control) {
+void CWBDevice::addControl(const CWBControl &control)
+{
     deviceControls[control.name] = control;
 }
 
-void CWBDevice::addControl(const string &name, ControlType type, bool readonly) {
+void CWBDevice::addControl(const string &name, ControlType type, bool readonly)
+{
     addControl(CWBControl(name, type, readonly));
 }
 
@@ -155,13 +165,13 @@ void CWBDevice::set(CWBControl::ControlType type, string_cref value)
 
 void CWBDevice::set(string_cref name, string_cref value)
 {
-	CControlMap::iterator i = deviceControls.find(name);
+    CControlMap::iterator i = deviceControls.find(name);
 
-	if (i == deviceControls.end())
-		throw CHaException(CHaException::ErrBadParam, name);
+    if (i == deviceControls.end())
+        throw CHaException(CHaException::ErrBadParam, name);
 
-	i->second.value = value;
-	i->second.changed = true;
+    i->second.value = value;
+    i->second.changed = true;
 }
 
 void CWBDevice::set(CWBControl::ControlType type, float value)
@@ -171,89 +181,85 @@ void CWBDevice::set(CWBControl::ControlType type, float value)
 
 void CWBDevice::set(string_cref name, float value)
 {
-	CControlMap::iterator i = deviceControls.find(name);
+    CControlMap::iterator i = deviceControls.find(name);
 
-	if (i == deviceControls.end())
-		throw CHaException(CHaException::ErrBadParam, name);
+    if (i == deviceControls.end())
+        throw CHaException(CHaException::ErrBadParam, name);
 
-	i->second.value = ftoa(value);
-	i->second.changed = true;
+    i->second.value = ftoa(value);
+    i->second.changed = true;
 }
 
 
 float CWBDevice::getFloat(string_cref name)
 {
-	CControlMap::iterator i = deviceControls.find(name);
+    CControlMap::iterator i = deviceControls.find(name);
 
-	if (i == deviceControls.end())
-		throw CHaException(CHaException::ErrBadParam, name);
-        
-	return i->second.floatValue();
+    if (i == deviceControls.end())
+        throw CHaException(CHaException::ErrBadParam, name);
+
+    return i->second.floatValue();
 }
 
 string_cref CWBDevice::getString(string_cref name)
 {
-	CControlMap::iterator i = deviceControls.find(name);
+    CControlMap::iterator i = deviceControls.find(name);
 
-	if (i == deviceControls.end())
-		throw CHaException(CHaException::ErrBadParam, name);
+    if (i == deviceControls.end())
+        throw CHaException(CHaException::ErrBadParam, name);
 
-	return i->second.stringValue();
+    return i->second.stringValue();
 }
 
 void CWBDevice::createDeviceValues(StringMap &v)
 {
-	const string base = "/devices/" + deviceName;
-    
-	v[base + "/meta/name"] = deviceDescription;
+    const string base = "/devices/" + deviceName;
 
-	for(const auto &i : deviceControls)
-	{
-		const string controlBase = base + "/controls/" + i.second.name;
-		v[controlBase] = i.second.value;
-		v[controlBase + "/meta/type"] = i.second.metaType();
-		if (i.second.readonly)
-			v[controlBase + "/meta/readonly"] = "1";
-	}
+    v[base + "/meta/name"] = deviceDescription;
+
+    for(const auto &i : deviceControls) {
+        const string controlBase = base + "/controls/" + i.second.name;
+        v[controlBase] = i.second.value;
+        v[controlBase + "/meta/type"] = i.second.metaType();
+        if (i.second.readonly)
+            v[controlBase + "/meta/readonly"] = "1";
+    }
 }
 
 void CWBDevice::updateValues(StringMap &v)
 {
-	const string base = "/devices/" + deviceName;
+    const string base = "/devices/" + deviceName;
 
-	for(auto &i : deviceControls)
-	{
-		if (i.second.changed)
-		{
-			v[base + "/controls/" + i.second.name] = i.second.value;
-			i.second.changed = false;
-		}
-	}
+    for(auto &i : deviceControls) {
+        if (i.second.changed) {
+            v[base + "/controls/" + i.second.name] = i.second.value;
+            i.second.changed = false;
+        }
+    }
 }
 
 std::string CWBDevice::getTopic(string_cref control)
 {
-	string base = "/devices/" + deviceName;
-	return base + "/controls/" + control;
+    string base = "/devices/" + deviceName;
+    return base + "/controls/" + control;
 }
 
 bool CWBDevice::sourceExists(string_cref source)
 {
-	for (const auto &i : deviceControls)
-		if (i.second.source == source)
-			return true;
-	
-	return false;
+    for (const auto &i : deviceControls)
+        if (i.second.source == source)
+            return true;
+
+    return false;
 }
 
 void CWBDevice::setBySource(string_cref source, string_cref sourceType, std::string value)
 {
-	if (sourceType=="X10")
-		value = (value==("ON"?"1":"0"));
+    if (sourceType == "X10")
+        value = (value == ("ON" ? "1" : "0"));
 
-	for (const auto &i : deviceControls)
-	{
-		if (i.second.source == source)
-			set(i.first, value);
-	}
+    for (const auto &i : deviceControls) {
+        if (i.second.source == source)
+            set(i.first, value);
+    }
 }
