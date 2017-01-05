@@ -72,7 +72,11 @@ class RFM69OOK {
       _isRFM69HW = isRFM69HW;
     }
 */
+    RFM69OOK();
     RFM69OOK(SPI* spi, int gpioInt, CLog *log=NULL);
+    // function does constructor's work
+    void init(SPI* spi, int gpioInt, CLog *log=NULL);
+    
 
     bool initialize();
     uint32_t getFrequency();

@@ -7,6 +7,8 @@
 #endif
 #include "Exception.h"
 
+using std::string;
+
 
 LogParam::LogParam()
 {

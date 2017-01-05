@@ -47,10 +47,17 @@ volatile int RFM69OOK::RSSI; 	  // most accurate RSSI during reception (closest 
 RFM69OOK* RFM69OOK::selfPointer;
 volatile uint8_t RFM69OOK::PAYLOADLEN;
 
-RFM69OOK::RFM69OOK(SPI* spi, int gpioInt, CLog *log)
-  :m_spi(spi), m_gpioInt(gpioInt), m_Log(log)
-{
+RFM69OOK::RFM69OOK() { }
 
+RFM69OOK::RFM69OOK(SPI* spi, int gpioInt, CLog *log)
+{
+    init(spi, gpioInt, log);
+}
+
+void RFM69OOK::init(SPI* spi, int gpioInt, CLog *log) {
+    m_spi = spi;
+    m_gpioInt = gpioInt;
+    m_Log = log;
 }
 
 bool RFM69OOK::initialize()
@@ -397,9 +404,10 @@ bool RFM69OOK::getGPIO(int num)
   if (!f)
     throw CHaException(CHaException::ErrBadParam, buffer);
 
-  if (fread(buffer, 1, 1, f)!=1)
+  if (fread(buffer, 1, 1, f) !=1 ) {
+    fclose(f);
     throw CHaException(CHaException::ErrBadParam, "Read GPIO file failed");
-
+  }
   fclose(f);
 
   return buffer[0]=='1';

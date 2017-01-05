@@ -1,12 +1,19 @@
 #ifndef __STR_UTILS_H
 #define __STR_UTILS_H
 
+#include <string>
+#include <vector>
+#include <map>
+#include <cstring>
+
 #include "libutils.h"
 
-typedef LIBUTILS_API vector<string> string_vector;
-typedef map<string, string> LIBUTILS_API string_map;
-typedef map<int, string> map_i2s;
-typedef map<string, int> map_s2i;
+
+
+typedef LIBUTILS_API std::vector<std::string> string_vector;
+typedef std::map<std::string, std::string> LIBUTILS_API string_map;
+typedef std::map<int, std::string> map_i2s;
+typedef std::map<std::string, int> map_s2i;
 
 #ifdef WIN32
 	char inline *strnew(const char *src){size_t l =strlen(src); char *dest = new char[l+1]; strcpy_s(dest, l+1, src);return dest;};
@@ -29,12 +36,12 @@ typedef map<string, int> map_s2i;
 	#define FOLDER_DELIMETER_STR "/"
 #endif
 
-string LIBUTILS_API GetPath(string path);
-void LIBUTILS_API SplitString(const string &s, char dlmt, string_vector &v);
-void LIBUTILS_API SplitString(const string &s, string dlmt, string_vector &v);
-void LIBUTILS_API SplitPair(const string &s, string dlmt, string &first, string &second);
-void LIBUTILS_API SplitPair(const string &s, char dlmt, string &first, string &second);
-void LIBUTILS_API SplitValues(const string &s, string_map &v, char groupDlmt=' ', char valueDlmt='=');
+std::string LIBUTILS_API GetPath(std::string path);
+void LIBUTILS_API SplitString(const std::string &s, char dlmt, string_vector &v);
+void LIBUTILS_API SplitString(const std::string &s, std::string dlmt, string_vector &v);
+void LIBUTILS_API SplitPair(const std::string &s, std::string dlmt, std::string &first, std::string &second);
+void LIBUTILS_API SplitPair(const std::string &s, char dlmt, std::string &first, std::string &second);
+void LIBUTILS_API SplitValues(const std::string &s, string_map &v, char groupDlmt=' ', char valueDlmt='=');
 
 #ifdef WIN32
 	#define DLL_EXPORT __declspec(dllexport)
@@ -44,7 +51,7 @@ void LIBUTILS_API SplitValues(const string &s, string_map &v, char groupDlmt=' '
 	#define DLL_IMPORT
 #endif
 
-string LIBUTILS_API str_upper(const string &str);
+std::string LIBUTILS_API str_upper(const std::string &str);
 
 enum BASE_PATH_TYPE
 {
@@ -54,11 +61,11 @@ enum BASE_PATH_TYPE
 	BASE_PATH_LUA
 };
 
-string LIBUTILS_API GetBasePath(BASE_PATH_TYPE type);
-string LIBUTILS_API ftoa(float f, int digits=2);
-string LIBUTILS_API itoa(int i);
+std::string LIBUTILS_API GetBasePath(BASE_PATH_TYPE type);
+std::string LIBUTILS_API ftoa(float f, int digits=2);
+std::string LIBUTILS_API itoa(int i);
 
-inline int atoi(const string &s){return atoi(s.c_str());};
-inline double atof(const string &s){return atof(s.c_str());};
+inline int atoi(const std::string &s){return atoi(s.c_str());};
+inline double atof(const std::string &s){return atof(s.c_str());};
 
 #endif

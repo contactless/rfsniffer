@@ -19,10 +19,10 @@ class LIBUTILS_API CConfig
 public:
 	CConfig(void);
 	virtual ~CConfig(void);
-	void Load(string ConfigFileName);
+	void Load(std::string ConfigFileName);
 	void Close();
 
-	string getStr(string path, bool bMandatory = true, string defaultValue = "");
+	std::string getStr(std::string path, bool bMandatory = true, std::string defaultValue = "");
 	CConfigItem getNode(const char* path);
 	void getList(const char* path, CConfigItemList &list);
 	CConfigItem getRoot(){return m_Document;};

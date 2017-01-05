@@ -3,11 +3,16 @@
 
 #pragma warning (disable: 4251)
 
+#include <string>
+#include <map>
+#include <cstdio>
+#include <cstdarg>
+
 #include "libutils.h"
 #include "locks.h"
 
 class CLog;
-typedef map<string, CLog*> LIBUTILS_API CLogsMap;
+typedef std::map<std::string, CLog*> LIBUTILS_API CLogsMap;
 
 #ifdef USE_CONFIG
 	class CConfigItem;
@@ -15,7 +20,7 @@ typedef map<string, CLog*> LIBUTILS_API CLogsMap;
 
 struct LogParam
 {
-	string FileName;
+	std::string FileName;
 	bool LogTime;
 	int ConsoleLevel;
 	int FileLevel;
@@ -25,18 +30,18 @@ struct LogParam
 #endif
 };
 
-typedef map<string, LogParam> LIBUTILS_API CLogsParamMap;
+typedef std::map<std::string, LogParam> LIBUTILS_API CLogsParamMap;
 
 
 class LIBUTILS_API CLog
 {
 	CLock lock;
-	string m_FileName;
+	std::string m_FileName;
 	FILE *m_File;
 	bool m_bTimeLog;
 	int m_iConsoleLogLevel, m_iLogLevel;
 	static CLogsMap m_Logs;
-	static string m_BasePath;
+	static std::string m_BasePath;
 	static bool m_DisableConsole;
 #ifdef USE_CONFIG
 	static CLogsParamMap m_LogsCfg;
@@ -52,7 +57,7 @@ public:
 	static void Init(CConfigItem *Config);
 #endif
 
-	static CLog* GetLog(string Name);
+	static CLog* GetLog(std::string Name);
 	static CLog* Default();
 	static void CloseAll();
 	static void DisableConsole(bool bDisable){m_DisableConsole = bDisable;};

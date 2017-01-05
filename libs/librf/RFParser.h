@@ -30,8 +30,18 @@ public:
 	Декодеры перебираются по очереди
 	В случае успеха возвращает строку вида <Имя декодера>:<Результат декодирования>
 */	
-	string Parse(base_type*, size_t len);
-	string Parse(base_type**, size_t *len);
+    // Пытается декодировать всю последовательность [data, data + len) каким-то одним декодером
+	string Parse(base_type* data, size_t len);
+    // Режет последовательность на пакеты (по длинным паузам и коротким импульсам)
+    // Делает это сначала и одновременно пытается распознать пакеты
+    // Возвращает первый успешный результат, при этом "data_ptr" и "len_ptr" сдвигаются
+	string Parse(base_type** data_ptr, size_t *len_ptr);
+        
+    // Tries to recognize packet from begin of data.
+    // If data was recognised then returned string have non-zero length,
+    // otherwise returned string is empty.
+    // In every case read length (or just skipped) will be written to "readLength"
+    string ParseRepetitive(base_type *data, size_t length, size_t *readLength);
 
 //  Включает анализатор для пакетов, которые не получилось декодировать. Пока не реализованно	
 	void EnableAnalyzer();

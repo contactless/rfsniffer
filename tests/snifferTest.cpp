@@ -1,5 +1,3 @@
-
-#include "stdafx.h"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>

@@ -4,8 +4,6 @@
  * programmer is to see an effect
  * */
 
-
-#include "stdafx.h"
 #include "../libs/libutils/logging.h"
 #include "../libs/libutils/thread.h"
 #include "../libs/libutils/Exception.h"

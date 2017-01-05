@@ -5,6 +5,9 @@
 #include <fstream>
 //#include "strutils.h"
 
+using std::string;
+using std::ifstream;
+
 
 CConfig::CConfig(void)
 {

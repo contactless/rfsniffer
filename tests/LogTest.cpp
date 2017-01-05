@@ -2,8 +2,6 @@
  * (mlog->Printf(4, ....);)
  * */
 
-
-#include "stdafx.h"
 #include "../libs/libutils/logging.h"
 
 void LogTest()

@@ -2,11 +2,12 @@
  * It seems to be a manual test.
  * */
 
-#include "stdafx.h"
 #include "../libs/libutils/logging.h"
 #include "../libs/libutils/Exception.h"
 #include "mosquittopp.h"
 #include "../libs/libwb/WBDevice.h"
+
+using std::string;
 
 class TestMqttConnection
     : public mosqpp::mosquittopp
@@ -109,16 +110,16 @@ void TestMqttConnection::Test()
 
 
     CWBDevice wbdev("TestDev", "Тестовое устройство");
-    wbdev.AddControl("Time", CWBControl::Text, true);
-    wbdev.AddControl("Random", CWBControl::Temperature, true);
-    string_map v;
+    wbdev.addControl("Time", CWBControl::Text, true);
+    wbdev.addControl("Random", CWBControl::Temperature, true);
+    CWBDevice::StringMap v;
 
-    wbdev.CreateDeviceValues(v);
+    wbdev.createDeviceValues(v);
     m_Log->Printf(1, "Create test device");
 
-    for_each(string_map, v, i) {
-        publish(NULL, i->first.c_str(), i->second.size(), i->second.c_str(), 0, true);
-        m_Log->Printf(1, "publish %s=%s", i->first.c_str(), i->second.c_str());
+    for (auto i : v) {
+        publish(NULL, i.first.c_str(), i.second.size(), i.second.c_str(), 0, true);
+        m_Log->Printf(1, "publish %s=%s", i.first.c_str(), i.second.c_str());
     }
     m_Log->Printf(1, "Created");
 
@@ -131,15 +132,15 @@ void TestMqttConnection::Test()
     wbdev.set("Random", rand() * 0.01);
 
     v.clear();
-    wbdev.UpdateValues(v);
+    wbdev.updateValues(v);
     m_Log->Printf(1, "Update test device");
 
-    for_each(string_map, v, i) {
+    for (auto i : v) {
         while (!m_isConnected)
             usleep(10);
 
-        publish(NULL, i->first.c_str(), i->second.size(), i->second.c_str(), 0, true);
-        m_Log->Printf(1, "publish %s=%s", i->first.c_str(), i->second.c_str());
+        publish(NULL, i.first.c_str(), i.second.size(), i.second.c_str(), 0, true);
+        m_Log->Printf(1, "publish %s=%s", i.first.c_str(), i.second.c_str());
     }
     m_Log->Printf(1, "Updated");
 

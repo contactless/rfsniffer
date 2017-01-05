@@ -5,45 +5,15 @@
 
 CONFFILE="/etc/wb-homa-rfsniffer.conf"
 
-case "$WB_VERSION" in
-    "58" )
-        SUFFIX="wb58"
-    ;;
+BOARD_CONF_PREFIX="/usr/share/wb-homa-rfsniffer/wb-homa-rfsniffer.conf."
 
-    "55" )
-        SUFFIX="wb55"
-    ;;
+SUFFIX=$WB_VERSION
+BOARD_CONF="${BOARD_CONF_PREFIX}${SUFFIX}"
 
-    "52" )
-        SUFFIX="wb52"
-    ;;
-
-    "50" )
-        SUFFIX="wbsh5"
-    ;;
-
-    "41" )
-        SUFFIX="wbsh4"
-    ;;
-
-    "32" )
-        SUFFIX="wbsh3"
-    ;;
-
-    "KMON1" )
-        SUFFIX="mka3"
-    ;;
-
-    "CQC10" )
-        SUFFIX="cqc10"
-    ;;
-
-    * )
-        SUFFIX="default"
-    ;;
-esac
-
-BOARD_CONF="/usr/share/wb-homa-rfsniffer/wb-homa-rfsniffer.conf.${SUFFIX}"
+if ! [ -f $BOARD_CONF ]; then
+    SUFFIX="default"
+    BOARD_CONF="${BOARD_CONF_PREFIX}${SUFFIX}"
+fi
 
 ucf --debconf-ok $BOARD_CONF $CONFFILE
 

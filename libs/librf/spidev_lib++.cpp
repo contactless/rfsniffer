@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <string.h>
+#include <algorithm>
 
 #include "spidev_lib++.h"
 
@@ -166,8 +167,23 @@ bool SPI::begin(){
 
   
 }
+
+SPI::SPI() {
+    m_spidev = NULL;
+    m_open = false;
+}
+
 SPI::SPI(const char * p_spidev){
-  m_spidev = NULL;
+    init(p_spidev);
+}
+
+
+SPI::SPI(const char * p_spidev, spi_config_t *p_spi_config){
+    init(p_spidev, p_spi_config);
+}
+
+void SPI::init(const char * p_spidev) {
+    m_spidev = NULL;
   if (p_spidev != NULL ){
       m_spidev = (char *)malloc(strlen(p_spidev)+1);
       if (m_spidev != NULL) 
@@ -176,13 +192,9 @@ SPI::SPI(const char * p_spidev){
    m_open = false;
 
 }
-SPI::SPI(const char * p_spidev, spi_config_t *p_spi_config){
-  m_spidev = NULL;
-  if (p_spidev != NULL ){
-      m_spidev = (char *)malloc(strlen(p_spidev)+1);
-      if (m_spidev != NULL) 
-         strcpy(m_spidev,p_spidev);
-  }
+
+void SPI::init(const char * p_spidev, spi_config_t *p_spi_config) {
+  init(p_spidev);
   if (p_spi_config != NULL){
 	memcpy(&m_spiconfig,p_spi_config,sizeof(spi_config_t));
      }
@@ -192,19 +204,23 @@ SPI::SPI(const char * p_spidev, spi_config_t *p_spi_config){
 	m_spiconfig.bits_per_word = 8;
 	m_spiconfig.delay = 0;
 		
-  }
- m_open = false;
+  }   
 }
 
 SPI::~SPI(){
-  if (m_spidev != NULL ) {
-	free(m_spidev);
-	m_spidev = NULL;
-  }
-  if (m_open)
-      close(m_spifd);
+    deinit();
 }
 
+void SPI::deinit() {
+    if (m_spidev != NULL ) {
+        free(m_spidev);
+        m_spidev = NULL;
+    }
+    if (m_open) {
+        close(m_spifd);
+        m_open = false;
+    }
+}
 
 bool SPI::setConfig(spi_config_t *p_spi_config){
   if (p_spi_config != NULL){

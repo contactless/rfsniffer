@@ -1,9 +1,12 @@
+#include <cstdio>
+#include <cstdlib>
+#include <string>
+
 #include "../libs/librf/DebugPrintf.h"
-
-#include "stdafx.h"
-
 #include "../libs/libutils/strutils.h"
 //#include "../lua/liblua.h"
+
+using std::string;
 
 void LogTest();
 void RfParserTest(string path);

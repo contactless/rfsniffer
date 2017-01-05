@@ -28,7 +28,8 @@ CLock::~CLock()
 	DeleteCriticalSection(&cs);
 #else
 	if (pthread_mutex_destroy(&cs))
-	{
+	{ 
+        // throwing exception from destructor is very bad =(
 		throw CHaException(CHaException::ErrSyncFailed, "Cannot destroy mutex");
 	}
 	pthread_mutexattr_destroy(&cs_attr);

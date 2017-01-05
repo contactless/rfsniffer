@@ -45,7 +45,7 @@ public:
 
 	// Раскодируем пакет
 	virtual string Parse(base_type*, size_t len);
-	virtual string DecodeRaw(base_type* data, size_t dataLen);  // Декодироавние строки по длинам
+	virtual string DecodeRaw(base_type* data, size_t dataLen);  // Декодирование строки по длинам
 	virtual bool SplitPackets(const string &rawData, string_vector& rawPackets); // Нарезка по пакетам
 	virtual string DecodeBits(string_vector&rawPackets); // Сборка бит по массиву пакетов
 	virtual string DecodePacket(const string&); // Преобразование строки длин в биты

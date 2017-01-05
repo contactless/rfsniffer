@@ -3,6 +3,8 @@
 #include "Buffer.h"
 #include "logging.h"
 
+typedef std::string string;
+
 CHaException::CHaException(void)
 {
 	m_code = ErrNoError;

@@ -38,19 +38,22 @@ typedef struct {
 }
 #endif
 
-//class SPI{
-//public:
+
 #ifdef __cplusplus
 class SPI{
-private:
-char *m_spidev;
-int m_spifd;
-spi_config_t m_spiconfig;
-bool m_open;
-public:
+  private:
+    char *m_spidev;
+    int m_spifd;
+    spi_config_t m_spiconfig;
+    bool m_open;
+  public:
+        SPI();
         SPI(const char * p_spidev);
         SPI(const char * p_spidev, spi_config_t *p_spi_config);
+        void init(const char * p_spidev);
+        void init(const char * p_spidev, spi_config_t *p_spi_config);
         ~SPI();
+        void deinit();
         bool begin();
         bool end();
         int read(uint8_t *p_rxbuffer,uint8_t p_rxlen);

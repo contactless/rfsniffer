@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include "libutils.h"
 
 class CSerializable;
@@ -19,13 +20,13 @@ public:
 	void Reset(){m_BufferPtr = m_Buffer;};
 
 	static size_t getSizeSize(size_t s);
-	static size_t getSizeString(const string &s);
+	static size_t getSizeString(const std::string &s);
 
 	void Serialize(char &data, bool bSerialize);
 	void Serialize(short &data, bool bSerialize);
 	void Serialize(long &data, bool bSerialize);
-	void Serialize(string &data, bool bSerialize);
-	void Serialize(const string &data){string s=data; Serialize(s, true);};
+	void Serialize(std::string &data, bool bSerialize);
+	void Serialize(const std::string &data){ std::string s=data; Serialize(s, true); };
 	void SerializeBinary(void *data, size_t size, bool bSerialize);
 	void SerializeSize(size_t &size, bool bSerialize);
 	void SerializeSize(size_t size){SerializeSize(size, true);};

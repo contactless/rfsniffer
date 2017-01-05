@@ -52,6 +52,5 @@
 #include <vector>
 #include <map>
 #include <queue>
-using namespace std;
 
 #include "haconfig.h"

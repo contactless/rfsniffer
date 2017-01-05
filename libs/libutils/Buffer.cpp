@@ -3,6 +3,8 @@
 #include "Exception.h"
 #include "Serializable.h"
 
+typedef std::string string;
+
 CBuffer::CBuffer(void)
 {
 	m_Buffer = m_BufferPtr = NULL;

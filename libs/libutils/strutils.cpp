@@ -8,6 +8,7 @@
 #include "strutils.h"
 #include "Exception.h"
 
+typedef std::string string;
 
 string GetPath(string path)
 {

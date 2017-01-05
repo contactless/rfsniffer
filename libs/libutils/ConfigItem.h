@@ -1,6 +1,9 @@
 #pragma once
 #pragma warning (disable: 4251)
 
+#include <vector>
+#include <string>
+
 #include "libutils.h"
 #include "strutils.h"
 
@@ -11,13 +14,13 @@
 #elif defined(HAVE_JSONCPP_JSON_JSON_H)
 #	include "jsoncpp/json/json.h"
 #else 
-#	error josn.h not found
+#	error json.h not found
 #endif
 
 #pragma warning (disable: 4275)
 class CConfigItem;
 class LIBUTILS_API CConfigItemList:
-	public vector<CConfigItem*>
+	public std::vector<CConfigItem*>
 {
 public:
 	CConfigItemList();
@@ -39,6 +42,8 @@ public:
 
 class LIBUTILS_API CConfigItem
 {
+    typedef std::string string;
+    
 	friend class CXmlDocument;
 	configNode m_Node;
 

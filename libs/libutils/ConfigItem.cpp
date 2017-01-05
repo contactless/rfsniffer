@@ -17,6 +17,8 @@
 	const char* CConfigItem::CONFIG_EXTENSION = "json";
 #endif
 
+using std::string;
+
 
 CConfigItemList::CConfigItemList()
 :vector<CConfigItem*>()

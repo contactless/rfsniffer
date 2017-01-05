@@ -89,7 +89,7 @@ private:
 * string <b>m_Message</b> - ����� ����������
 *
 ********************************************/
-	string m_Message;
+	std::string m_Message;
 
 public:
 /*******************************************
@@ -140,7 +140,7 @@ public:
 *		*Message* - ������, �������� ����� ����������
 *
 ********************************************/
-	CHaException(ErrorCodes code, string Message);
+	CHaException(ErrorCodes code, std::string Message);
 	CHaException(ErrorCodes code, const char* Format, ...);
 	~CHaException(void);
 
@@ -167,8 +167,8 @@ public:
 * ����� ���������� ����� ����������
 *
 ********************************************/
-	string GetMessage(){return m_Message;};
-	string GetMsg(){return m_Message;};
+	std::string GetMessage(){return m_Message;};
+	std::string GetMsg(){return m_Message;};
 
 
 	virtual size_t getSize() const;

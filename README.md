@@ -2,15 +2,14 @@
 Целью проекта является поддержка приема сигналов от различных радиоустройств диапазона 433.92 (метеодатчики, пульты и т.п.) с помощью радиомодуля RFM69 и ядерного linux драйвера, эмулирующего lirc устройство
 
 Для сборки требуется Docker контейнер из http://contactless.ru/wiki/index.php/%D0%9A%D0%B0%D0%BA_%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%B0%D1%82%D1%8B%D0%B2%D0%B0%D1%82%D1%8C_%D0%9F%D0%9E_%D0%B4%D0%BB%D1%8F_Wiren_Board
-
-Сборка:
 (если контейнере нет пакетов dh-exec и dh-autoreconf, то устанавливаем (./wbdev_additional_installs.sh)) 
+
+Сборка исполняемых файлов:
 - git submodule init
 - git submodule update --remote
 - autoreconf -fvi  
 - ./configure 
 - make
-
 
 В результате получается 2 нужных файла:
 - wb-homa-rfsniffer-test (tests/)
@@ -18,14 +17,14 @@
 
 Необходимо скопировать wb-homa-rfsniffer и wb-homa-rfsniffer-test куда-либо на устройство
 
-Если речь идет о сборке deb-пакета, то:
-- #dpkg-buildpackage -rfakeroot -us -uc
-(или #./build_deb.sh)
+Сборка deb-пакета:
+- #./build_deb.sh
+Или же вручную:
+- #python generate_configs.py (в папке configs)
+- #dpkg-buildpackage -rfakeroot -us -uc (в корне проекта)
 
-
-Cейчас все настроено на работу с WB5 (RFM подключен к /dev/spidev32766.0, его DIO2 виден через /dev/lirc0, mqtt доступен без авторизации на localhost). При необходимости настройки можно изменить через параметры командной строки (./rfsniffer -?)
-
-Также, большинство настроек можно передавать через json config. Пример в rfsniffer/rfsniffer.json. Использование конфига делается через -c <config.json>
+Большинство настроек можно передавать испольняемому файлу через json config. Пример в rfsniffer/rfsniffer.json. Использование конфига делается через -c <config.json>
+(в deb пакете нужный файл с настройками будет установлен автоматически)
 
 rftest проверяет работу в целом (логирование, парсер, работу с RFM69, прием и декодирование пакетов от RFM69), создание тестового устройства для WB.
 

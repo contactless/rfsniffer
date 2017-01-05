@@ -1,90 +1,139 @@
 #pragma once
-//#include "../engine/StateJob.h"
 #include "libwb.h"
-#include "../libutils/strutils.h"
+#include <vector>
+#include <unordered_map>
+#include <string>
 
-struct LIBWB_API CWBControl
+#ifdef USE_CONFIG
+	#include "../libutils/ConfigItem.h"
+#endif
+
+class LIBWB_API CWBControl
 {
-	enum ControlType
-	{
-		Error=0,
-		Switch,  //0 or 1
-		Alarm, // 
-		PushButton, // 1
-		Range, // 0..255 [TODO] - max value
-		Rgb, 
-		Text,
-		Generic,
-		Temperature, //	temperature	°C	float
-		RelativeHumidity, //	rel_humidity	%, RH	float, 0 - 100
-		AtmosphericPressure, //	atmospheric_pressure	millibar(100 Pa)	float
-		PrecipitationRate, //(rainfall rate)	rainfall	mm per hour	float
-		PrecipitationTotal, // (rainfall total) mm
-		WindSpeed, //	wind_speed	m / s	float
-		WindAverageSpeed, //	wind_avg_speed	m / s	float
-		WindDirection, // Wind direction in degrees float 0..360
-		Power, //	watt	float
-		PowerConsumption, //	power_consumption	kWh	float
-		Voltage, //	volts	float
-		WaterFlow, //	water_flow	m ^ 3 / hour	float
-		WaterTotal, // consumption	water_consumption	m ^ 3	float
-		Resistance, //	resistance	Ohm	float
-		GasConcentration, //	concentration	ppm	float(unsigned)
-		BatteryLow, // Low battery level - 0 or 1
-		UltravioletIndex, // integer
-		Forecast, // weather forecast - string
-		Comfort // Level of comfort - string
-		
+    // Using std::string without namespace
+    typedef std::string string;
+    
+  public:
+    
+    enum ControlType
+    {
+        Error=0,
+        Switch,  //0 or 1
+        Alarm, // 
+        PushButton, // 1
+        Range, // 0..255 [TODO] - max value
+        Rgb, 
+        Text,
+        Generic,
+        Temperature, // temperature °C float
+        RelativeHumidity, //    rel_humidity %, RH float, 0 - 100
+        AtmosphericPressure, // atmospheric_pressure    millibar(100 Pa)    float
+        PrecipitationRate, //(rainfall rate)    rainfall    mm per hour float
+        PrecipitationTotal, // (rainfall total) mm
+        WindSpeed, //   wind_speed  m / s   float
+        WindAverageSpeed, //    wind_avg_speed  m / s   float
+        WindDirection, // Wind direction in degrees float 0..360
+        Power, //   watt    float
+        PowerConsumption, //    power_consumption   kWh float
+        Voltage, // volts   float
+        WaterFlow, //   water_flow  m ^ 3 / hour    float
+        WaterTotal, // consumption  water_consumption   m ^ 3   float
+        Resistance, //  resistance  Ohm float
+        GasConcentration, //    concentration   ppm float(unsigned)
+        BatteryLow, // Low battery level - 0 or 1
+        UltravioletIndex, // integer
+        Forecast, // weather forecast - string
+        Comfort, // Level of comfort - string
+        ControlTypeCount // amount of above-mentioned types, terminal item in enum
+    };
+    
+    struct ControlNames {
+       ControlType type;
+       string metaType;
+       string defaultName;  
+    };
+    
+  protected:
+  
+    static std::vector<string> getControlTypeToMetaType(
+            const std::vector<ControlNames> &controlNamesList);
+            
+    static std::vector<string> getControlTypeToDefaultName(
+        const std::vector<ControlNames> &controlNamesList);
+    
+  public:
+    
+    const static std::vector<ControlNames> controlNamesList;
+    // failed to do them const =(
+    static std::vector<string> controlTypeToMetaType;
+    static std::vector<string> controlTypeToDefaultName;
+    
+    static ControlType getControlTypeByMetaType(const string &metaType);
 
-	};
+    // "type" - type of control
+    // "name" is a name of control in mqtt tree and also description in web interface
+    // "metaType" is the type that will be written into .../meta/type
+    // upd: "metaType" will be generated from "type"
+    ControlType type;
+    string name;
+    // "readonly" is a flag answering if item is readonly in web-interface
+    // "changed" is a flag that is used when we update mqtt
+    bool readonly, changed;
+    // "value" - value on control
+    string value;
+    string source, sourceType;
+    
+    const string &metaType() const;
+    
+    const string &stringValue() const;
+    float floatValue() const;
+    
+    CWBControl &setSource(const string &source_); 
+    CWBControl &setSourceType(const string &sourceType_); 
 
-	ControlType Type;
-	// Name is a name of control in mqtt tree and also description in web interface
-	// MetaType is the type that will be written into .../meta/type
-	string Name, MetaType, Source, SourceType;
-	bool Readonly, Changed;
-	string sValue;
-	float fValue;
+    CWBControl(const string &name, ControlType type, bool readonly = true);
+    CWBControl(); 
 };
 
-typedef map<string, CWBControl*> CControlMap;
 
 class LIBWB_API CWBDevice
 {
-	string deviceName;
-	string deviceDescription;
-	CControlMap deviceControls;
-
-    string GetControlMetaTypeByType(CWBControl::ControlType type);
-    CWBControl::ControlType GetControlTypeByMetaType(string meta_type);
-    string GetControlUserReadNameByType(CWBControl::ControlType type);
-    
+    // Using std::vector, std::string and std::unordered_map without namespace
+    typedef std::string string;
 public:
-	// Name is the name in mqtt tree
-	// Description will be written into .../meta/name
-	CWBDevice(string DeviceName, string DeviceDescription);
-	CWBDevice();
-	~CWBDevice();
+    typedef std::unordered_map<string, CWBControl> CControlMap;
+    typedef std::unordered_map<string, CWBDevice*> CWBDeviceMap;
+    typedef std::unordered_map<string, string> StringMap;
+private:
+    string deviceName;
+    string deviceDescription;
+    CControlMap deviceControls;
+public:
+    // deviceName is the name in mqtt tree
+    // deviceDescription will be written into .../meta/name
+    CWBDevice();
+    CWBDevice(const string &deviceName, const string &deviceDescription);
+    ~CWBDevice();
 
-	string getName(){return deviceName;};
-	string getDescription(){return deviceDescription;};
+    const string &getName() {return deviceName;};
+    const string &sgetDescription() {return deviceDescription;};
 #ifdef USE_CONFIG
-	void Init(CConfigItem config);
-#endif	
-	void AddControl(string Name, CWBControl::ControlType Type, bool ReadOnly, string Source="", string SourceType="");
-	bool sourceExists(string source);
-	void setBySource(string source, string sourceType, string Value);
-    void set(CWBControl::ControlType Type, string Value);
-    void set(CWBControl::ControlType Type, float Value);
-	void set(string Name, string Value);
-	void set(string Name, float Value);
-	float getF(string Name);
-	string getS(string Name);
-	void CreateDeviceValues(string_map &);
-	void UpdateValues(string_map &);
-	const CControlMap *getControls(){return &deviceControls;};
-	string getTopic(string Control);
+    void init(CConfigItem config);
+#endif  
+    void addControl(const CWBControl &device);
+    void addControl(const string &name, CWBControl::ControlType type, bool readonly = true);
+    bool sourceExists(const string &source);
+    void setBySource(const string &source, const string &sourceType, string value);
+    void set(CWBControl::ControlType type, const string &value);
+    void set(CWBControl::ControlType type, float value);
+    void set(const string &name, const string &value);
+    void set(const string &name, float value);
+    float getFloat(const string &name);
+    const string &getString(const string &name);
+    void createDeviceValues(StringMap &);
+    void updateValues(StringMap &);
+    const CControlMap *getControls(){return &deviceControls;};
+    string getTopic(const string &control);
 
 };
 
-typedef map<string, CWBDevice*> CWBDeviceMap;

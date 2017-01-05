@@ -7,6 +7,7 @@ class RFM69OOK;
 class CMqttConnection
 :public mosqpp::mosquittopp
 {
+    typedef CWBDevice::CWBDeviceMap CWBDeviceMap; 
     string m_Server;
     CLog *m_Log;
     bool m_isConnected;
@@ -28,6 +29,9 @@ private:
     virtual void on_unsubscribe(int mid);
     virtual void on_log(int level, const char *str);
     virtual void on_error();
+
+    void publishString(const string &path, const string &value);
+    void publishStringMap(const CWBDevice::StringMap &values);
 
     void SendUpdate();
     void CreateDevice(CWBDevice* dev);

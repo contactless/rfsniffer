@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "../libs/libutils/logging.h"
 #include "../libs/libutils/Exception.h"
 #include "MqttConnect.h"
@@ -139,8 +138,8 @@ void CMqttConnection::NewMessage(string message)
         if (!dev) {
             string desc = string("RST sensor ") + id;
             dev = new CWBDevice(name, desc);
-            dev->AddControl("Temperature", CWBControl::Temperature, true);
-            dev->AddControl("Humidity", CWBControl::RelativeHumidity, true);
+            dev->addControl("Temperature", CWBControl::Temperature, true);
+            dev->addControl("Humidity", CWBControl::RelativeHumidity, true);
             CreateDevice(dev);
         }
 
@@ -162,10 +161,10 @@ void CMqttConnection::NewMessage(string message)
             if (!dev) {
                 string desc = string("Noolite Sensor 0x") + id;
                 dev = new CWBDevice(name, desc);
-                dev->AddControl("Temperature", CWBControl::Temperature, true);
+                dev->addControl("Temperature", CWBControl::Temperature, true);
 
                 if (h.length() > 0)
-                    dev->AddControl("Humidity", CWBControl::RelativeHumidity, true);
+                    dev->addControl("Humidity", CWBControl::RelativeHumidity, true);
 
                 CreateDevice(dev);
             }
@@ -180,7 +179,7 @@ void CMqttConnection::NewMessage(string message)
             if (!dev) {
                 string desc = string("Noolite Sensor 0x") + id;
                 dev = new CWBDevice(name, desc);
-                dev->AddControl("State", CWBControl::Switch, true);
+                dev->addControl("State", CWBControl::Switch, true);
 
                 CreateDevice(dev);
             }
@@ -190,7 +189,7 @@ void CMqttConnection::NewMessage(string message)
             else if (cmd == "2")
                 dev->set("State", "1");
             else if (cmd == "4")
-                dev->set("State", dev->getS("State") == "1" ? "0" : "1");
+                dev->set("State", dev->getString("State") == "1" ? "0" : "1");
             else
                 dev->set("State", "0");
         }
@@ -232,7 +231,7 @@ void CMqttConnection::NewMessage(string message)
             dev = new CWBDevice(name, desc);
             
             for (auto control_pair: control_and_value) 
-                dev->AddControl("", control_pair.first, true);
+                dev->addControl("", control_pair.first, true);
             
             CreateDevice(dev);
         }
@@ -244,7 +243,7 @@ void CMqttConnection::NewMessage(string message)
         CWBDevice *dev = m_Devices["X10"];
         if (!dev) {
             dev = new CWBDevice("X10", "X10");
-            dev->AddControl("Command", CWBControl::Text, true);
+            dev->addControl("Command", CWBControl::Text, true);
             CreateDevice(dev);
         }
 
@@ -254,9 +253,9 @@ void CMqttConnection::NewMessage(string message)
         CWBDevice *dev = m_Devices["Remotes"];
         if (!dev) {
             dev = new CWBDevice("Remotes", "RF Remote controls");
-            dev->AddControl("Raex", CWBControl::Text, true);
-            dev->AddControl("Livolo", CWBControl::Text, true);
-            dev->AddControl("Rubitek", CWBControl::Text, true);
+            dev->addControl("Raex", CWBControl::Text, true);
+            dev->addControl("Livolo", CWBControl::Text, true);
+            dev->addControl("Rubitek", CWBControl::Text, true);
             //dev->AddControl("Raw", CWBControl::Text, true);
             CreateDevice(dev);
         }
@@ -268,28 +267,46 @@ void CMqttConnection::NewMessage(string message)
     SendUpdate();
 }
 
+void CMqttConnection::publishString(const string &path, const string &value) {
+    publish(NULL, path.c_str(), value.size(), value.c_str(), 0, true);
+}
+
+void CMqttConnection::publishStringMap(const CWBDevice::StringMap &values) {
+    for (auto i : values) {
+        publishString(i.first, i.second);
+        m_Log->Printf(5, "publish %s=%s", i.first.c_str(), i.second.c_str());
+    }
+}
+
 void CMqttConnection::SendUpdate()
 {
-    string_map v;
+    CWBDevice::StringMap valuesForUpdate;
 
-    for_each(CWBDeviceMap, m_Devices, dev) {
-        if (dev->second)
-            dev->second->UpdateValues(v);
+    // read changes into "valuesForUpdate"
+    for (auto dev : m_Devices) {
+        if (dev.second)
+            dev.second->updateValues(valuesForUpdate);
     }
 
-    for_each(string_map, v, i) {
-        publish(NULL, i->first.c_str(), i->second.size(), i->second.c_str(), 0, true);
+    // do these changes in mqtt
+    
+    publishStringMap(valuesForUpdate);
+    /*for (auto i : valuesForUpdate) {
+        publishString(i->first, i->second);
+        //publish(NULL, i->first.c_str(), i->second.size(), i->second.c_str(), 0, true);
         m_Log->Printf(5, "publish %s=%s", i->first.c_str(), i->second.c_str());
-    }
+    }*/
 }
 
 void CMqttConnection::CreateDevice(CWBDevice *dev)
 {
     m_Devices[dev->getName()] = dev;
-    string_map v;
-    dev->CreateDeviceValues(v);
-    for_each(string_map, v, i) {
-        publish(NULL, i->first.c_str(), i->second.size(), i->second.c_str(), 0, true);
+    CWBDevice::StringMap valuesForCreate;
+    dev->createDeviceValues(valuesForCreate);
+    publishStringMap(valuesForCreate);
+    /*for (auto i : valuesForCreate) {
+        publishString(i->first, i->second);
+        //publish(NULL, i->first.c_str(), i->second.size(), i->second.c_str(), 0, true);
         m_Log->Printf(5, "publish %s=%s", i->first.c_str(), i->second.c_str());
-    }
+    }*/
 }

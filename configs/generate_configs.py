@@ -23,18 +23,13 @@ def generate_config(version, lirc_device="/dev/lirc0", spi_device=None, spi_majo
     config_file = open(config_name, "w")
     config_file.write(config)
 
+
 # supported
-generate_config("wb58")
-generate_config("wb55")
-generate_config("wb52") 
+generate_config("52")
+generate_config("55")
+generate_config("58")
 
 # may be supported
-generate_config("wbsh3", spi_minor=5, irq=36) # smth
-generate_config("wbsh5") # smth
-
-# probably not supported
-generate_config("cqc10")
-generate_config("wbsh4")
-generate_config("mka3")
-
-
+generate_config("32", spi_minor=5, irq=36)
+generate_config("41", spi_minor=4, irq=92)
+generate_config("50")
