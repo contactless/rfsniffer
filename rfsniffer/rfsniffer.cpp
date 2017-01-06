@@ -1,4 +1,7 @@
+#include <algorithm>
+
 #include "rfsniffer.h"
+
 
 
 RFSniffer::RFSnifferArgs::RFSnifferArgs():
@@ -402,35 +405,41 @@ void RFSniffer::receiveForever() throw(CHaException)
             break;
 
         // try recognize packets
-        while (readSmthNew && readDataCount() > 0) {
+        if (readSmthNew) {
             size_t parsedLength;
-            string parsedResult = m_parser.ParseRepetitive(dataBegin, readDataCount(), &parsedLength);
-            if (parsedResult.length() > 0) {
-                m_Log->Printf(3, "RF Recieved: %s (parsed from %u lirc_t). RSSI=%d (%d)",
-                              parsedResult.c_str(), parsedLength, lastRSSI, minGoodRSSI);
-                conn.NewMessage(parsedResult);
-                if (minGoodRSSI > lastRSSI)
-                    minGoodRSSI = lastRSSI;
+            std::vector<string> results = m_parser.ParseToTheEnd(dataBegin, readDataCount(), &parsedLength);
 
+            if (parsedLength == 0) {
+                if (readDataCount() > maxMessageLength) {
+                    dataPtr = dataBegin; // clean buffer
+                    m_Log->Printf(3, "RF Received too long message or just a lot of trash RSSI=%d (%d)", lastRSSI,
+                                  minGoodRSSI);
+                }
+            } else {
                 // copy [dataBegin + parsedLength, dataPtr) to [dataBegin, dataPtr - parsedLength)
                 for (lirc_t *p = data; p < dataPtr - parsedLength; p++)
                     *p = *(p + parsedLength);
                 // and shift pointer
                 dataPtr -= parsedLength;
-            } else {
-                if (readDataCount() > maxMessageLength) {
-                    dataPtr = dataBegin; // clean buffer
-                    m_Log->Printf(3, "RF Recieved too long message or just a lot of trash RSSI=%d (%d)", lastRSSI,
-                                  minGoodRSSI);
+
+                for (const string &parsedResult : results) {
+                    m_Log->Printf(3, "RF Received: %s (parsed from %u lirc_t). RSSI=%d (%d)",
+                                  parsedResult.c_str(), parsedLength, lastRSSI, minGoodRSSI);
+                    conn.NewMessage(parsedResult);
+                    if (minGoodRSSI > lastRSSI)
+                        minGoodRSSI = lastRSSI;
+
                 }
-                break;
             }
 
         }
         readSmthNew = false;
 
         // try get more data and sleep if fail
-        if (waitForData(lircFD, 300000)) {
+        if (waitForData(lircFD, 3000000)) {
+            // do not try to read much, because it easier to process it by small parts
+            //size_t tryToReadCount = std::min(normalMessageLength, remainingDataCount());
+
             int resultBytes = read(lircFD, (void *)dataPtr, remainingDataCount() * sizeof(lirc_t));
             // I hope this never happen
             while (resultBytes % sizeof(lirc_t) != 0) {
@@ -487,13 +496,13 @@ void RFSniffer::receiveForever() throw(CHaException)
                     string parsedResult = m_parser.ParseRepetitive(data, data_ptr - data, &parsedLength);
                     rfm.receiveBegin();
                     if (parsedResult.length()) {
-                        m_Log->Printf(3, "RF Recieved: %s (parsed from %u lirc_t). RSSI=%d (%d)",
+                        m_Log->Printf(3, "RF Received: %s (parsed from %u lirc_t). RSSI=%d (%d)",
                             parsedResult.c_str(), parsedLength, lastRSSI, minGoodRSSI);
                         conn.NewMessage(parsedResult);
                         if (minGoodRSSI > lastRSSI)
                             minGoodRSSI = lastRSSI;
                     } else {
-                        m_Log->Printf(4, "Recieved %ld signals. Not decoded");
+                        m_Log->Printf(4, "Received %ld signals. Not decoded");
                         if (writePackets > 0) {
                             vector <char> buff_data(12000);
                             char *buff = buff_data.data();

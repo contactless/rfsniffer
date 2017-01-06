@@ -33,7 +33,9 @@
 #include <vector>
 #include <map>
 #include <queue>
-using namespace std;
+
+// bad but better that using namespace std;
+using std::string;
 
 #include "../libutils/haconfig.h"
 #include "../libutils/Exception.h"

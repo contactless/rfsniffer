@@ -3,8 +3,8 @@
 #include "rflib.h"
 #include "RFProtocol.h"
 
-typedef map<base_type, int> TBase2Int;
-typedef map<base_type, double> TBase2Float;
+typedef std::map<base_type, int> TBase2Int;
+typedef std::map<base_type, double> TBase2Float;
 
 class CRFAnalyzer
 {

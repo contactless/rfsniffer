@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "stdafx.h"
 #include <fcntl.h>
 
@@ -12,6 +13,8 @@
 #include "RFProtocolRubitek.h"
 #include "RFProtocolMotionSensor.h"
 #include "RFAnalyzer.h"
+
+using std::string;
 
 CRFParser::CRFParser(CLog *log, string SavePath)
     : b_RunAnalyzer(false), m_Analyzer(NULL), m_Log(log), m_SavePath(SavePath),
@@ -71,7 +74,28 @@ void CRFParser::AddProtocol(CRFProtocol *p)
     //  setMinMax();
 }
 
-// 1,2,3,1,100,1,1,2,3
+
+
+
+std::vector<string> CRFParser::ParseToTheEnd(base_type *data, size_t length,
+        size_t *readLengthToReturn)
+{
+    const base_type *dataBegin = data;
+    std::vector<string> results;
+    string str;
+
+    // While ParseRepetitive can recognize smth
+    // recognize and add result to "results".
+    // Add only unique strings.
+    // Notice that used Parse changes data and length
+    while (!(str = Parse(&data, &length)).empty())
+        if (std::find(results.begin(), results.end(), str) == results.end())
+            results.push_back(str);
+
+    *readLengthToReturn = data - dataBegin;
+    return results;
+}
+
 
 // Tries to recognize packet from begin of data.
 // If data was recognised then returned string have non-zero length,
@@ -164,6 +188,10 @@ string CRFParser::Parse(base_type *data, size_t len)
     return "";
 }
 
+
+
+
+
 void CRFParser::EnableAnalyzer()
 {
     b_RunAnalyzer = true;
@@ -207,10 +235,10 @@ void CRFParser::setMinMax()
         } else {
             base_type minPause, maxPause, minPulse, maxPulse;
             (*i)->getMinMax(&minPause, &maxPause, &minPulse, &maxPulse);
-            m_minPause = min(m_minPause, minPause);
-            m_maxPause = max(m_maxPause, maxPause);
-            m_minPulse = min(m_minPulse, minPulse);
-            m_maxPulse = max(m_maxPulse, maxPulse);
+            m_minPause = std::min(m_minPause, minPause);
+            m_maxPause = std::max(m_maxPause, maxPause);
+            m_minPulse = std::min(m_minPulse, minPulse);
+            m_maxPulse = std::max(m_maxPulse, maxPulse);
         }
     }
     m_Log->Printf(3, "CRFProtocol decoders use pauses %ld-%ld pulses %ld-%ld", m_minPause, m_maxPause,

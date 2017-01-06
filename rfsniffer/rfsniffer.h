@@ -9,7 +9,6 @@
 #include <sys/un.h>
 #include <dirent.h>
 #include <unistd.h>
-#include <functional>
 #include "../libs/libutils/logging.h"
 #include "../libs/libutils/Exception.h"
 #include "../libs/libutils/Config.h"
@@ -67,6 +66,7 @@ class RFSniffer
     int lircFD;
     // lirc_t buffer
     const static size_t maxMessageLength = (1 << 17);
+    const static size_t normalMessageLength = (1 << 9);
     const static size_t dataSize = maxMessageLength * 2;
     lirc_t data[dataSize];
     lirc_t *const dataBegin;

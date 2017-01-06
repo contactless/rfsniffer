@@ -3,7 +3,7 @@
 class RFLIB_API CRFProtocolNooLite :
     public CRFProtocol
 {
-    map<uint16_t, bool> m_lastFlip;
+    std::map<uint16_t, bool> m_lastFlip;
 
   public:
     enum nooLiteCommandType {

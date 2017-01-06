@@ -3,11 +3,12 @@
 #include "rflib.h"
 #include "RFProtocol.h"
 
-typedef vector<CRFProtocol *> CRFProtocolList;
+typedef std::vector<CRFProtocol *> CRFProtocolList;
 class CRFAnalyzer;
 
 class RFLIB_API CRFParser
 {
+    typedef std::string string;
     CLog *m_Log;
     CRFProtocolList m_Protocols;
     bool b_RunAnalyzer;
@@ -43,6 +44,11 @@ class RFLIB_API CRFParser
     // otherwise returned string is empty.
     // In every case read length (or just skipped) will be written to "readLength"
     string ParseRepetitive(base_type *data, size_t length, size_t *readLength);
+
+    // Tries to recognize packet from begin of data.
+    // It returns all recognized packets to the end
+    // and parsed length
+    std::vector<string> ParseToTheEnd(base_type *data, size_t length, size_t *readLength);
 
     //  Включает анализатор для пакетов, которые не получилось декодировать. Пока не реализованно
     void EnableAnalyzer();
