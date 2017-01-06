@@ -9,6 +9,7 @@ override_dh_autoreconf:
 DEB_HOST_MULTIARCH  ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 override_dh_auto_configure:
+	./configs/generate_configs.py --directory configs/ --generate
 	dh_auto_configure -- --enable-static --enable-plugins --enable-doxygen
 
 override_dh_auto_install:
@@ -23,6 +24,7 @@ override_dh_clean:
 	rm -vf haconfig.inc
 	rm -vf test-driver
 	rm -vfr m4
+	./configs/generate_configs.py --directory configs/ --clean
 	dh_autoreconf_clean
 	dh_clean
 

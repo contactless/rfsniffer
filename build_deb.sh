@@ -1,11 +1,5 @@
 #!/bin/bash
 
-# generate configs
-echo "Generating configs (json configs for rfsniffer)"
-cd configs
-python generate_configs.py
-cd ..
-
 # build deb
 SUCCESS_CODE=0
 dh_testdir

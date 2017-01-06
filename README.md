@@ -20,7 +20,6 @@
 Сборка deb-пакета:
 - #./build_deb.sh
 Или же вручную:
-- #python generate_configs.py (в папке configs)
 - #dpkg-buildpackage -rfakeroot -us -uc (в корне проекта)
 
 Большинство настроек можно передавать испольняемому файлу через json config. Пример в rfsniffer/rfsniffer.json. Использование конфига делается через -c <config.json>

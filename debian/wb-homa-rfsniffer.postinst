@@ -6,13 +6,14 @@
 CONFFILE="/etc/wb-homa-rfsniffer.conf"
 
 BOARD_CONF_PREFIX="/usr/share/wb-homa-rfsniffer/wb-homa-rfsniffer.conf."
+BOARD_CONF_CUFFIX=".generated"
 
-SUFFIX=$WB_VERSION
-BOARD_CONF="${BOARD_CONF_PREFIX}${SUFFIX}"
+ID=$WB_VERSION
+BOARD_CONF="${BOARD_CONF_PREFIX}${ID}${BOARD_CONF_CUFFIX}"
 
 if ! [ -f $BOARD_CONF ]; then
-    SUFFIX="default"
-    BOARD_CONF="${BOARD_CONF_PREFIX}${SUFFIX}"
+    ID="default"
+    BOARD_CONF="${BOARD_CONF_PREFIX}${ID}${BOARD_CONF_CUFFIX}"
 fi
 
 ucf --debconf-ok $BOARD_CONF $CONFFILE

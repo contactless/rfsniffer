@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "stdafx.h"
 #include "RFProtocol.h"
 
@@ -443,14 +445,14 @@ void CRFProtocol::getMinMax(base_type *minPause, base_type *maxPause, base_type 
 
     int pos = 0;
     for (; m_PulseLengths[pos][0]; pos++) {
-        *minPulse = min (*minPulse, m_PulseLengths[pos][0]);
-        *maxPulse = max (*maxPulse, m_PulseLengths[pos][1]);
+        *minPulse = std::min (*minPulse, m_PulseLengths[pos][0]);
+        *maxPulse = std::max (*maxPulse, m_PulseLengths[pos][1]);
     }
 
     pos = 0;
     for (; m_ZeroLengths[pos][0]; pos++) {
-        *minPause = min (*minPause, m_ZeroLengths[pos][0]);
-        *maxPause = max (*maxPause, m_ZeroLengths[pos][1]);
+        *minPause = std::min (*minPause, m_ZeroLengths[pos][0]);
+        *maxPause = std::max (*maxPause, m_ZeroLengths[pos][1]);
     }
 }
 

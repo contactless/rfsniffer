@@ -36,6 +36,8 @@
 
 // bad but better that using namespace std;
 using std::string;
+using std::min;
+using std::max;
 
 #include "../libutils/haconfig.h"
 #include "../libutils/Exception.h"

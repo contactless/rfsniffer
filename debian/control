@@ -3,7 +3,7 @@ Maintainer: Yuri Pechatnov <yuri.pechatnov@gmail.com>
 Section: misc
 Priority: optional
 Standards-Version: 1.0.0
-Build-Depends: debhelper (>= 9), dh-autoreconf, dh-exec, pkg-config, g++, libjsoncpp-dev, libmosquittopp-dev, libmosquitto-dev, libwbmqtt-dev (>= 1.3.2)
+Build-Depends: debhelper (>= 9), dh-autoreconf, dh-exec, python, pkg-config, g++, libjsoncpp-dev, libmosquittopp-dev, libmosquitto-dev, libwbmqtt-dev (>= 1.3.2)
 
 Package: wb-homa-rfsniffer
 Architecture: any
