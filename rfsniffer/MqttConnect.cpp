@@ -133,8 +133,15 @@ void CMqttConnection::NewMessage(String message)
     }
 
     if (type == "RST") {
+        m_Log->Printf(3, "Msg from RST %s", value.c_str());
+
         String::Map values = value.SplitToPairs();
         string id = values["id"], t = values["t"], h = values["h"];
+
+        if (id.empty() || t.empty() || h.empty()) {
+            m_Log->Printf(3, "Msg from RST INCORRECT %s", value.c_str());
+            return;
+        }
 
         string name = string("RST_") + id;
         CWBDevice *dev = m_Devices[name];
@@ -148,13 +155,19 @@ void CMqttConnection::NewMessage(String message)
 
         dev->set("Temperature", t);
         dev->set("Humidity", h);
-        m_Log->Printf(3, "Msg from RST %s", value.c_str());
     } else if (type == "nooLite") {
+        m_Log->Printf(3, "Msg from nooLite %s", value.c_str());
+
         // nooLite:sync=80 cmd=21 type=2 t=24.6 h=39 s3=ff bat=0 addr=1492 fmt=07 crc=a2
         String::Map values = value.SplitToPairs();
 
         string sensorType = values["type"], id = values["addr"], cmd = values["cmd"], t = values["t"],
                h = values["h"];
+
+        if (sensorType.empty() || id.empty() || cmd.empty()) {
+            m_Log->Printf(3, "Msg from nooLite INCORRECT %s", value.c_str());
+            return;
+        }
 
         if (cmd == "21") {
             //noolite_rx_0x1492
@@ -195,11 +208,18 @@ void CMqttConnection::NewMessage(String message)
             else
                 dev->set("State", "0");
         }
-        m_Log->Printf(3, "Msg from nooLite %s", value.c_str());
     } else if (type == "Oregon") {
+        m_Log->Printf(3, "Msg from Oregon %s", value.c_str());
+
         String::Map values = value.SplitToPairs();
 
         const string sensorType = values["type"], id = values["id"], ch = values["ch"];
+
+        if (sensorType.empty() || id.empty() || ch.empty()) {
+            m_Log->Printf(3, "Msg from Oregon INCORRECT %s", value.c_str());
+            return;
+        }
+
 
         // Fields of data from sensor
         // Format is vector of pairs (key in input string, conforming CWBControl)
@@ -241,8 +261,9 @@ void CMqttConnection::NewMessage(String message)
         for (auto control_pair : control_and_value)
             dev->set(control_pair.first, control_pair.second);
 
-        m_Log->Printf(3, "Msg from Oregon %s", value.c_str());
     } else if (type == "X10") {
+        m_Log->Printf(3, "Msg from X10 %s", message.c_str());
+
         CWBDevice *dev = m_Devices["X10"];
         if (!dev) {
             dev = new CWBDevice("X10", "X10");
@@ -251,8 +272,9 @@ void CMqttConnection::NewMessage(String message)
         }
 
         dev->set("Command", value);
-        m_Log->Printf(3, "Msg from X10 %s", message.c_str());
     } else if (type == "Raex" || type == "Livolo" || type == "Rubitek" ) {
+        m_Log->Printf(3, "Msg from X10 %s", message.c_str());
+
         CWBDevice *dev = m_Devices["Remotes"];
         if (!dev) {
             dev = new CWBDevice("Remotes", "RF Remote controls");
@@ -264,7 +286,6 @@ void CMqttConnection::NewMessage(String message)
         }
 
         dev->set(type, value);
-        m_Log->Printf(3, "New RF message %s", message.c_str());
     }
 
     SendUpdate();
