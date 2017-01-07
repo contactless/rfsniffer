@@ -114,39 +114,47 @@ string CRFParser::ParseRepetitive(base_type *data, size_t length, size_t *readLe
     return ret;
 }
 
-string CRFParser::Parse(base_type **data, size_t *length)
+string CRFParser::Parse(base_type **data_ptr, size_t *length_ptr)
 {
     if (m_maxPause == 0)
         setMinMax();
 
-    base_type *saveStart = *data;
+    // I think references is more understandable
+    base_type *&data = *data_ptr;
+    size_t &length = *length_ptr;
+
+    base_type *saveStart = data;
     base_type splitDelay = m_maxPause * 10 / 8;
     base_type splitPulse = m_minPulse / 2;
 
-    for(base_type *ptr = *data; ptr - *data < *length; ptr++) {
+    for(base_type *ptr = data; ptr - data < length; ptr++) {
         bool isPulse = CRFProtocol::isPulse(*ptr);
         base_type len = CRFProtocol::getLengh(*ptr);
-        if ((!isPulse && len > splitDelay) || (isPulse && len < splitPulse)) {
-            size_t packetLen = ptr - *data;
+        bool badInterval1 = ((!isPulse && len > splitDelay) || (isPulse && len < splitPulse));
+        bool badInterval2 =
+            (( isPulse && (len < m_minPulse || len > m_maxPulse)) ||
+             (!isPulse && (len < m_minPause || len > m_maxPause)));
+        if (badInterval2) {
+            size_t packetLen = ptr - data;
             if (packetLen > 50)
-                m_Log->Printf(4, "Parse part of packet from %ld size %ld splitted by %ld", *data - saveStart,
+                m_Log->Printf(4, "Parse part of packet from %ld size %ld splitted by %ld", data - saveStart,
                               packetLen, CRFProtocol::getLengh(*ptr));
 
-            string res = Parse(*data, packetLen);
+            string res = Parse(data, packetLen);
 
-            *data += packetLen + 1;
-            *length -= packetLen + 1;
+            data += packetLen + 1;
+            length -= packetLen + 1;
 
             if (res.length())
                 return res;
         }
     }
 
-    if (*length > MIN_PACKET_LEN) {
-        string res = Parse(*data, *length);
+    if (length > MIN_PACKET_LEN) {
+        string res = Parse(data, length);
         if (res.length()) {
-            *data += (*length);
-            *length = 0;
+            data += length;
+            length = 0;
             return res;
         }
     }
@@ -160,8 +168,8 @@ string CRFParser::Parse(base_type *data, size_t len)
         return "";
 
     // Пытаемся декодировать пакет каждым декодером по очереди
-    for_each(CRFProtocolList, m_Protocols, i) {
-        string retval = (*i)->Parse(data, len);
+    for (CRFProtocol *protocol : m_Protocols) {
+        string retval = protocol->Parse(data, len);
         if (retval.length())
             return retval;  // В случае успеха возвращаем результат
     }
@@ -176,9 +184,9 @@ string CRFParser::Parse(base_type *data, size_t len)
 
     // Если указан путь для сохранения - пишем в файл пакет, который не смогли декодировать
     if (m_SavePath.length()) {
-        for_each(CRFProtocolList, m_Protocols, i) {
-            if ((*i)->needDumpPacket()) {
-                m_Log->Printf(3, "Dump packet for %s", (*i)->getName().c_str());
+        for (CRFProtocol *protocol : m_Protocols) {
+            if (protocol->needDumpPacket()) {
+                m_Log->Printf(3, "Dump packet for %s", protocol->getName().c_str());
                 SaveFile(data, len);
                 return "";
             }
@@ -213,7 +221,7 @@ void CRFParser::SaveFile(base_type *data, size_t size)
             return;
         };
 
-        write(of, data, sizeof(data[0])*size);
+        size_t ignore_ = write(of, data, sizeof(data[0]) * size);
         close(of);
     }
 #endif
@@ -228,13 +236,13 @@ void CRFParser::SetSavePath(string SavePath)
 void CRFParser::setMinMax()
 {
     bool first = true;
-    for_each(CRFProtocolList, m_Protocols, i) {
+    for (CRFProtocol *protocol : m_Protocols) {
         if (first) {
-            (*i)->getMinMax(&m_minPause, &m_maxPause, &m_minPulse, &m_maxPulse);
+            protocol->getMinMax(&m_minPause, &m_maxPause, &m_minPulse, &m_maxPulse);
             first = false;
         } else {
             base_type minPause, maxPause, minPulse, maxPulse;
-            (*i)->getMinMax(&minPause, &maxPause, &minPulse, &maxPulse);
+            protocol->getMinMax(&minPause, &maxPause, &minPulse, &maxPulse);
             m_minPause = std::min(m_minPause, minPause);
             m_maxPause = std::max(m_maxPause, maxPause);
             m_minPulse = std::min(m_minPulse, minPulse);

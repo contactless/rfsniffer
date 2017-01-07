@@ -342,7 +342,7 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
         if (apos != string::npos)
             raw.resize(apos);
     }
-    dprintf("Oregon decodePacket: %s\n", raw.c_str());
+    dprintf("OregonV2 decodePacket: %s\n", raw.c_str());
 
     std::vector <char> isPulse(raw.size());
     for (int i = 0; i < (int)raw.size(); i++)
@@ -408,8 +408,8 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
     string hexPacket = "";
 
     if (packet.length() < 48) {
-        m_Log->Printf(3, "Oregon: (only warning: it may be other protocol) Too short packet %s",
-                      packet.c_str());
+        dprintf("OregonV2: (only warning: it may be other protocol) Too short packet %s",
+                packet.c_str());
         return "";
     }
 
@@ -434,12 +434,12 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
     }
 
     if (crc != originalCRC) {
-        m_Log->Printf(3, "Oregon: (only warning: it may be other protocol) Bad CRC for %s", packet.c_str());
+        dprintf("OregonV2: (only warning: it may be other protocol) Bad CRC for %s", packet.c_str());
         return "";
     }
 
     if (hexPacket[0] != 'A') {
-        m_Log->Printf(4, "Oregon: First nibble is not 'A'. Data: %s", hexPacket.c_str());
+        dprintf("OregonV2: First nibble is not 'A'. Data: %s", hexPacket.c_str());
         return "";
     }
 
@@ -454,7 +454,8 @@ string CRFProtocolOregon::DecodeData(const string &packet) // Преобразование бит
     for (auto device = devices.begin(); device != devices.end() && parsed.length() == 0; device++)
         parsed = device->DecodeData(packet);
     if (parsed.size() == 0) {
-        m_Log->Printf(4, "Unknown sensor type %s. Data: %s", packet.substr(1, 4).c_str(), packet.c_str());
+        m_Log->Printf(4, "OregonV2: Unknown sensor type %s. Data: %s", packet.substr(1, 4).c_str(),
+                      packet.c_str());
         return "raw:" + packet;
     }
     return parsed;

@@ -160,35 +160,35 @@ void getAllTestFiles( string path, string_vector &result )
 
 bool OneTest(const string_pair &test, CLog *log, CRFParser &parser)
 {
-    string file_name = test.first, exp_result = test.second;
+    String file_name = test.first, exp_result = test.second;
 
     // expected values
-    string exp_type, exp_value;
-    string_map exp_values;
+    String exp_type, exp_value;
+    String::Map exp_values;
 
     // parsed values
-    string res_type, res_value;
-    string_map res_values;
+    String res_type, res_value;
+    String::Map res_values;
 
     // printf("Test #%d: %s\n", (int)(test - Tests), (*test)[1]);
 
     try {
-        SplitPair(exp_result, ':', exp_type, exp_value);
+        exp_result.SplitByExactlyOneDelimiter(":", exp_type, exp_value);
         if (exp_value.find(' ') != exp_value.npos)
-            SplitValues(exp_value, exp_values);
+            exp_values = exp_value.SplitToPairs();
     } catch (CHaException ex) {
     }
 
-    string res = DecodeFile(&parser, log, (string("tests/testfiles/") + file_name).c_str());
+    String res = DecodeFile(&parser, log, (string("tests/testfiles/") + file_name).c_str());
 
 
     // Simple check for cases with not "a=1 b=2..." format
     if (res == exp_result)
         return true;
     try {
-        SplitPair(res, ':', res_type, res_value);
+        res.SplitByExactlyOneDelimiter(":", res_type, res_value);
         if (res_value.find(' ') != res_value.npos)
-            SplitValues(res_value, res_values);
+            res_values = res_value.SplitToPairs();
     } catch (CHaException ex) {
         printf("Failed! Format is incorrect! File:%s, result:%s, Expected: %s\n", file_name.c_str(),
                res.c_str(), exp_result.c_str());

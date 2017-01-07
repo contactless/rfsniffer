@@ -34,14 +34,15 @@
 #include <map>
 #include <queue>
 
-// bad but better that using namespace std;
-using std::string;
-using std::min;
-using std::max;
 
 #include "../libutils/haconfig.h"
 #include "../libutils/Exception.h"
 #include "../libutils/logging.h"
 #include "../libutils/strutils.h"
 
+// bad but better that using namespace std;
+using std::string;
+using std::min;
+using std::max;
+using namespace strutils;
 

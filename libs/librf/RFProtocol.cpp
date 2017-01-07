@@ -107,7 +107,7 @@ string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)
 
             if (!m_PulseLengths[pos][0]) {
                 if (m_Debug) // Если включена отладка - явно пишем длины плохих пауз
-                    decodedRaw += string("[") + itoa(len) + "}";
+                    decodedRaw += string("[") + itoa(len) + "]";
                 else
                     decodedRaw += "?";
             }
@@ -172,7 +172,7 @@ string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)
 
 bool CRFProtocol::SplitPackets(const string &rawData, string_vector &rawPackets)
 {
-    SplitString(rawData, m_PacketDelimeter, rawPackets);
+    String(rawData).Split(m_PacketDelimeter, rawPackets);
     return rawPackets.size() > 1;
 }
 
@@ -181,13 +181,13 @@ string CRFProtocol::DecodeBits(string_vector &rawPackets)
     string res;
     int count = 0;
 
-    for_each(string_vector, rawPackets, s) {
+    for (const string &s : rawPackets) {
         string packet;
-        size_t pos = s->find(m_Debug ? '[' : '?');
+        size_t pos = s.find(m_Debug ? '[' : '?');
         if (pos != string::npos)
-            packet = s->substr(0, pos);
+            packet = s.substr(0, pos);
         else
-            packet = *s;
+            packet = s;
 
         if (!packet.length())
             continue;
@@ -249,10 +249,10 @@ unsigned long CRFProtocol::bits2long(const string &raw)
 {
     unsigned long res = 0;
 
-    for_each_const(string, raw, i) {
+    for (char c : raw) {
         res = res << 1;
 
-        if (*i == '1')
+        if (c == '1')
             res++;
     }
 
@@ -291,10 +291,10 @@ string CRFProtocol::ManchesterDecode(const string &raw, bool expectPulse, char s
     t_state state = expectPulse ? expectStartPulse : expectStartPause;
     string res;
 
-    for_each_const(string, raw, c) {
+    for (char c : raw) {
         switch (state) {
             case expectStartPulse:   // Ожидаем короткий пульс, всегда 1
-                if (*c == shortPulse) {
+                if (c == shortPulse) {
                     res += expectPulse ? "1" : "0";
                     state = expectMiddlePause;
                 } else {
@@ -302,7 +302,7 @@ string CRFProtocol::ManchesterDecode(const string &raw, bool expectPulse, char s
                 }
                 break;
             case expectStartPause:  // Ожидаем короткую паузу, всегда 0
-                if (*c == shortPause) {
+                if (c == shortPause) {
                     res += expectPulse ? "0" : "1";
                     state = expectMiddlePulse;
                 } else {
@@ -310,9 +310,9 @@ string CRFProtocol::ManchesterDecode(const string &raw, bool expectPulse, char s
                 }
                 break;
             case expectMiddlePulse:  // Ожидаем пульс. Если короткий - пара закончилась, ждем короткую стартовую паузу. Если длинный, получили начало след пары и ждем среднюю паузу
-                if (*c == shortPulse) {
+                if (c == shortPulse) {
                     state = expectStartPause;
-                } else if (*c == longPulse) {
+                } else if (c == longPulse) {
                     state = expectMiddlePause;
                     res += expectPulse ? "1" : "0";
                 } else {
@@ -320,9 +320,9 @@ string CRFProtocol::ManchesterDecode(const string &raw, bool expectPulse, char s
                 }
                 break;
             case expectMiddlePause:  // Ожидаем паузу. Если короткая - пара закончилась, ждем короткую стартовый пульс. Если длинная, получили начало след пары и ждем средний пульс
-                if (*c == shortPause) {
+                if (c == shortPause) {
                     state = expectStartPulse;
-                } else if (*c == longPause) {
+                } else if (c == longPause) {
                     state = expectMiddlePulse;
                     res += expectPulse ? "0" : "1";
                 } else {
@@ -369,8 +369,8 @@ string CRFProtocol::ManchesterEncode(const string &bits, bool invert, char short
                                      char longPause, char shortPulse, char longPulse)
 {
     string res;
-    for_each_const(string, bits, i) {
-        bool bit = *i == '1';
+    for (char c : bits) {
+        bool bit = (c == '1');
 
         if (bit ^ invert) {
             res += "Aa";

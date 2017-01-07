@@ -1,4 +1,5 @@
 #include "mosquittopp.h"
+#include "../libs/libutils/strutils.h"
 #include "../libs/libwb/WBDevice.h"
 #include "../libs/librf/RFProtocolNooLite.h"
 
@@ -18,7 +19,7 @@ class CMqttConnection
   public:
     CMqttConnection(string Server, CLog *log, RFM69OOK *rfm);
     ~CMqttConnection();
-    void NewMessage(string message);
+    void NewMessage(strutils::String message);
 
   private:
     virtual void on_connect(int rc);

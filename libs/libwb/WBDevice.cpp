@@ -3,7 +3,7 @@
 #include "../libutils/Exception.h"
 #include "WBDevice.h"
 
-
+using namespace strutils;
 
 typedef CWBControl::ControlNames ControlNames;
 typedef CWBControl::ControlType ControlType;
@@ -86,9 +86,7 @@ string_cref CWBControl::stringValue() const
 
 float CWBControl::floatValue() const
 {
-    float res;
-    sscanf(value.c_str(), "%f", &res);
-    return res;
+    return atof(value.c_str());
 }
 
 

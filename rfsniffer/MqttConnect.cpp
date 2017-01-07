@@ -3,6 +3,8 @@
 #include "MqttConnect.h"
 #include "../libs/librf/RFM69OOK.h"
 
+using namespace strutils;
+
 
 CMqttConnection::CMqttConnection(string Server, CLog *log, RFM69OOK *rfm)
     : m_isConnected(false), mosquittopp("TestMqttConnection"), m_RFM(rfm)
@@ -49,8 +51,8 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
 {
     try {
         m_Log->Printf(6, "mqtt::on_message(%s=%s)", message->topic, message->payload);
-        string_vector v;
-        SplitString(message->topic, '/', v);
+        String::Vector v = String(message->topic).Split('/');
+
         if (v.size() != 6)
             return;
 
@@ -76,8 +78,7 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
             extra = string(" level=") + (char *)message->payload;
         } else if (control == "color") {
             cmd = 6;
-            string_vector v;
-            SplitString((char *)message->payload, ';', v);
+            String::Vector v = String((char *)message->payload).Split(';');
             if (v.size() == 3) {
                 extra += " fmt=3 r=" + v[0] + " g=" + v[1] + " b=" + v[2];
             }
@@ -123,14 +124,16 @@ void CMqttConnection::on_error()
     m_Log->Printf(1, "mqtt::on_error()");
 }
 
-void CMqttConnection::NewMessage(string message)
+void CMqttConnection::NewMessage(String message)
 {
-    string type, value;
-    SplitPair(message, ':', type, value);
+    String type, value;
+    if (message.SplitByExactlyOneDelimiter(':', type, value) != 0) {
+        m_Log->Printf(3, "CMqttConnection::NewMessage - Incorrect message: %s", message.c_str());
+        return;
+    }
 
     if (type == "RST") {
-        string_map values;
-        SplitValues(value, values);
+        String::Map values = value.SplitToPairs();
         string id = values["id"], t = values["t"], h = values["h"];
 
         string name = string("RST_") + id;
@@ -148,9 +151,8 @@ void CMqttConnection::NewMessage(string message)
         m_Log->Printf(3, "Msg from RST %s", value.c_str());
     } else if (type == "nooLite") {
         // nooLite:sync=80 cmd=21 type=2 t=24.6 h=39 s3=ff bat=0 addr=1492 fmt=07 crc=a2
+        String::Map values = value.SplitToPairs();
 
-        string_map values;
-        SplitValues(value, values);
         string sensorType = values["type"], id = values["addr"], cmd = values["cmd"], t = values["t"],
                h = values["h"];
 
@@ -195,9 +197,10 @@ void CMqttConnection::NewMessage(string message)
         }
         m_Log->Printf(3, "Msg from nooLite %s", value.c_str());
     } else if (type == "Oregon") {
-        string_map values;
-        SplitValues(value, values);
+        String::Map values = value.SplitToPairs();
+
         const string sensorType = values["type"], id = values["id"], ch = values["ch"];
+
         // Fields of data from sensor
         // Format is vector of pairs (key in input string, conforming CWBControl)
         // keys are taken from RFProtocolOregon (in librf)

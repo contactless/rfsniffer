@@ -1,3 +1,10 @@
+wb-homa-rfsniffer (1.0.3) stable; urgency=medium
+  
+  * A lot of changes in inner structure
+  * Some improvements like better computing of consequent radio-packets
+
+ -- Yuri Pechatnov <yuri.pechatnov@wirenboard.ru>  Mon, 27 Oct 2016 23:59:59 +0000
+
 wb-homa-rfsniffer (1.0.2) stable; urgency=medium
   
   * Added Oregon V3 protocol

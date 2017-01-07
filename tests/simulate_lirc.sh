@@ -37,8 +37,12 @@ echo "take $EXE as executable rfsniffer"
 
 CMD="$EXE -L -l $LIRC"
 
-# stop service to avoid contradictions
+echo "Stop service wb-homa-rfsniffer to avoid contradictions"
 service wb-homa-rfsniffer stop
+
+# too long too wait
+#echo "Clean mqtt tree"
+#mqtt-delete-retained '/devices/#'
 
 echo "Start testing (run: $CMD)"
 
@@ -55,7 +59,7 @@ do
    
 done
 
-sleep 20
+sleep 10
 
 
 kill %3

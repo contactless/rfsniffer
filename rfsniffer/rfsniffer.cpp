@@ -422,6 +422,7 @@ void RFSniffer::receiveForever() throw(CHaException)
                 // and shift pointer
                 dataPtr -= parsedLength;
 
+                // run over all parsed results and make messages about them
                 for (const string &parsedResult : results) {
                     m_Log->Printf(3, "RF Received: %s (parsed from %u lirc_t). RSSI=%d (%d)",
                                   parsedResult.c_str(), parsedLength, lastRSSI, minGoodRSSI);

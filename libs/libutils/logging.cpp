@@ -7,6 +7,8 @@
 #endif
 #include "Exception.h"
 
+
+using namespace strutils;
 using std::string;
 
 

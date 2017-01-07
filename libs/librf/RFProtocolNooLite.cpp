@@ -131,21 +131,23 @@ bool CRFProtocolNooLite::bits2packet(const string &bits, uint8_t *packet, size_t
 }
 
 
-string CRFProtocolNooLite::DecodePacket(const string &raw)
+string CRFProtocolNooLite::DecodePacket(const string &raw_)
 {
+    String raw = String(raw_);
+
     if (raw.length() < 10 )
         return "";
 
-    string_vector v;
-    SplitString(raw, 'd', v);
+    String::Vector v = raw.Split('d');
+    //SplitString(raw, 'd', v);
 
     if (v.size() == 1)
-        SplitString(raw, 'c', v);   // TODO CheckIT
+        v = raw.Split('c');   // TODO CheckIT
 
     string res;
 
-    for_each(string_vector, v, i) {
-        res = ManchesterDecode('a' + *i, false, 'a', 'b', 'A', 'B');
+    for(const String &i : v) {
+        res = ManchesterDecode('a' + i, false, 'a', 'b', 'A', 'B');
         string tmp = bits2timings(res);
         uint8_t tmpBuffer[100];
         size_t tmpBufferSize = sizeof(tmpBuffer);
@@ -282,13 +284,12 @@ string l2bits(uint16_t val, int bits)
 
 string CRFProtocolNooLite::data2bits(const string &data)
 {
-    string proto, dataDetail;
-    SplitPair(data, ':', proto, dataDetail);
+    String proto, dataDetail;
+    String(data).SplitByExactlyOneDelimiter(':', proto, dataDetail);
     if (proto != "nooLite")
         throw CHaException(CHaException::ErrBadParam, "Bad protocol in '" + data + "'");
 
-    string_map values;
-    SplitValues(dataDetail, values);
+    String::Map values = dataDetail.SplitToPairs();
 
     string sAddr = values["addr"];
     string sCmd = values["cmd"];

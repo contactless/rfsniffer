@@ -69,4 +69,4 @@ if (args.generate):
     generate_config("default")
 
 if (args.clean):
-    os.system("rm -v " + working_directory + "*." + generated_config_name_suffix)
+    os.system("rm -vf " + working_directory + "*." + generated_config_name_suffix)

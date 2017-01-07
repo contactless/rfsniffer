@@ -8,6 +8,6 @@ libutils_la_SOURCES = Buffer.cpp Buffer.h Exception.cpp Exception.h \
 	strutils.h targetver.h thread.cpp thread.h 
 
 AM_CFLAGS = -pthread
-AM_CXXFLAGS = -pthread
+AM_CXXFLAGS = -pthread --std=c++0x
 
 libutils_la_LDFLAGS = -all-static

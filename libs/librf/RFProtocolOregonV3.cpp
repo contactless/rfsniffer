@@ -100,8 +100,8 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
     string hexPacket = "";
 
     if (packet.length() < 48) {
-        m_Log->Printf(3, "OregonV3: (only warning: it may be other protocol) Too short packet %s",
-                      packet.c_str());
+        dprintf("OregonV3: (only warning: it may be other protocol) Too short packet %s",
+                packet.c_str());
         return "";
     }
 
@@ -131,15 +131,15 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
     dprintf("    OregonV3 decodedData: %s\n", hexPacket.c_str());
 
     if (crc != originalCRC) {
-        m_Log->Printf(3,
-                      "OregonV3: (only warning: it may be other protocol) Bad CRC (calculated %d != %d told) for %s", crc,
-                      originalCRC, packet.c_str());
+        dprintf("OregonV3: (only warning: it may be other protocol)"\
+                " Bad CRC (calculated %d != %d told) for %s", crc,
+                originalCRC, packet.c_str());
         return "";
     }
 
 
     if (hexPacket[0] != 'A') {
-        m_Log->Printf(4, "OregonV3: First nibble is not 'A'. Data: %s", hexPacket.c_str());
+        dprintf("OregonV3: First nibble is not 'A'. Data: %s", hexPacket.c_str());
         return "";
     }
 
