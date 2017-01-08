@@ -146,7 +146,7 @@ void CMqttConnection::NewMessage(String message)
         string name = string("RST_") + id;
         CWBDevice *dev = m_Devices[name];
         if (!dev) {
-            string desc = string("RST sensor ") + id;
+            string desc = string("RST sensor") + " [" + id + "]";
             dev = new CWBDevice(name, desc);
             dev->addControl("Temperature", CWBControl::Temperature, true);
             dev->addControl("Humidity", CWBControl::RelativeHumidity, true);
@@ -161,10 +161,9 @@ void CMqttConnection::NewMessage(String message)
         // nooLite:sync=80 cmd=21 type=2 t=24.6 h=39 s3=ff bat=0 addr=1492 fmt=07 crc=a2
         String::Map values = value.SplitToPairs();
 
-        string sensorType = values["type"], id = values["addr"], cmd = values["cmd"], t = values["t"],
-               h = values["h"];
+        string id = values["addr"], cmd = values["cmd"];
 
-        if (sensorType.empty() || id.empty() || cmd.empty()) {
+        if (id.empty() || cmd.empty()) {
             m_Log->Printf(3, "Msg from nooLite INCORRECT %s", value.c_str());
             return;
         }
@@ -172,9 +171,10 @@ void CMqttConnection::NewMessage(String message)
         if (cmd == "21") {
             //noolite_rx_0x1492
             string name = string("noolite_rx_0x") + id;
+            string t = values["t"], h = values["h"];
             CWBDevice *dev = m_Devices[name];
             if (!dev) {
-                string desc = string("Noolite Sensor 0x") + id;
+                string desc = string("Noolite Sensor PT111") + " [0x" + id + "]";
                 dev = new CWBDevice(name, desc);
                 dev->addControl("Temperature", CWBControl::Temperature, true);
 
@@ -190,23 +190,24 @@ void CMqttConnection::NewMessage(String message)
         } else if (cmd == "0" || cmd == "4" || cmd == "2") {
             //noolite_rx_0x1492
             string name = string("noolite_rx_0x") + id;
+            static const string movement_control_name = "Is there a movement";
             CWBDevice *dev = m_Devices[name];
             if (!dev) {
-                string desc = string("Noolite Sensor 0x") + id;
+                string desc = string("Noolite Sensor PM111") + " [0x" + id + "]";
                 dev = new CWBDevice(name, desc);
-                dev->addControl("State", CWBControl::Switch, true);
+                dev->addControl(movement_control_name, CWBControl::Switch, true);
 
                 CreateDevice(dev);
             }
 
             if (cmd == "0")
-                dev->set("State", "0");
+                dev->set(movement_control_name, "0");
             else if (cmd == "2")
-                dev->set("State", "1");
+                dev->set(movement_control_name, "1");
             else if (cmd == "4")
-                dev->set("State", dev->getString("State") == "1" ? "0" : "1");
+                dev->set(movement_control_name, dev->getString(movement_control_name) == "1" ? "0" : "1");
             else
-                dev->set("State", "0");
+                dev->set(movement_control_name, "0");
         }
     } else if (type == "Oregon") {
         m_Log->Printf(3, "Msg from Oregon %s", value.c_str());
@@ -273,7 +274,7 @@ void CMqttConnection::NewMessage(String message)
 
         dev->set("Command", value);
     } else if (type == "Raex" || type == "Livolo" || type == "Rubitek" ) {
-        m_Log->Printf(3, "Msg from X10 %s", message.c_str());
+        m_Log->Printf(3, "Msg from remote control (Raex | Livolo | Rubitek) %s", message.c_str());
 
         CWBDevice *dev = m_Devices["Remotes"];
         if (!dev) {

@@ -3,6 +3,11 @@
 
 #pragma warning (disable: 4251)
 
+#include <vector>
+#include <string>
+#include <iostream>
+
+
 #include "libutils.h"
 #include "Serializable.h"
 /*******************************************
@@ -81,6 +86,9 @@ class LIBUTILS_API CHaException
     *
     ********************************************/
     ErrorCodes m_code;
+    
+    static std::vector<std::string> generateTypeDescriptions();
+    static std::vector<std::string> m_TypeDescriptions;
     /*******************************************
     *
     * Name: m_Message
@@ -177,6 +185,10 @@ class LIBUTILS_API CHaException
     {
         return m_Message;
     };
+    
+    std::string GetExplanation() {
+		return std::string("CHaException") + " (ErrorCodes::" + m_TypeDescriptions[m_code] + "): " + m_Message;
+	};
 
 
     virtual size_t getSize() const;

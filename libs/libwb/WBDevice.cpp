@@ -206,6 +206,7 @@ string_cref CWBDevice::getString(string_cref name)
     if (i == deviceControls.end())
         throw CHaException(CHaException::ErrBadParam, name);
 
+
     return i->second.stringValue();
 }
 
