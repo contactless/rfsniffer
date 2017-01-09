@@ -54,8 +54,8 @@ static const std::vector<string_pair> Tests = {
 
     { "capture-0307-215444.rcf", "nooLite:flip=1 cmd=4 addr=9a13 fmt=00 crc=76" },
     { "capture-0307-215449.rcf", "nooLite:flip=0 cmd=4 addr=9a13 fmt=00 crc=6a" },
-    { "capture-2706-190620.rcf", "nooLite:flip=0 cmd=21 type=2 t=29.6 h=39 s3=ff bat=0 addr=1492 fmt=07 crc=ec"},
-    { "capture-2706-143835.rcf", "nooLite:flip=1 cmd=21 type=2 t=30.3 h=43 s3=ff bat=0 addr=1492 fmt=07 crc=d3"},
+    { "capture-2706-190620.rcf", "nooLite:flip=0 cmd=21 type=2 t=29.6 h=39 s3=ff low_bat=0 addr=1492 fmt=07 crc=ec"},
+    { "capture-2706-143835.rcf", "nooLite:flip=1 cmd=21 type=2 t=30.3 h=43 s3=ff low_bat=0 addr=1492 fmt=07 crc=d3"},
     { "capture-2706-093124.rcf", "nooLite:flip=1 cmd=5 addr=9a12 fmt=00 crc=e5" },
     { "capture-2706-093129.rcf", "nooLite:flip=0 cmd=10 addr=9a12 fmt=00 crc=88" },
     { "capture-2706-093217.rcf", "nooLite:flip=0 cmd=15 addr=9a11 fmt=00 crc=b4" },
@@ -80,13 +80,13 @@ static const std::vector<string_pair> Tests = {
     { "capture-0906-210412.rcf", "Oregon:type=1D20 id="ROLLING_CODE" ch=1 t=23.0 h=40" },
 #undef ROLLING_CODE
     // Tests ported from ism-radio
-    { "ism-test-3b374d96c9.rcf", "Oregon:type=1D20 id=12 ch=4 battery=low t=26.3 h=35" },
-    { "ism-test-ca09da62af.rcf", "Oregon:type=1D20 id=85 ch=2 battery=low t=25.6 h=43"},
-    { "ism-test-d66b21c765.rcf", "Oregon:type=F824 id=42 ch=1 battery=normal t=26.9 h=39"},
-    { "ism-test-41d890077f.rcf", "Oregon:type=F824 id=42 ch=1 battery=normal t=26.7 h=39"},
-    { "ism-test-df05ec91e6.rcf", "Oregon:type=F824 id=42 ch=1 battery=normal t=26.6 h=39"},
-    { "ism-test-7031d3158b.rcf", "Oregon:type=F824 id=42 ch=1 battery=normal t=26.4 h=39"},
-    { "ism-test-7b8d00e86c.rcf", "Oregon:type=F824 id=42 ch=1 battery=normal t=26.3 h=40"},
+    { "ism-test-3b374d96c9.rcf", "Oregon:type=1D20 id=12 ch=4 low_bat=1 t=26.3 h=35" },
+    { "ism-test-ca09da62af.rcf", "Oregon:type=1D20 id=85 ch=2 low_bat=1 t=25.6 h=43"},
+    { "ism-test-d66b21c765.rcf", "Oregon:type=F824 id=42 ch=1 low_bat=0 t=26.9 h=39"},
+    { "ism-test-41d890077f.rcf", "Oregon:type=F824 id=42 ch=1 low_bat=0 t=26.7 h=39"},
+    { "ism-test-df05ec91e6.rcf", "Oregon:type=F824 id=42 ch=1 low_bat=0 t=26.6 h=39"},
+    { "ism-test-7031d3158b.rcf", "Oregon:type=F824 id=42 ch=1 low_bat=0 t=26.4 h=39"},
+    { "ism-test-7b8d00e86c.rcf", "Oregon:type=F824 id=42 ch=1 low_bat=0 t=26.3 h=40"},
 
     { "capture-2708-132748.rcf", "X10:D2ON" },
     { "capture-2708-132756.rcf", "X10:D2ON" },

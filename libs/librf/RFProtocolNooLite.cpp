@@ -185,72 +185,90 @@ string CRFProtocolNooLite::DecodeData(const string
     if (packetLen < 5)
         return bits;
 
-    char buffer[100] = "";
-    uint8_t fmt = packet[packetLen - 2];
+	// DEBUG
+	int calculated_crc = crc8(packet, packetLen - 1);
+	int received_crc = packet[packetLen - 1];
+	if (calculated_crc != received_crc) {		
+		m_Log->Printf(3, "CRFProtocolNooLite::DecodeData - Incorrect packet - wrong CRC (received %02x != %02x calculated)", 
+								received_crc, calculated_crc);
+		return "";
+	}
+	
+    int fmt = packet[packetLen - 2];
     switch (fmt) {
         case 0: {
+			// for cmd = 0 | 2 | 4
+			// motion sensor (PM111) (repeats >= 2)
+			// something strange (PT111 in some modes) (repeats = 1)
+			// so demand repeats >= 2
             bool sync = (packet[0] & 8) != 0;
-            uint8_t cmd = packet[0] >> 4;
-            snprintf(buffer, sizeof(buffer), "flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
-                     (uint16_t)((packet[2] << 8) + packet[1]), (uint8_t)packet[3], (uint8_t)packet[4]);
-            break;
+            int cmd = packet[0] >> 4;
+            return String::ComposeFormat("flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
+                     (int)((packet[2] << 8) + packet[1]), (int)packet[3], (int)packet[4])
+                     + ((cmd == 0 || cmd == 2 || cmd == 4)  ? " __repeat=2" : "");
         }
         case 1: {
-            uint8_t type = packet[3];
-            snprintf(buffer, sizeof(buffer), "cmd=%02x b0=%02x type=%d addr=%04x fmt=%02x crc=%02x",
-                     (uint8_t)packet[0], (uint8_t)packet[1],
+            int type = packet[3];
+            return String::ComposeFormat("cmd=%02x b0=%02x type=%d addr=%04x fmt=%02x crc=%02x",
+                     (int)packet[0], (int)packet[1],
                      type,
-                     (uint16_t)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (uint8_t)fmt,
-                     (uint8_t)packet[packetLen - 1]);
+                     (int)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (int)fmt,
+                     (int)packet[packetLen - 1]);
         }
-        break;
 
         case 7:
             if (packet[1] == 21) {
-                uint8_t type = (packet[3] >> 4) & 7;
-                int t0 = ((packet[3] & 0x7) << 8) | packet[2];
-                float t = (float)0.1 * ((packet[3] & 8) ? 4096 - t0 : t0);
+                int type = (packet[3] >> 4) & 7;
+                int t_raw = ((packet[3] & 0xF) << 8) | packet[2];
+                const int t_signum_bit = 11, t_signum_bit_mask = (1 << t_signum_bit);
+    
+				// it seems to be right
+                float t = 0.1 * ((t_raw & t_signum_bit_mask) ? 
+								 -((t_signum_bit_mask << 1) - t_raw) : +t_raw);
+					
+                // here is a BUG, I can't see negative temperature
+                //float t = (float)0.1 * ((packet[3] & 8) ? 4096 - t0 : t0);
+                
                 int h = packet[4];
                 int s3 = packet[5];
-                bool bat = (packet[3] & 0x80) != 0;
+                int bat = ((packet[3] & 0x80) != 0);
+                
+                int flip = (int)packet[0] ? 1 : 0;
+                int cmd = (int)packet[1];
                 if (type == 2) {
-                    snprintf(buffer, sizeof(buffer),
-                             "flip=%d cmd=%d type=%d t=%.1f h=%d s3=%02x bat=%d addr=%04x fmt=%02x crc=%02x",
-                             (uint8_t)packet[0] ? 1 : 0, (uint8_t)packet[1],
-                             type, t, h, s3, bat,
-                             (uint16_t)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (uint8_t)fmt,
-                             (uint8_t)packet[packetLen - 1]);
+                    return String::ComposeFormat(
+                             "flip=%d cmd=%d type=%d t=%.1f h=%d s3=%02x low_bat=%d addr=%04x fmt=%02x crc=%02x",
+                             flip, cmd, type, t, h, s3, bat,
+                             (int)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (int)fmt,
+                             (int)packet[packetLen - 1]);
                 } else if (type == 3) {
-                    snprintf(buffer, sizeof(buffer),
-                             "flip=%d cmd=%d type=%d t=%.1f s3=%02x bat=%d addr=%04x fmt=%02x crc=%02x",
-                             (uint8_t)packet[0] ? 1 : 0, (uint8_t)packet[1],
-                             type, t, s3, bat,
-                             (uint16_t)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (uint8_t)fmt,
-                             (uint8_t)packet[packetLen - 1]);
+                    return String::ComposeFormat(
+                             "flip=%d cmd=%d type=%d t=%.1f s3=%02x low_bat=%d addr=%04x fmt=%02x crc=%02x",
+                             flip, cmd, type, t, s3, bat,
+                             (int)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (int)fmt,
+                             (int)packet[packetLen - 1]);
                 } else {
-                    snprintf(buffer, sizeof(buffer),
+                    return String::ComposeFormat(
                              "flip=%d cmd=%02x type=%02x b3=%02x b4=%02x b5=%02x addr=%04x fmt=%02x crc=%02x",
-                             (uint8_t)packet[0] ? 1 : 0, (uint8_t)packet[1], (uint8_t)packet[2], (uint8_t)packet[3],
-                             (uint8_t)packet[4], (uint8_t)packet[5], (uint16_t)((packet[7] << 8) + packet[6]),
-                             (uint8_t)packet[8], (uint8_t)packet[9]);
+                             flip, cmd, (int)packet[2], (int)packet[3],
+                             (int)packet[4], (int)packet[5], (int)((packet[7] << 8) + packet[6]),
+                             (int)packet[8], (int)packet[9]);
                 }
 
             } else {
-                snprintf(buffer, sizeof(buffer),
-                         "cmd=%02x b1=%02x b2=%02x b3=%02x b4=%02x b5=%02x addr=%04x fmt=%02x crc=%02x", (uint8_t)packet[0],
-                         (uint8_t)packet[1], (uint8_t)packet[2], (uint8_t)packet[3], (uint8_t)packet[4], (uint8_t)packet[5],
-                         (uint16_t)((packet[7] << 8) + packet[6]), (uint8_t)packet[8], (uint8_t)packet[9]);
+                return String::ComposeFormat(
+                         "cmd=%02x b1=%02x b2=%02x b3=%02x b4=%02x b5=%02x addr=%04x fmt=%02x crc=%02x", (int)packet[0],
+                         (int)packet[1], (int)packet[2], (int)packet[3], (int)packet[4], (int)packet[5],
+                         (int)((packet[7] << 8) + packet[6]), (int)packet[8], (int)packet[9]);
             }
-            break;
-
         default:
             m_Log->Printf(3, "len=%d addr=%04x fmt=%02x crc=%02x", packetLen,
-                          (uint16_t)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (uint8_t)fmt,
-                          (uint8_t)packet[packetLen - 1]);
+                          (int)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (int)fmt,
+                          (int)packet[packetLen - 1]);
             m_Log->PrintBuffer(3, packet, packetLen);
     }
 
-    return buffer;
+    return "";
 }
 
 bool CRFProtocolNooLite::needDump(const string &rawData)

@@ -4,45 +4,6 @@
 
 #include "DebugPrintf.h"
 
-class BufferWriter
-{
-    std::vector <char> buff;
-    int offset;
-  public:
-    void clear()
-    {
-        offset = 0;
-    }
-
-    std::string getString()
-    {
-        return std::string(buff.data());
-    }
-
-    // consequently prints to buffer
-    int printf(const char *format, ...)
-    {
-        while (true) {
-            va_list args;
-            va_start (args, format);
-            int written_length = vsnprintf(
-                                     buff.data() + offset, buff.size() - offset - 1, format, args
-                                 );
-            va_end (args);
-            if (written_length < 0)
-                return written_length;
-            if (offset + written_length + 1 >= buff.size()) {
-                buff.resize((offset + written_length + 1) * 2);
-                continue;
-            }
-            offset += written_length;
-            return written_length;
-        }
-    }
-
-    BufferWriter(): buff(2), offset(0) { }
-};
-
 // Class that extract fields of specified device
 // from sequence that is decoded Oregon Protocol
 class OregonRFDevice
@@ -152,8 +113,8 @@ class OregonRFDevice
         const int data_offset = 8;
 
         BufferWriter buffered_writer;
-        buffered_writer.printf("type=%s id=%02X ch=%d battery=%s",
-                               sensor_id.c_str(), rolling_code, channel, ((flags & 0x4) ? "low" : "normal"));
+        buffered_writer.printf("type=%s id=%02X ch=%d low_bat=%s",
+                               sensor_id.c_str(), rolling_code, channel, ((flags & 0x4) ? "1" : "0"));
 
         if (temperature_offset != -1) {
             int offset = data_offset + temperature_offset;

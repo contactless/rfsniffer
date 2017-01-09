@@ -397,6 +397,9 @@ void RFSniffer::receiveForever() throw(CHaException)
     time_t lastReport = 0, packetStartTime = time(NULL), startTime = time(NULL);
     int lastRSSI = -1000, minGoodRSSI = 0;
 
+	//string lastParsed = "";
+	time_t lastRecognizedPacketTime = time(NULL);
+
     bool readSmthNew = false;
 
     while (true) {
@@ -405,6 +408,7 @@ void RFSniffer::receiveForever() throw(CHaException)
 			// notice that writePackets is 0 if corresponding command line argument is not set
 			if (args.writePackets > 0 && time(NULL) - startTime > args.writePackets)
 				break;
+				
 
 			// try recognize packets
 			if (readSmthNew) {
@@ -426,6 +430,13 @@ void RFSniffer::receiveForever() throw(CHaException)
 
 					// run over all parsed results and make messages about them
 					for (const string &parsedResult : results) {
+						// disabled because replicas a needed to distinguish some messages
+						//if (time(NULL) - lastRecognizedPacketTime < 2 && parsedResult == lastParsed) {
+						//	m_Log->Printf(3, "RF Received [but duplicate of previous one]");
+						//	continue;
+						//}
+						
+						//lastParsed = parsedResult;
 						m_Log->Printf(3, "RF Received: %s (parsed from %u lirc_t). RSSI=%d (%d)",
 									  parsedResult.c_str(), parsedLength, lastRSSI, minGoodRSSI);
 						conn.NewMessage(parsedResult);

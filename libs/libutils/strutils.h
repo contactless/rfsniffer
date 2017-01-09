@@ -48,6 +48,15 @@ class String : public std::string
     */
     int SplitByExactlyOneDelimiter(string delimiter, string &first, string &second) const;
     int SplitByExactlyOneDelimiter(char delimiter, string &first, string &second) const;
+    
+    /*!
+    Splits String by delimiter to two ones
+    \param [in] delimiter Delimiter
+    \param [out] first, second Strings before delimiter and after
+    If input string doesn't contain delimiter that first string will be equal to input string and second to empty one
+    */
+    void SplitByFirstOccurenceDelimiter(string delimiter, string &first, string &second) const;
+    void SplitByFirstOccurenceDelimiter(char delimiter, string &first, string &second) const;
 
     /*!
     Splits String by delimiter to some ones
@@ -90,6 +99,9 @@ class String : public std::string
 
     String(const char *data_array): std::string(data_array) {}
 
+	// 
+	
+	static String ComposeFormat(const char *format, ...);
 
     // converters
 
@@ -106,6 +118,28 @@ class String : public std::string
     {
         return atof(c_str());
     };
+};
+
+
+class BufferWriter
+{
+    std::vector <char> buff;
+    int offset;
+  public:
+    inline void clear()
+    {
+        offset = 0;
+    }
+
+    inline String getString()
+    {
+        return String(buff.data());
+    }
+
+    // consequently prints to buffer
+    int printf(const char *format, ...);
+
+    BufferWriter(): buff(2), offset(0) { }
 };
 
 // converters

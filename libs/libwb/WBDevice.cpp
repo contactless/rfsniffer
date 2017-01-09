@@ -34,7 +34,7 @@ const std::vector<ControlNames> CWBControl::controlNamesList = {
     {WaterTotal, "water_consumption", "Water consumption"},
     {Resistance, "resistance", "Resistance"},
     {GasConcentration, "concentration", "Gas concentration"},
-    {BatteryLow, "battery", "Battery"},
+    {BatteryLow, "alarm", "Battery low"},
     {UltravioletIndex, "ultraviolet", "Ultraviolet"},
     {Forecast, "forecast", "Forecast"},
     {Comfort, "comfort_level", "Comfort level"}
