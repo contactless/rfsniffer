@@ -4,7 +4,7 @@
 # how rfsniffer transfer information
 # to mqtt and then to web-interface
 
-LIRC="/dev/lirc42"
+LIRC="./lirc_rfm_test_device"
 
 if ! [[ $# -gt 1 ]]; then
     echo "Need more arguments"
@@ -35,10 +35,17 @@ mkfifo $LIRC
 
 echo "take $EXE as executable rfsniffer"
 
-CMD="$EXE -L -l $LIRC"
+CMD="$EXE -T -l $LIRC"
 
-echo "Stop service wb-homa-rfsniffer to avoid contradictions"
-service wb-homa-rfsniffer stop
+
+# Make sure only root can run our script
+if [[ $EUID -ne 0 ]]; then
+    echo "Don't try to stop service wb-homa-rfsniffer"
+	echo "It's probably not WB device"
+else
+	echo "Stop service wb-homa-rfsniffer to avoid contradictions"
+	service wb-homa-rfsniffer stop
+fi
 
 # too long too wait
 #echo "Clean mqtt tree"
@@ -51,16 +58,15 @@ eval "$CMD &"
 
 for file in `find $TESTS_FOLDER -type f -name "*.rcf" | sort`
 do
+   # do not print file name so it will not be mixed with rfsniffer output
    wc -l $file
    cat $file >> $LIRC
    # this sends long pause and long impulse and again pause
    # so driver will be able to split packets
    echo -n -e "\x00\x0F\xFF\xFF\x01\x0F\xFF\xFF\x00\x0F\xFF\xFF" >> $LIRC
-   
 done
 
-sleep 10
-
+sleep 3
 
 kill %3
 kill %2

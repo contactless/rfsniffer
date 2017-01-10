@@ -8,7 +8,7 @@ RFSniffer::RFSnifferArgs::RFSnifferArgs():
     configName(""),
     bDebug(false),
     bDumpAllRegs(false),
-    bLircPedantic(false),
+    bLircPedantic(true),
 
     spiDevice("/dev/spidev32766.0"),
     spiSpeed(500000),
@@ -16,6 +16,9 @@ RFSniffer::RFSnifferArgs::RFSnifferArgs():
 
     fixedThresh(0),
     rssi(0),
+    bRfmEnable(true),
+
+	bCoreTestMod(false),
 
     lircDevice("/dev/lirc0"),
 
@@ -119,7 +122,7 @@ void RFSniffer::readEnvironmentVariables()
 void RFSniffer::readCommandLineArguments(int argc, char **argv)
 {
     // I don't know why, but signed is essential (though it should by by default??)
-    for (signed char c = ' '; c != -1; c = getopt(argc, argv, "Ds:m:l:LS:f:r:tw:c:i")) {
+    for (signed char c = ' '; c != -1; c = getopt(argc, argv, "Ds:m:l:TS:f:r:tw:c:i")) {
         switch (c) {
             case ' ':
                 // just nothing, for first iteration to avoid repetitive getopt
@@ -131,14 +134,21 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
 
             case 's':
                 args.spiDevice = optarg;
+                if (args.spiDevice == "do_not_use") {
+					args.spiDevice = "/dev/null";
+					args.bRfmEnable = false;
+				}
                 break;
 
             case 'l':
                 args.lircDevice = optarg;
                 break;
 
-            case 'L':
+            case 'T':
                 args.bLircPedantic = false;
+                args.bRfmEnable = false;
+                args.bCoreTestMod = true;
+                args.spiDevice = "/dev/null";
                 break;
 
             case 'm':
@@ -181,7 +191,8 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
                 printf("Usage: rfsniffer [params]\n");
                 printf("-D - debug mode. Write good but not decoded packets to files\n");
                 printf("-g <DIO0 gpio> - set custom DIO0 GPIO number. Default %d\n", args.gpioInt);
-                printf("-s <spi device> - set custom SPI device. Default %s\n", args.spiDevice.c_str());
+                printf("-s <spi device> - set custom SPI device. Default %s\n" \
+					   "    to disable SPI and RFM put \'do_not_use\' ", args.spiDevice.c_str());
                 printf("-l <lirc device> - set custom lirc device. Default %s\n", args.lircDevice.c_str());
                 printf("-m <mqtt host> - set custom mqtt host. Default %s\n", args.mqttHost.c_str());
                 printf("-w <seconds> - write to file all packets for <secods> second and exit\n");
@@ -192,7 +203,8 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
                 printf("-f <fixed Threshold> - Use OokFixedThresh with fixed level. 0 - Disabled. Default %d\n",
                        args.fixedThresh);
 
-                printf("-L - disable pedantic check of lirc character device (may use pipe instead)\n");
+                printf("-T - disable pedantic check of lirc character device (may use pipe instead)\n" \
+					   " disable using SPI and RFM, do specific test output");
                 printf("-c configfile - specify config file\n");
                 //          printf("-f <sampling freq> - set custom sampling freq. Default %d\n", samplingFreq);
                 exit(0);
@@ -238,14 +250,16 @@ void RFSniffer::tryReadConfigFile()
 
 void RFSniffer::initSPI()
 {
+	if (!args.bRfmEnable)
+		return;
     spi_config_t spi_config;
     spi_config.mode = 0;
     spi_config.speed = args.spiSpeed;
     spi_config.delay = 0;
     spi_config.bits_per_word = 8;
     // do not use "=" because destructor breaks all
-    mySPI.init(args.spiDevice.c_str(), &spi_config);
-    if (!mySPI.begin()) {
+    mySPI.reset(new SPI(args.spiDevice.c_str(), &spi_config));
+    if (!mySPI->begin()) {
         m_Log->Printf(0, "SPI init failed (probably no such device: %s)", args.spiDevice.c_str());
         showCandidates("/dev/", "spidev");
         m_Log->Printf(0, "Please contact developers");
@@ -255,15 +269,18 @@ void RFSniffer::initSPI()
 
 void RFSniffer::initRFM()
 {
-    rfm.init(&mySPI, args.gpioInt);
-    rfm.initialize();
+	if (!args.bRfmEnable)
+		return;
+		
+    rfm.reset(new RFM69OOK(mySPI.get(), args.gpioInt));
+    rfm->initialize();
 
     if (args.bDumpAllRegs) {
         char *Buffer = (char *)data;
         char *BufferPtr = Buffer;
         size_t BufferSize = dataSize;
         for (int i = 0; i <= 0x4F; i++) {
-            byte cur = rfm.readReg(i);
+            byte cur = rfm->readReg(i);
             BufferPtr += snprintf(BufferPtr, BufferSize - (BufferPtr - Buffer), "Reg_%02X = %02x ", i, cur);
 
             if (i % 4 == 3) {
@@ -276,8 +293,8 @@ void RFSniffer::initRFM()
             m_Log->Printf(3, "%s", Buffer);
         }
 
-        m_Log->Printf(0, "Reg_%02x = %02x Reg_%02x = %02x", 0x6F, rfm.readReg(0x6F), 0x71,
-                      rfm.readReg(0x71));
+        m_Log->Printf(0, "Reg_%02x = %02x Reg_%02x = %02x", 0x6F, rfm->readReg(0x6F), 0x71,
+                      rfm->readReg(0x71));
         exit(0);
     }
 }
@@ -346,10 +363,10 @@ void RFSniffer::tryJustScan() throw(CHaException)
     int curLevel = minLevel;
 
     while (curLevel < maxLevel) {
-        rfm.receiveEnd();
-        rfm.writeReg(REG_OOKPEAK, RF_OOKPEAK_THRESHTYPE_FIXED);
-        rfm.writeReg(REG_OOKFIX, curLevel);
-        rfm.receiveBegin();
+        rfm->receiveEnd();
+        rfm->writeReg(REG_OOKPEAK, RF_OOKPEAK_THRESHTYPE_FIXED);
+        rfm->writeReg(REG_OOKFIX, curLevel);
+        rfm->receiveBegin();
         int pulses = 0;
         time_t startTime = time(NULL);
 
@@ -379,8 +396,8 @@ void RFSniffer::tryJustScan() throw(CHaException)
 void RFSniffer::tryFixThresh() throw(CHaException)
 {
     if (args.fixedThresh) {
-        rfm.writeReg(REG_OOKPEAK, RF_OOKPEAK_THRESHTYPE_FIXED);
-        rfm.writeReg(REG_OOKFIX, args.fixedThresh);
+        rfm->writeReg(REG_OOKPEAK, RF_OOKPEAK_THRESHTYPE_FIXED);
+        rfm->writeReg(REG_OOKFIX, args.fixedThresh);
     }
 }
 
@@ -389,8 +406,9 @@ void RFSniffer::receiveForever() throw(CHaException)
 {
     m_Log->Printf(3, "RF Reciever begins");
 
-    rfm.receiveBegin();
-    CMqttConnection conn(args.mqttHost, m_Log, &rfm);
+	if (rfm)
+		rfm->receiveBegin();
+    CMqttConnection conn(args.mqttHost, m_Log, rfm.get());
     CRFParser m_parser(m_Log, (args.bDebug || args.writePackets > 0) ? args.savePath : "");
     m_parser.AddProtocol("All");
 
@@ -411,7 +429,7 @@ void RFSniffer::receiveForever() throw(CHaException)
 				
 
 			// try recognize packets
-			if (readSmthNew) {
+			if (readSmthNew) { 
 				size_t parsedLength;
 				std::vector<string> results = m_parser.ParseToTheEnd(dataBegin, readDataCount(), &parsedLength);
 
@@ -437,8 +455,14 @@ void RFSniffer::receiveForever() throw(CHaException)
 						//}
 						
 						//lastParsed = parsedResult;
+						
+						// This output is important for testing!
+						// upd: can't rely on it
 						m_Log->Printf(3, "RF Received: %s (parsed from %u lirc_t). RSSI=%d (%d)",
 									  parsedResult.c_str(), parsedLength, lastRSSI, minGoodRSSI);
+						// Test output
+						if (args.bCoreTestMod)
+							fprintf(stderr, "TEST_RF_RECEIVED %s\n", parsedResult.c_str());
 						conn.NewMessage(parsedResult);
 						if (minGoodRSSI > lastRSSI)
 							minGoodRSSI = lastRSSI;
@@ -481,11 +505,12 @@ void RFSniffer::receiveForever() throw(CHaException)
 					m_Log->Printf(0, "read() failed [during endless cycle]\n");
 					break;
 				}
-				lastRSSI = rfm.readRSSI();
+				if (rfm)
+					lastRSSI = rfm->readRSSI();
 			} 
 
-			if (args.rssi < 0)
-				rfm.setRSSIThreshold(args.rssi);
+			if (rfm && args.rssi < 0)
+				rfm->setRSSIThreshold(args.rssi);
 				
 		}
 		catch (CHaException ex) {
@@ -551,7 +576,7 @@ void RFSniffer::receiveForever() throw(CHaException)
 
 void RFSniffer::closeConnections()
 {
-    rfm.receiveEnd();
+    rfm->receiveEnd();
     if (lircFD > 0)
         close(lircFD);
 
@@ -586,6 +611,8 @@ void RFSniffer::run(int argc, char **argv)
 }
 
 RFSniffer::RFSniffer():
+	mySPI(nullptr),
+	rfm(nullptr),
     lircFD(-1),
     dataBegin(data),
     dataEnd(data + dataSize),

@@ -137,10 +137,14 @@ string CRFParser::Parse(base_type **data_ptr, size_t *length_ptr)
         if (badInterval2) {
             size_t packetLen = ptr - data;
             if (packetLen > 50)
-                m_Log->Printf(4, "Parse part of packet from %ld size %ld splitted by %ld", data - saveStart,
-                              packetLen, CRFProtocol::getLengh(*ptr));
+                m_Log->Printf(4, "Parse part of packet from %ld size %ld splitted by %c%ld", data - saveStart,
+                              packetLen, (isPulse ? '+' : '-'), len);
 
-            string res = Parse(data, packetLen);
+            //string res = Parse(data, packetLen);
+            // Important feature with: packetLen * 2 + 20
+            // it's enable tests to work, because some protocols repeats message twice
+            // TODO (?) change to maximum repeat count
+            string res = Parse(data, std::min(packetLen * 2 + 20, length));
 
             data += packetLen + 1;
             length -= packetLen + 1;

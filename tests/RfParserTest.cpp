@@ -3,6 +3,8 @@
  * and compares result with given
  * */
 #include <algorithm>
+#include <iostream>
+#include <fstream>
 
 #include <sys/types.h>
 #include <dirent.h>
@@ -40,6 +42,7 @@ typedef pstr_pair *ppstr_pair;
 
 typedef std::pair<string, string> string_pair;
 
+// deprecated, now description of tests in file
 static const std::vector<string_pair> Tests = {
     /*{ "capture-1311-190209.rcf", "Rubitek:0110111010111110000010110" },
     { "capture-1311-190019.rcf", "Rubitek:0110111010111110000011100" },
@@ -203,6 +206,9 @@ bool OneTest(const string_pair &test, CLog *log, CRFParser &parser)
     // Compare values, extra values in parsed result are ignored
     for (auto value_pair : exp_values)
         if (value_pair.second != res_values[value_pair.first]) {
+			// there may be a regular expression for check by unix grep
+			if (value_pair.second.length() > 0 && value_pair.second[0] == '[')
+				continue;
             printf("Failed! Field\"%s\" mismatch! \n\tFile:%s, result:%s, Expected: %s\n",
                    value_pair.second.c_str(), file_name.c_str(), res.c_str(), exp_result.c_str());
             return false;
@@ -238,9 +244,30 @@ void RfParserTest(string path)
         return;
     }
 
-    for (const string_pair test : Tests)
-        allPassed &= OneTest(test, log, parser);
+	// read tests from descriptive file
+	{
+		std::ifstream test_file;
+		test_file.open("tests/testfiles.ans");
+		if (test_file.is_open()) {
+			String test;
+			while (std::getline(test_file, test)) {
+				String file, answer;
+				test.SplitByFirstOccurenceDelimiter(' ', file, answer);
+				//std::cout << "Test: " << file << " & " << answer << std::endl;;
+				allPassed &= OneTest(std::pair<string, string>(file, answer), log, parser); 
+			}
+			test_file.close();
+		}
+		else {
+			printf("Can't open testfiles descriptive file.");
+			exit(1);
+		}
+	}
+	
+	//for (const string_pair test : Tests)
+    //    allPassed &= OneTest(test, log, parser);
 
+	
     if (!allPassed)
         exit(1);
 }

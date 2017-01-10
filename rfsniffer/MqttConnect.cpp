@@ -96,8 +96,10 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
         string command = "nooLite:cmd=" + itoa(cmd) + " addr=" + addr + extra;
         m_Log->Printf(1, "%s", command.c_str());
         m_nooLite.EncodeData(command, 2000, buffer, bufferSize);
-        m_RFM->send(buffer, bufferSize);
-        m_RFM->receiveBegin();
+        if (m_RFM) {
+			m_RFM->send(buffer, bufferSize);
+			m_RFM->receiveBegin();
+		}
     } catch (CHaException ex) {
         m_Log->Printf(0, "Exception %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
     }

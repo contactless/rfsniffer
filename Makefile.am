@@ -5,4 +5,5 @@ CPPFLAGS = -std=c++0x
 
 SUBDIRS = libs/libutils libs/librf libs/libwb tests rfsniffer
 dist_doc_DATA = README.md
-TESTS = tests/wb-homa-rfsniffer-test
+TESTS = tests/wb-homa-rfsniffer-test tests/test-core-cpp-wrapper
+

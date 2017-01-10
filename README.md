@@ -5,8 +5,6 @@
 (если контейнере нет пакетов dh-exec и dh-autoreconf, то устанавливаем (./wbdev_additional_installs.sh)) 
 
 Сборка исполняемых файлов:
-- git submodule init
-- git submodule update --remote
 - autoreconf -fvi  
 - ./configure 
 - make
@@ -21,6 +19,13 @@
 - #./build_deb.sh
 Или же вручную:
 - #dpkg-buildpackage -rfakeroot -us -uc (в корне проекта)
+
+Если возникают странные ошибки полезно сделать
+- #dpkg-buildpackage -T clean
+
+При разработке не обязательно пересобирать пакет
+- #make clean && make -j 8
+
 
 Большинство настроек можно передавать испольняемому файлу через json config. Пример в rfsniffer/rfsniffer.json. Использование конфига делается через -c <config.json>
 (в deb пакете нужный файл с настройками будет установлен автоматически)

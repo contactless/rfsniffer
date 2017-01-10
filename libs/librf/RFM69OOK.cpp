@@ -47,7 +47,9 @@ volatile int RFM69OOK::RSSI;      // most accurate RSSI during reception (closes
 RFM69OOK *RFM69OOK::selfPointer;
 volatile uint8_t RFM69OOK::PAYLOADLEN;
 
-RFM69OOK::RFM69OOK() { }
+RFM69OOK::RFM69OOK() { 
+	init(NULL, -1, NULL);
+}
 
 RFM69OOK::RFM69OOK(SPI *spi, int gpioInt, CLog *log)
 {

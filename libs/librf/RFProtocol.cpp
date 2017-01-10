@@ -224,6 +224,7 @@ string CRFProtocol::DecodeBits(string_vector &rawPackets)
         else {
             m_DumpPacket = true;
             m_Log->Printf(3, "Decoded '%s' but repeat %d of %d", res.c_str(), count, m_MinRepeat);
+            //return res + String::ComposeFormat(" __repeat=%d", m_MinRepeat);
         }
     }
 

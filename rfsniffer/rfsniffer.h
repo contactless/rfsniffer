@@ -9,6 +9,7 @@
 #include <sys/un.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <memory>
 #include "../libs/libutils/logging.h"
 #include "../libs/libutils/Exception.h"
 #include "../libs/libutils/Config.h"
@@ -42,6 +43,9 @@ class RFSniffer
 
         int fixedThresh;
         int rssi;
+        bool bRfmEnable;
+        
+        bool bCoreTestMod;
 
         string lircDevice;
 
@@ -57,16 +61,16 @@ class RFSniffer
 
     CLog *m_Log;
 
-    SPI mySPI;
-    RFM69OOK rfm;
+    std::unique_ptr<SPI> mySPI;
+    std::unique_ptr<RFM69OOK> rfm;
 
     const static unsigned long lircGetRecMode = _IOR('i', 0x00000002, uint32_t);
 
     // lirc
     int lircFD;
     // lirc_t buffer
-    const static size_t maxMessageLength = (1 << 17);
-    const static size_t normalMessageLength = (1 << 9);
+    //const static size_t maxMessageLength = (1 << 17);
+    const static size_t maxMessageLength = (1 << 25);
     const static size_t dataSize = maxMessageLength * 2;
     lirc_t data[dataSize];
     lirc_t *const dataBegin;
