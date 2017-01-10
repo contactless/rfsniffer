@@ -44,7 +44,7 @@ class RFSniffer
         int fixedThresh;
         int rssi;
         bool bRfmEnable;
-        
+
         bool bCoreTestMod;
 
         string lircDevice;

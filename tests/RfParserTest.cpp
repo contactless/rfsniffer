@@ -206,9 +206,9 @@ bool OneTest(const string_pair &test, CLog *log, CRFParser &parser)
     // Compare values, extra values in parsed result are ignored
     for (auto value_pair : exp_values)
         if (value_pair.second != res_values[value_pair.first]) {
-			// there may be a regular expression for check by unix grep
-			if (value_pair.second.length() > 0 && value_pair.second[0] == '[')
-				continue;
+            // there may be a regular expression for check by unix grep
+            if (value_pair.second.length() > 0 && value_pair.second[0] == '[')
+                continue;
             printf("Failed! Field\"%s\" mismatch! \n\tFile:%s, result:%s, Expected: %s\n",
                    value_pair.second.c_str(), file_name.c_str(), res.c_str(), exp_result.c_str());
             return false;
@@ -244,30 +244,29 @@ void RfParserTest(string path)
         return;
     }
 
-	// read tests from descriptive file
-	{
-		std::ifstream test_file;
-		test_file.open("tests/testfiles.ans");
-		if (test_file.is_open()) {
-			String test;
-			while (std::getline(test_file, test)) {
-				String file, answer;
-				test.SplitByFirstOccurenceDelimiter(' ', file, answer);
-				//std::cout << "Test: " << file << " & " << answer << std::endl;;
-				allPassed &= OneTest(std::pair<string, string>(file, answer), log, parser); 
-			}
-			test_file.close();
-		}
-		else {
-			printf("Can't open testfiles descriptive file.");
-			exit(1);
-		}
-	}
-	
-	//for (const string_pair test : Tests)
+    // read tests from descriptive file
+    {
+        std::ifstream test_file;
+        test_file.open("tests/testfiles.ans");
+        if (test_file.is_open()) {
+            String test;
+            while (std::getline(test_file, test)) {
+                String file, answer;
+                test.SplitByFirstOccurenceDelimiter(' ', file, answer);
+                //std::cout << "Test: " << file << " & " << answer << std::endl;;
+                allPassed &= OneTest(std::pair<string, string>(file, answer), log, parser);
+            }
+            test_file.close();
+        } else {
+            printf("Can't open testfiles descriptive file.");
+            exit(1);
+        }
+    }
+
+    //for (const string_pair test : Tests)
     //    allPassed &= OneTest(test, log, parser);
 
-	
+
     if (!allPassed)
         exit(1);
 }

@@ -66,10 +66,7 @@ do
    echo -n -e "\x00\x0F\xFF\xFF\x01\x0F\xFF\xFF\x00\x0F\xFF\xFF" >> $LIRC
 done
 
-sleep 3
-
-kill %3
-kill %2
-kill %1
+# wait for job (CMD) completion
+wait -n
 
 rm -v -f $LIRC

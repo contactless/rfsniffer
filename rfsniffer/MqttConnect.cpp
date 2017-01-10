@@ -97,9 +97,9 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
         m_Log->Printf(1, "%s", command.c_str());
         m_nooLite.EncodeData(command, 2000, buffer, bufferSize);
         if (m_RFM) {
-			m_RFM->send(buffer, bufferSize);
-			m_RFM->receiveBegin();
-		}
+            m_RFM->send(buffer, bufferSize);
+            m_RFM->receiveBegin();
+        }
     } catch (CHaException ex) {
         m_Log->Printf(0, "Exception %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
     }
@@ -128,13 +128,13 @@ void CMqttConnection::on_error()
 
 /*!
  *  NewMessage: function gets a string looking like:
- * 		ProtocolName: flip=0 second_arg=123 addr=0x13 low_battery=0 crc=19 __repeat=2
- * 	    (here flip, ..., crc - usual data, and after them:
- * 			__repeat=N - demand to wait 
- * 			N consequent copies of this message before processing.
- * 			This is made because different messages of the same protocol 
- * 			may need different repeat count)
- * 	and parses it and sends update to mqtt.
+ *      ProtocolName: flip=0 second_arg=123 addr=0x13 low_battery=0 crc=19 __repeat=2
+ *      (here flip, ..., crc - usual data, and after them:
+ *          __repeat=N - demand to wait
+ *          N consequent copies of this message before processing.
+ *          This is made because different messages of the same protocol
+ *          may need different repeat count)
+ *  and parses it and sends update to mqtt.
  */
 void CMqttConnection::NewMessage(String message)
 {
@@ -143,36 +143,36 @@ void CMqttConnection::NewMessage(String message)
         m_Log->Printf(3, "CMqttConnection::NewMessage - Incorrect message: %s", message.c_str());
         return;
     }
-	String::Map values = value.SplitToPairs(' ', '=');
-	
-	// process copies
-	{
-		if (message != lastMessage) {
-			static const String repeatString = "__repeat";
-			
-			lastMessageReceiveTime = time(NULL);
-		
-			lastMessage = message;
-			lastMessageCount = 0;
-			if (values.count(repeatString))
-				lastMessageNeedCount = values[repeatString].IntValue();
-			else
-				lastMessageNeedCount = 1;
-		}
-		
-		lastMessageCount++;
-		// if lastMessageCount == lastMessageNeedCount then go through block
-		if (lastMessageCount > lastMessageNeedCount) {
-			if (time(NULL) - lastMessageReceiveTime < 2)
-				return;
-			else {
-				lastMessageCount = 1;							
-			}
-		}	
-		if (lastMessageCount < lastMessageNeedCount)
-			return;
-	}
-	
+    String::Map values = value.SplitToPairs(' ', '=');
+
+    // process copies
+    {
+        if (message != lastMessage) {
+            static const String repeatString = "__repeat";
+
+            lastMessageReceiveTime = time(NULL);
+
+            lastMessage = message;
+            lastMessageCount = 0;
+            if (values.count(repeatString))
+                lastMessageNeedCount = values[repeatString].IntValue();
+            else
+                lastMessageNeedCount = 1;
+        }
+
+        lastMessageCount++;
+        // if lastMessageCount == lastMessageNeedCount then go through block
+        if (lastMessageCount > lastMessageNeedCount) {
+            if (time(NULL) - lastMessageReceiveTime < 2)
+                return;
+            else {
+                lastMessageCount = 1;
+            }
+        }
+        if (lastMessageCount < lastMessageNeedCount)
+            return;
+    }
+
     if (type == "RST") {
         m_Log->Printf(3, "Msg from RST %s", value.c_str());
 
@@ -220,8 +220,8 @@ void CMqttConnection::NewMessage(String message)
 
                 if (h.length() > 0)
                     dev->addControl("Humidity", CWBControl::RelativeHumidity, true);
-                    
-                   
+
+
                 dev->addControl("", CWBControl::BatteryLow, true);
 
                 CreateDevice(dev);
@@ -231,7 +231,7 @@ void CMqttConnection::NewMessage(String message)
             if (h.length() > 0)
                 dev->set("Humidity", h);
             dev->set(CWBControl::BatteryLow, values["low_bat"]);
-                   
+
         } else if (cmd == "0" || cmd == "4" || cmd == "2") {
             //noolite_rx_0x1492
             string name = string("noolite_rx_0x") + id;
@@ -256,7 +256,7 @@ void CMqttConnection::NewMessage(String message)
         }
     } else if (type == "Oregon") {
         m_Log->Printf(3, "Msg from Oregon %s", value.c_str());
-        
+
         const string sensorType = values["type"], id = values["id"], ch = values["ch"];
 
         if (sensorType.empty() || id.empty() || ch.empty()) {
@@ -271,7 +271,7 @@ void CMqttConnection::NewMessage(String message)
         const static std::vector< std::pair<string, CWBControl::ControlType> > key_and_controls = {
             {"t", CWBControl::Temperature},
             {"h", CWBControl::RelativeHumidity},
-            
+
             {"low_bat", CWBControl::BatteryLow},
             {"uv", CWBControl::UltravioletIndex},
             {"rain_rate", CWBControl::PrecipitationRate},

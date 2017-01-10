@@ -48,7 +48,7 @@ class String : public std::string
     */
     int SplitByExactlyOneDelimiter(string delimiter, string &first, string &second) const;
     int SplitByExactlyOneDelimiter(char delimiter, string &first, string &second) const;
-    
+
     /*!
     Splits String by delimiter to two ones
     \param [in] delimiter Delimiter
@@ -99,9 +99,9 @@ class String : public std::string
 
     String(const char *data_array): std::string(data_array) {}
 
-	// 
-	
-	static String ComposeFormat(const char *format, ...);
+    //
+
+    static String ComposeFormat(const char *format, ...);
 
     // converters
 

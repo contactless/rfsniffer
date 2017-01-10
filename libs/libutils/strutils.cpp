@@ -54,11 +54,10 @@ void String::SplitByFirstOccurenceDelimiter(string delimiter, string &first, str
         first = substr(0, pos);
         second = substr(pos + delimiter.length());
         return;
+    } else {
+        first = *this;
+        second = "";
     }
-	else {
-		first = *this;
-		second = "";
-	}    
 }
 
 void String::SplitByFirstOccurenceDelimiter(char delimiter, string &first, string &second) const
@@ -69,11 +68,10 @@ void String::SplitByFirstOccurenceDelimiter(char delimiter, string &first, strin
         first = substr(0, pos);
         second = substr(pos + 1);
         return;
+    } else {
+        first = *this;
+        second = "";
     }
-	else {
-		first = *this;
-		second = "";
-	}
 }
 
 void String::Split(char dlmt, std::vector<String> &splitted) const
@@ -139,18 +137,18 @@ Map String::SplitToPairs(char out_pair_delimiter, char in_pair_delimiter) const
 
 String String::ComposeFormat(const char *format, ...)
 {
-	std::vector<char> data;
-	for (int loop = 0; loop < 2; loop++) {
-		va_list args;
-		va_start (args, format);
-		int written_length = vsnprintf(
-								 data.data(), data.size(), format, args
-							 );
-		va_end (args);
-		// plus 1 for terminal 0 symbol in the end of the string
-		data.resize(written_length + 1);
-	}
-	return data.data();
+    std::vector<char> data;
+    for (int loop = 0; loop < 2; loop++) {
+        va_list args;
+        va_start (args, format);
+        int written_length = vsnprintf(
+                                 data.data(), data.size(), format, args
+                             );
+        va_end (args);
+        // plus 1 for terminal 0 symbol in the end of the string
+        data.resize(written_length + 1);
+    }
+    return data.data();
 }
 
 String String::ValueOf(float f, int digits)
@@ -165,22 +163,22 @@ String String::ValueOf(int i)
 
 int BufferWriter::printf(const char *format, ...)
 {
-	while (true) {
-		va_list args;
-		va_start (args, format);
-		int written_length = vsnprintf(
-								 buff.data() + offset, buff.size() - offset - 1, format, args
-							 );
-		va_end (args);
-		if (written_length < 0)
-			return written_length;
-		if (offset + written_length + 1 >= buff.size()) {
-			buff.resize((offset + written_length + 1) * 2);
-			continue;
-		}
-		offset += written_length;
-		return written_length;
-	}
+    while (true) {
+        va_list args;
+        va_start (args, format);
+        int written_length = vsnprintf(
+                                 buff.data() + offset, buff.size() - offset - 1, format, args
+                             );
+        va_end (args);
+        if (written_length < 0)
+            return written_length;
+        if (offset + written_length + 1 >= buff.size()) {
+            buff.resize((offset + written_length + 1) * 2);
+            continue;
+        }
+        offset += written_length;
+        return written_length;
+    }
 }
 
 std::string ftoa(float f, int digits)

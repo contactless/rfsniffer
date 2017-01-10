@@ -16,10 +16,10 @@ class CMqttConnection
     RFM69OOK *m_RFM;
     CRFProtocolNooLite m_nooLite;
 
-	String lastMessage;
-	size_t lastMessageCount, lastMessageNeedCount;
-	
-	time_t lastMessageReceiveTime;
+    String lastMessage;
+    size_t lastMessageCount, lastMessageNeedCount;
+
+    time_t lastMessageReceiveTime;
 
   public:
     CMqttConnection(string Server, CLog *log, RFM69OOK *rfm);

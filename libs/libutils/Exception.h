@@ -86,7 +86,7 @@ class LIBUTILS_API CHaException
     *
     ********************************************/
     ErrorCodes m_code;
-    
+
     static std::vector<std::string> generateTypeDescriptions();
     static std::vector<std::string> m_TypeDescriptions;
     /*******************************************
@@ -185,10 +185,12 @@ class LIBUTILS_API CHaException
     {
         return m_Message;
     };
-    
-    std::string GetExplanation() {
-		return std::string("CHaException") + " (ErrorCodes::" + m_TypeDescriptions[m_code] + "): " + m_Message;
-	};
+
+    std::string GetExplanation()
+    {
+        return std::string("CHaException") + " (ErrorCodes::" + m_TypeDescriptions[m_code] + "): " +
+               m_Message;
+    };
 
 
     virtual size_t getSize() const;

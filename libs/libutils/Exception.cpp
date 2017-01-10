@@ -6,11 +6,12 @@
 typedef std::string string;
 
 
-std::vector<std::string> CHaException::generateTypeDescriptions() {
-	std::vector<std::string> descriptions(CHaException::ErrorCodes::ErrLast + 1);
-	// bad but fast
-	#define ADD_ERROR_DEFAULT(err) descriptions[err] = #err
-	ADD_ERROR_DEFAULT(ErrNoError);
+std::vector<std::string> CHaException::generateTypeDescriptions()
+{
+    std::vector<std::string> descriptions(CHaException::ErrorCodes::ErrLast + 1);
+    // bad but fast
+#define ADD_ERROR_DEFAULT(err) descriptions[err] = #err
+    ADD_ERROR_DEFAULT(ErrNoError);
     ADD_ERROR_DEFAULT(ErrInvalidConfig);
     ADD_ERROR_DEFAULT(ErrCannotConnectQueueManager);
     ADD_ERROR_DEFAULT(ErrCannotOpenQueue);
@@ -48,14 +49,15 @@ std::vector<std::string> CHaException::generateTypeDescriptions() {
     ADD_ERROR_DEFAULT(ErrSystemAPIError);
     ADD_ERROR_DEFAULT(ErrBadParam);
     ADD_ERROR_DEFAULT(ErrLuaException);
-    
+
     ADD_ERROR_DEFAULT(ErrLast);
-    
-	#undef ADD_ERROR_DEFAULT
-	return descriptions;
+
+#undef ADD_ERROR_DEFAULT
+    return descriptions;
 }
 
-std::vector<std::string> CHaException::m_TypeDescriptions = CHaException::generateTypeDescriptions();
+std::vector<std::string> CHaException::m_TypeDescriptions =
+    CHaException::generateTypeDescriptions();
 
 
 CHaException::CHaException(void)
