@@ -67,6 +67,12 @@ do
 done
 
 # wait for job (CMD) completion
-wait -n
+if ! wait -n
+then
+	sleep 5
+	kill %1
+	kill %2
+	kill %3
+fi
 
 rm -v -f $LIRC

@@ -220,6 +220,7 @@ void CWBDevice::createDeviceValues(StringMap &v)
         const string controlBase = base + "/controls/" + i.second.name;
         v[controlBase] = i.second.value;
         v[controlBase + "/meta/type"] = i.second.metaType();
+        v[controlBase + "/meta/order"] = String::ValueOf((int)i.second.type);
         if (i.second.readonly)
             v[controlBase + "/meta/readonly"] = "1";
     }
