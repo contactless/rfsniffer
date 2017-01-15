@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <../libs/librf/DebugPrintf.h>
 
 #include "rfsniffer.h"
 
@@ -220,7 +221,8 @@ void RFSniffer::tryReadConfigFile()
     if (args.configName.empty())
         return;
     try {
-        CConfig config;
+        std::unique_ptr<CConfig> configPtr(new CConfig());
+        CConfig &config = *configPtr;
         config.Load(args.configName);
 
         CConfigItem radio = config.getNode("radio");
@@ -239,7 +241,7 @@ void RFSniffer::tryReadConfigFile()
             args.writePackets = debug.getInt("write_packets", false, args.writePackets);
             CLog::Init(&debug);
         }
-
+        this->configJson = std::move(configPtr);
     } catch (CHaException ex) {
         fprintf(stderr, "Failed load config. Error: %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
         exit(-1);
@@ -408,7 +410,11 @@ void RFSniffer::receiveForever() throw(CHaException)
 
     if (rfm)
         rfm->receiveBegin();
-    CMqttConnection conn(args.mqttHost, m_Log, rfm.get());
+
+    CConfigItem devicesConfig = configJson->getNode("devices");
+
+    CMqttConnection conn(args.mqttHost, m_Log, rfm.get(),
+                         (devicesConfig.isNode() ? &devicesConfig : NULL));
     CRFParser m_parser(m_Log, (args.bDebug || args.writePackets > 0) ? args.savePath : "");
     m_parser.AddProtocol("All");
 
@@ -512,64 +518,13 @@ void RFSniffer::receiveForever() throw(CHaException)
             if (rfm && args.rssi < 0)
                 rfm->setRSSIThreshold(args.rssi);
 
+            conn.SendAliveness();
+
         } catch (CHaException ex) {
             // clean buffer
             dataPtr = dataBegin;
             m_Log->Printf(0, "Exception %s", ex.GetExplanation().c_str());
         }
-        /*
-                if (readCount >= 32 &&
-                        (!waitForData(fd, 300000)
-                         || remainedCount < 10
-                         || time(NULL) - packetStartTime > 2)) {
-                    if (writePackets > 0) {
-                        m_parser.SaveFile(data, data_ptr - data);
-                        m_Log->Printf(3, "Saved file RSSI=%d (%d)", lastRSSI, minGoodRSSI);
-                    }
-
-                    // What is it? Why does he make it .reseiveEnd() and .receiveBegin?
-                    // TODO. Erase it and test.
-                    // Upd: It works without it, but it's safer to keep it as is.
-                    // It's in not connected with kernel error:
-                    // [  384.785198] lirc_pwm lirc-rfm69: wtf? value=0, last=351115718, now=384643156, delta=33527437
-                    rfm.receiveEnd();
-                    // How many lirc_t were read
-                    size_t parsedLength;
-                    string parsedResult = m_parser.ParseRepetitive(data, data_ptr - data, &parsedLength);
-                    rfm.receiveBegin();
-                    if (parsedResult.length()) {
-                        m_Log->Printf(3, "RF Received: %s (parsed from %u lirc_t). RSSI=%d (%d)",
-                            parsedResult.c_str(), parsedLength, lastRSSI, minGoodRSSI);
-                        conn.NewMessage(parsedResult);
-                        if (minGoodRSSI > lastRSSI)
-                            minGoodRSSI = lastRSSI;
-                    } else {
-                        m_Log->Printf(4, "Received %ld signals. Not decoded");
-                        if (writePackets > 0) {
-                            vector <char> buff_data(12000);
-                            char *buff = buff_data.data();
-                            char *buff_ptr = buff;
-                            for (long unsigned int *c = data; c < data_ptr && buff_ptr + 20 < buff + buff_data.size(); c++)
-                                buff_ptr += sprintf(buff_ptr, "%u ", (unsigned int)*c);
-                            *buff_ptr = 0;
-                            m_Log->Printf(4, "(\n%s\n)\n", data_ptr - data, buff);
-                        }
-                    }
-
-
-                    if (parsedLength != 0) {
-
-                    }
-                    else
-                        data_ptr = data;
-
-                    packetStartTime = time(NULL);
-
-                    if (rssi < 0)
-                        rfm.setRSSIThreshold(rssi);
-                }
-
-           */
     }
 }
 
@@ -583,6 +538,8 @@ void RFSniffer::closeConnections()
 
 void RFSniffer::run(int argc, char **argv)
 {
+    DPrintf::globallyEnable(true);
+
     readEnvironmentVariables();
     readCommandLineArguments(argc, argv);
     tryReadConfigFile();

@@ -107,12 +107,26 @@ class LIBWB_API CWBDevice
     string deviceName;
     string deviceDescription;
     CControlMap deviceControls;
+
+    // if this flag is NOT set then output functions won't write anything
+    bool deviceIsActive;
+    // it's a time in seconds that defines how long may be max pause between messages
+    // it helps determine that device is dead
+    long long heartbeat;
+    // it's a flag of aliveness of device by heartbeat (it's changing when updates to mqtt are sent)
+    bool deviceIsAlive;
+    time_t lastMessageReceiveTime;
+    void doHeartbeat();
+
   public:
     // deviceName is the name in mqtt tree
     // deviceDescription will be written into .../meta/name
     CWBDevice();
     CWBDevice(const string &deviceName, const string &deviceDescription);
     ~CWBDevice();
+
+
+    void findAndSetConfigs(CConfigItem *devices);
 
     const string &getName()
     {
@@ -135,8 +149,13 @@ class LIBWB_API CWBDevice
     void set(const string &name, float value);
     float getFloat(const string &name);
     const string &getString(const string &name);
+
+    // output functions, they are returning changes that are to be done in mqtt
     void createDeviceValues(StringMap &);
     void updateValues(StringMap &);
+    void updateAliveness(StringMap &);
+    bool isAlive();
+
     const CControlMap *getControls()
     {
         return &deviceControls;

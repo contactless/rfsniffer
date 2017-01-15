@@ -1,6 +1,8 @@
 #include <cstdio>
+#include <ctime>
 #include "../libutils/strutils.h"
 #include "../libutils/Exception.h"
+#include "../librf/DebugPrintf.h"
 #include "WBDevice.h"
 
 using namespace strutils;
@@ -116,7 +118,8 @@ ControlType CWBControl::getControlTypeByMetaType(string_cref metaType)
 CWBDevice::CWBDevice() { }
 
 CWBDevice::CWBDevice(string_cref Name, string_cref Description)
-    : deviceName(Name), deviceDescription(Description)
+    : deviceName(Name), deviceDescription(Description), deviceIsActive(true),
+      heartbeat(-1), deviceIsAlive(true), lastMessageReceiveTime(time(NULL))
 { }
 
 
@@ -145,6 +148,45 @@ void CWBDevice::init(CConfigItem config)
 }
 #endif
 
+
+
+void CWBDevice::findAndSetConfigs(CConfigItem *devices)
+{
+    DPrintf dprintf = DPrintf().enabled(true);
+    dprintf("CWBDevice::findAndSetConfigs for %s\n", deviceName.c_str());
+    if (!devices)
+        return;
+    // check common settings
+    if (devices->getStr("unknown_devices_politics") == "ignore")
+        deviceIsActive = false;
+
+    // check known devices settings
+    if (!devices->getBool("use_devices_list"))
+        return;
+    CConfigItemList devicesConfigsList;
+    devices->getList("known_devices", devicesConfigsList);
+    for (auto deviceConfig : devicesConfigsList) {
+        dprintf("CWBDevice::findAndSetConfigs  There is a variant : %s\n",
+                deviceConfig->getStr("name").c_str());
+        if (deviceConfig->getStr("name") == deviceName) {
+            deviceIsActive = !(deviceConfig->getStr("politics") == "ignore");
+            heartbeat = deviceConfig->getInt("heartbeat");
+            dprintf("CWBDevice::findAndSetConfigs found device in the list! "\
+                    "politics=%s   heartbeat=%d\n",
+                    (deviceIsActive ? "show" : "ignore"), heartbeat);
+        }
+    }
+
+}
+
+
+void CWBDevice::doHeartbeat()
+{
+    lastMessageReceiveTime = time(NULL);
+}
+
+
+
 void CWBDevice::addControl(const CWBControl &control)
 {
     deviceControls[control.name] = control;
@@ -163,6 +205,8 @@ void CWBDevice::set(CWBControl::ControlType type, string_cref value)
 
 void CWBDevice::set(string_cref name, string_cref value)
 {
+    doHeartbeat();
+
     CControlMap::iterator i = deviceControls.find(name);
 
     if (i == deviceControls.end())
@@ -179,6 +223,8 @@ void CWBDevice::set(CWBControl::ControlType type, float value)
 
 void CWBDevice::set(string_cref name, float value)
 {
+    doHeartbeat();
+
     CControlMap::iterator i = deviceControls.find(name);
 
     if (i == deviceControls.end())
@@ -212,6 +258,9 @@ string_cref CWBDevice::getString(string_cref name)
 
 void CWBDevice::createDeviceValues(StringMap &v)
 {
+    if (!deviceIsActive) // do nothing if device is disabled
+        return;
+
     const string base = "/devices/" + deviceName;
 
     v[base + "/meta/name"] = deviceDescription;
@@ -226,8 +275,34 @@ void CWBDevice::createDeviceValues(StringMap &v)
     }
 }
 
+bool CWBDevice::isAlive()
+{
+    if (!deviceIsActive || heartbeat < 0)
+        return true;
+    return (time(NULL) - lastMessageReceiveTime <= heartbeat);
+}
+
+
+void CWBDevice::updateAliveness(StringMap &v)
+{
+    // notice that deviceIsAlive mirrors the state that was already sent
+    // and isAlive() mirrors the realtime state
+    bool deviceIsReallyAlive = isAlive();
+    if (deviceIsAlive != deviceIsReallyAlive) {
+        if (!deviceIsReallyAlive)
+            v["/devices/" + deviceName + "/meta/error"] =
+                "No heartbeat was received (device is probably discharged or just off)";
+        else
+            v["/devices/" + deviceName + "/meta/error"] = "";
+        deviceIsAlive = deviceIsReallyAlive;
+    }
+}
+
 void CWBDevice::updateValues(StringMap &v)
 {
+    if (!deviceIsActive) // do nothing if device is disabled
+        return;
+
     const string base = "/devices/" + deviceName;
 
     for(auto &i : deviceControls) {

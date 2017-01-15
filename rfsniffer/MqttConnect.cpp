@@ -6,15 +6,16 @@
 using namespace strutils;
 
 
-CMqttConnection::CMqttConnection(string Server, CLog *log, RFM69OOK *rfm)
-    : m_isConnected(false), mosquittopp("TestMqttConnection"), m_RFM(rfm)
+CMqttConnection::CMqttConnection(string Server, CLog *log, RFM69OOK *rfm,
+                                 CConfigItem *devicesConfig)
+    : m_Server(Server), m_Log(log), m_isConnected(false),
+      mosquittopp("RFsniffer"), m_RFM(rfm), m_devicesConfig(devicesConfig)
 {
-    m_Server  = Server;
+    m_Server = Server;
     m_Log = log;
 
     connect(m_Server.c_str());
     loop_start();
-
 }
 
 CMqttConnection::~CMqttConnection()
@@ -360,24 +361,36 @@ void CMqttConnection::SendUpdate()
     }
 
     // do these changes in mqtt
-
     publishStringMap(valuesForUpdate);
-    /*for (auto i : valuesForUpdate) {
-        publishString(i->first, i->second);
-        //publish(NULL, i->first.c_str(), i->second.size(), i->second.c_str(), 0, true);
-        m_Log->Printf(5, "publish %s=%s", i->first.c_str(), i->second.c_str());
-    }*/
 }
+
+
+void CMqttConnection::SendAliveness()
+{
+    CWBDevice::StringMap valuesForUpdate;
+
+    // read changes into "valuesForUpdate"
+    for (auto dev : m_Devices) {
+        if (dev.second)
+            dev.second->updateAliveness(valuesForUpdate);
+    }
+
+    // do these changes in mqtt
+    publishStringMap(valuesForUpdate);
+}
+
+
+
+
 
 void CMqttConnection::CreateDevice(CWBDevice *dev)
 {
+    // force device to find himself in the device list and set some settings
+    dev->findAndSetConfigs(m_devicesConfig);
+
     m_Devices[dev->getName()] = dev;
     CWBDevice::StringMap valuesForCreate;
     dev->createDeviceValues(valuesForCreate);
     publishStringMap(valuesForCreate);
-    /*for (auto i : valuesForCreate) {
-        publishString(i->first, i->second);
-        //publish(NULL, i->first.c_str(), i->second.size(), i->second.c_str(), 0, true);
-        m_Log->Printf(5, "publish %s=%s", i->first.c_str(), i->second.c_str());
-    }*/
+
 }

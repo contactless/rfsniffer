@@ -24,5 +24,17 @@
 				"log_time": "yes"
 			}
 		]
+	},
+	
+	"devices": {
+		"use_devices_list" : false,
+		"unknown_devices_politics" : "show",
+		"known_devices" : [
+			{
+				"name": "noolite_rx_0x149f",
+				"politics": "show",
+				"heartbeat": 7300
+			}
+		]
 	}
 }

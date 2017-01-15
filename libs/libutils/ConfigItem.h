@@ -29,22 +29,14 @@ class LIBUTILS_API CConfigItemList:
     ~CConfigItemList();
 };
 
-#ifdef _LIBUTILS_USE_XML_LIBXML2
-    typedef struct _xmlNode xmlNode;
-    typedef xmlNode *xmlNodePtr;
-    typedef xmlNodePtr configNode;
-#elif defined(USE_JSON)
-    typedef class Json::Value configNode;
-#else
-    #   error usupported configuration
-#endif
+
+typedef class Json::Value configNode;
 
 
 class LIBUTILS_API CConfigItem
 {
     typedef std::string string;
 
-    friend class CXmlDocument;
     configNode m_Node;
 
   public:
@@ -60,22 +52,10 @@ class LIBUTILS_API CConfigItem
 
     string getStr(string path, bool bMandatory = true, string defaultValue = "");
     int getInt(string path, bool bMandatory = true, int defaultValue = 0);
+    bool getBool(string path, bool bMandatory = true, bool defaultValue = false);
     CConfigItem getNode(string path, bool bMandatory = true);
     void getList(string path, CConfigItemList &list);
 
-
-    /*
-    static string GetValue(const char* path);
-    static string GetAttribute(const char* path);
-    static CConfigItem GetElement(const char* path);
-    static CConfigItemList GetElementList(const char* path);
-    */
-    //string GetValue();
-    //string GetValue(string path);
-    //string GetAttribute(string path, bool bMandatory=true, string defaultValue="");
-    //int GetAttributeInt(string path, bool bMandatory=true, string defaultValue=""){return atoi(GetAttribute(path, bMandatory, defaultValue));};
-    //CConfigItem GetElement(string path);
-    //void GetElementsList(string path, CConfigItemList &list);
 
     bool isEmpty();
     bool isNode();

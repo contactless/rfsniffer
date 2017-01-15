@@ -12,8 +12,8 @@
 	"properties": {
 		"radio": {
 			"type": "object",
-			"title": "Device settings",
-			//"propertyOrder" : 2,
+			"title": "Radio settings",
+			"propertyOrder" : 1,
 			"properties" : {
 				"lirc_device": {
 					"description": "Adress of lirc device",
@@ -43,7 +43,7 @@
 		"mqtt": {
 			"type": "object",
 			"title": "MQTT settings",
-			//"propertyOrder" : 2,
+			"propertyOrder" : 2,
 			"properties" : {
 				"host": {
 					"description": "MQTT host",
@@ -55,7 +55,7 @@
 		"debug": {
 			"type": "object",
 			"title": "DEBUG settings",
-			//"propertyOrder" : 2,
+			"propertyOrder" : 10,
 			"properties": {
 				"save_path": {
 					"description": "Path to save debug info",
@@ -97,6 +97,58 @@
 								"default": "yes"
 							}
 						}
+					}
+				}
+			}
+		},
+          
+		"devices": {
+			"type": "object",
+			"title": "Device politics",
+			"propertyOrder" : 7,
+			"properties": {
+				"use_devices_list": {
+					"description": "Use list of known devices",
+					"type": "boolean",
+					"default": false,
+				},
+				"unknown_devices_politics": {
+					"description": "What is needed to do with devices that are not mentioned in the list? ",
+					"type": "string", 
+					"enum": [ "ignore", "show"],
+					"default": "show"
+					
+				},
+			
+				"devices_list": {
+					"type": "array",	
+					"title": "Known devices",
+					"items": {
+						"type": "object",
+						"title": "Device",
+						"properties": {
+							"name": {
+								"description": "Name as in mqtt tree",
+                                "propertyOrder" : 1,
+								"type": "string",
+								"default": ""
+							},
+							"politics": {
+								"description": "What is needed to do with devices that are not mentioned in the list? ",
+                                "propertyOrder" : 2,
+								"type": "string", 
+                                "enum": [ "ignore", "show"],
+								"default": "show"
+							},
+							"heartbeat": {
+								"description": "Heartbeat (time in seconds which is needed to admit that device is dead, -1 for disable)",
+                                "propertyOrder" : 3,
+								"type": "integer",
+								"default": -1,
+								"minimum": -1
+							}
+						},
+						"required": ["name"]
 					}
 				}
 			}

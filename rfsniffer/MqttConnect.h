@@ -2,6 +2,7 @@
 #include "../libs/libutils/strutils.h"
 #include "../libs/libwb/WBDevice.h"
 #include "../libs/librf/RFProtocolNooLite.h"
+#include "../libs/libutils/ConfigItem.h"
 
 class RFM69OOK;
 
@@ -15,16 +16,22 @@ class CMqttConnection
     CWBDeviceMap m_Devices;
     RFM69OOK *m_RFM;
     CRFProtocolNooLite m_nooLite;
+    CConfigItem *m_devicesConfig;
 
     String lastMessage;
     size_t lastMessageCount, lastMessageNeedCount;
 
     time_t lastMessageReceiveTime;
 
+
   public:
-    CMqttConnection(string Server, CLog *log, RFM69OOK *rfm);
+    CMqttConnection(string Server, CLog *log, RFM69OOK *rfm, CConfigItem *devicesConfig = nullptr);
     ~CMqttConnection();
     void NewMessage(strutils::String message);
+
+    // Should be called regularly to devices be checked for aliveness
+    // and errors be sent if they are not alive
+    void SendAliveness();
 
   private:
     virtual void on_connect(int rc);
