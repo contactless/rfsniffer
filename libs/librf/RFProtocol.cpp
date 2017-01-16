@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "RFProtocol.h"
 
-#include "DebugPrintf.h"
+#include "../libutils/DebugPrintf.h"
 
 string c2s(char c)
 {

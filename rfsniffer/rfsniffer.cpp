@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <../libs/librf/DebugPrintf.h>
+#include <../libs/libutils/DebugPrintf.h>
 
 #include "rfsniffer.h"
 
@@ -372,7 +372,7 @@ void RFSniffer::tryJustScan() throw(CHaException)
         int pulses = 0;
         time_t startTime = time(NULL);
 
-        while (time(NULL) - startTime < scanTime) {
+        while (difftime(time(NULL), startTime) < scanTime) {
             if (!waitForData(lircFD, 100))
                 continue;
             int result = read(lircFD, (void *)data, dataSize);
@@ -406,15 +406,27 @@ void RFSniffer::tryFixThresh() throw(CHaException)
 
 void RFSniffer::receiveForever() throw(CHaException)
 {
-    m_Log->Printf(3, "RF Reciever begins");
+    DPrintf dprintf = DPrintf().enabled(true);
+
+    dprintf("RFSniffer::receiveForever(): DPrintf initiaized\n");
+
+    m_Log->Printf(3, "RF Receiver begins");
 
     if (rfm)
         rfm->receiveBegin();
 
-    CConfigItem devicesConfig = configJson->getNode("devices");
+    // will be automatically destroyed in the end of functions
+    std::unique_ptr<CConfigItem> devicesConfigPtr(nullptr);
+    if (configJson) {
+        CConfigItem devicesConfig = configJson->getNode("devices");
+        if (devicesConfig.isNode())
+            devicesConfigPtr.reset(new CConfigItem(devicesConfig));
+    }
 
-    CMqttConnection conn(args.mqttHost, m_Log, rfm.get(),
-                         (devicesConfig.isNode() ? &devicesConfig : NULL));
+    dprintf("RFSniffer::receiveForever(): Initialize connection, deviceConfigPtr = %p\n",
+            devicesConfigPtr.get());
+    CMqttConnection conn(args.mqttHost, m_Log, rfm.get(), devicesConfigPtr.get());
+
     CRFParser m_parser(m_Log, (args.bDebug || args.writePackets > 0) ? args.savePath : "");
     m_parser.AddProtocol("All");
 
@@ -426,11 +438,13 @@ void RFSniffer::receiveForever() throw(CHaException)
 
     bool readSmthNew = false;
 
+    dprintf("RFSniffer::receiveForever(): Start cycle\n");
+
     while (true) {
         // try is placed here to handle exceptions and just restart, not to crush
         try {
             // notice that writePackets is 0 if corresponding command line argument is not set
-            if (args.writePackets > 0 && time(NULL) - startTime > args.writePackets)
+            if (args.writePackets > 0 && difftime(time(NULL), startTime) > args.writePackets)
                 break;
 
 
@@ -551,7 +565,6 @@ void RFSniffer::run(int argc, char **argv)
                   args.lircDevice.c_str(), args.mqttHost.c_str());
     if (args.configName.length() == 0)
         m_Log->SetLogLevel(3);
-
     try {
         initSPI();
         initRFM();
@@ -567,6 +580,8 @@ void RFSniffer::run(int argc, char **argv)
 }
 
 RFSniffer::RFSniffer():
+    m_Log(nullptr),
+    configJson(nullptr),
     mySPI(nullptr),
     rfm(nullptr),
     lircFD(-1),

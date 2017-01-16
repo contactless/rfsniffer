@@ -1,6 +1,9 @@
 #include <cstdarg>
 #include <cstdio>
 #include "DebugPrintf.h"
+#include "strutils.h"
+
+using strutils::String;
 
 
 bool DPrintf::isGloballyEnabled = false;
@@ -45,7 +48,12 @@ int DPrintf::operator()(const char *format, ...)
         return 0;
     va_list args;
     va_start (args, format);
-    int ret = vfprintf(outFile, format, args);
+    int formatOffset = 0;
+    if (format[0] == '$' && format[1] == 'P') {
+        fprintf(outFile, "%s", prefix.c_str());
+        formatOffset = 2;
+    }
+    int ret = vfprintf(outFile, format + formatOffset, args);
     va_end (args);
     return ret;
 }
@@ -54,6 +62,20 @@ DPrintf &DPrintf::disabled()
 {
     isEnabled = false;
     return *this;
+}
+
+DPrintf &DPrintf::withPrefix(std::string prefix_)
+{
+    prefix = prefix_;
+    return *this;
+}
+
+
+DPrintf &DPrintf::withPrefixFromDefine(const char *fileName_, const char *functionName,
+                                       const int line)
+{
+    String fileName = String(fileName_).Split('/').back();
+    return withPrefix(String::ComposeFormat("%s - %s (%d): ", fileName.c_str(), functionName, line));
 }
 
 DPrintf::DPrintf(): outFile(defaultOutput), isEnabled(true) {}

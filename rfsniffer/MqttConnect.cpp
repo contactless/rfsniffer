@@ -164,7 +164,7 @@ void CMqttConnection::NewMessage(String message)
         lastMessageCount++;
         // if lastMessageCount == lastMessageNeedCount then go through block
         if (lastMessageCount > lastMessageNeedCount) {
-            if (time(NULL) - lastMessageReceiveTime < 2)
+            if (difftime(time(NULL), lastMessageReceiveTime) < 2)
                 return;
             else {
                 lastMessageCount = 1;

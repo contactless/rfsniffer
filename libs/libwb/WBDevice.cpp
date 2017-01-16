@@ -2,7 +2,7 @@
 #include <ctime>
 #include "../libutils/strutils.h"
 #include "../libutils/Exception.h"
-#include "../librf/DebugPrintf.h"
+#include "../libutils/DebugPrintf.h"
 #include "WBDevice.h"
 
 using namespace strutils;
@@ -152,26 +152,30 @@ void CWBDevice::init(CConfigItem config)
 
 void CWBDevice::findAndSetConfigs(CConfigItem *devices)
 {
-    DPrintf dprintf = DPrintf().enabled(true);
-    dprintf("CWBDevice::findAndSetConfigs for %s\n", deviceName.c_str());
+    DPRINTF_DECLARE(dprintf, true);
+    dprintf("$P findAndSetConfigs for %s\n", deviceName.c_str());
     if (!devices)
         return;
+    dprintf("$P devices is %p\n", devices);
     // check common settings
     if (devices->getStr("unknown_devices_politics") == "ignore")
         deviceIsActive = false;
 
+    dprintf("$P 2\n");
     // check known devices settings
     if (!devices->getBool("use_devices_list"))
         return;
+
+    dprintf("$P 3\n");
     CConfigItemList devicesConfigsList;
     devices->getList("known_devices", devicesConfigsList);
     for (auto deviceConfig : devicesConfigsList) {
-        dprintf("CWBDevice::findAndSetConfigs  There is a variant : %s\n",
+        dprintf("$P There is a variant : %s\n",
                 deviceConfig->getStr("name").c_str());
         if (deviceConfig->getStr("name") == deviceName) {
             deviceIsActive = !(deviceConfig->getStr("politics") == "ignore");
             heartbeat = deviceConfig->getInt("heartbeat");
-            dprintf("CWBDevice::findAndSetConfigs found device in the list! "\
+            dprintf("$P found device in the list! "\
                     "politics=%s   heartbeat=%d\n",
                     (deviceIsActive ? "show" : "ignore"), heartbeat);
         }
@@ -279,7 +283,7 @@ bool CWBDevice::isAlive()
 {
     if (!deviceIsActive || heartbeat < 0)
         return true;
-    return (time(NULL) - lastMessageReceiveTime <= heartbeat);
+    return (difftime(time(NULL), lastMessageReceiveTime) <= heartbeat);
 }
 
 
@@ -289,11 +293,13 @@ void CWBDevice::updateAliveness(StringMap &v)
     // and isAlive() mirrors the realtime state
     bool deviceIsReallyAlive = isAlive();
     if (deviceIsAlive != deviceIsReallyAlive) {
-        if (!deviceIsReallyAlive)
-            v["/devices/" + deviceName + "/meta/error"] =
-                "No heartbeat was received (device is probably discharged or just off)";
-        else
-            v["/devices/" + deviceName + "/meta/error"] = "";
+        const string base = "/devices/" + deviceName;
+        const string error = (deviceIsReallyAlive ? "" : "DEVICE_LEVEL_ERROR: "\
+                              "No heartbeat was received (device is probably discharged or just off)");
+        v[base + "/meta/error"] = error;
+        for(auto &i : deviceControls)
+            v[base + "/controls/" + i.second.name + "/meta/error"] = error;
+
         deviceIsAlive = deviceIsReallyAlive;
     }
 }
