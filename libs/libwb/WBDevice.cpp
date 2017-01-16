@@ -119,8 +119,12 @@ CWBDevice::CWBDevice() { }
 
 CWBDevice::CWBDevice(string_cref Name, string_cref Description)
     : deviceName(Name), deviceDescription(Description), deviceIsActive(true),
-      heartbeat(-1), deviceIsAlive(true), lastMessageReceiveTime(time(NULL))
-{ }
+      heartbeat(-1), deviceIsAlive(false), lastMessageReceiveTime(time(NULL))
+{
+	// device is firstly marked as non-alive because 
+	// it's a good idea to drop all /meta/error when creating a device
+	// but they drop only when alive-state changes
+}
 
 
 CWBDevice::~CWBDevice()

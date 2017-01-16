@@ -120,7 +120,7 @@
 					
 				},
 			
-				"devices_list": {
+				"known_devices": {
 					"type": "array",	
 					"title": "Known devices",
 					"items": {
