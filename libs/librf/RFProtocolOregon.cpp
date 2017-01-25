@@ -286,7 +286,7 @@ CRFProtocolOregon::~CRFProtocolOregon()
 
 string CRFProtocolOregon::DecodePacket(const string &raw_)
 {
-    DPrintf dprintf = DPrintf().enabled(false);
+    DPRINTF_DECLARE(dprintf, false);
 
     string raw = raw_;
 

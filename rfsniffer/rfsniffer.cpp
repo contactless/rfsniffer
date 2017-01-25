@@ -406,7 +406,7 @@ void RFSniffer::tryFixThresh() throw(CHaException)
 
 void RFSniffer::receiveForever() throw(CHaException)
 {
-    DPrintf dprintf = DPrintf().enabled(true);
+    DPRINTF_DECLARE(dprintf, true);
 
     dprintf("RFSniffer::receiveForever(): DPrintf initiaized\n");
 
@@ -423,8 +423,8 @@ void RFSniffer::receiveForever() throw(CHaException)
             devicesConfigPtr.reset(new CConfigItem(devicesConfig));
     }
 
-    dprintf("RFSniffer::receiveForever(): Initialize connection, deviceConfigPtr = %p\n",
-            devicesConfigPtr.get());
+    dprintf.c("RFSniffer::receiveForever(): Initialize connection, deviceConfigPtr = %p\n",
+              devicesConfigPtr.get());
     CMqttConnection conn(args.mqttHost, m_Log, rfm.get(), devicesConfigPtr.get());
 
     CRFParser m_parser(m_Log, (args.bDebug || args.writePackets > 0) ? args.savePath : "");
@@ -552,7 +552,8 @@ void RFSniffer::closeConnections()
 
 void RFSniffer::run(int argc, char **argv)
 {
-    DPrintf::globallyEnable(true);
+    DPrintf::globallyEnable(false);
+    DPrintf::setPrefixLength(40);
 
     readEnvironmentVariables();
     readCommandLineArguments(argc, argv);

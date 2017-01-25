@@ -121,9 +121,9 @@ CWBDevice::CWBDevice(string_cref Name, string_cref Description)
     : deviceName(Name), deviceDescription(Description), deviceIsActive(true),
       heartbeat(-1), deviceIsAlive(false), lastMessageReceiveTime(time(NULL))
 {
-	// device is firstly marked as non-alive because 
-	// it's a good idea to drop all /meta/error when creating a device
-	// but they drop only when alive-state changes
+    // device is firstly marked as non-alive because
+    // it's a good idea to drop all /meta/error when creating a device
+    // but they drop only when alive-state changes
 }
 
 
@@ -157,31 +157,29 @@ void CWBDevice::init(CConfigItem config)
 void CWBDevice::findAndSetConfigs(CConfigItem *devices)
 {
     DPRINTF_DECLARE(dprintf, true);
-    dprintf("$P findAndSetConfigs for %s\n", deviceName.c_str());
+    dprintf("$P findAndSetConfigs for %\n", deviceName);
     if (!devices)
         return;
-    dprintf("$P devices is %p\n", devices);
+    dprintf.c("$P devices is %p\n", devices);
     // check common settings
     if (devices->getStr("unknown_devices_politics") == "ignore")
         deviceIsActive = false;
 
-    dprintf("$P 2\n");
     // check known devices settings
     if (!devices->getBool("use_devices_list"))
         return;
 
-    dprintf("$P 3\n");
     CConfigItemList devicesConfigsList;
     devices->getList("known_devices", devicesConfigsList);
     for (auto deviceConfig : devicesConfigsList) {
-        dprintf("$P There is a variant : %s\n",
-                deviceConfig->getStr("name").c_str());
+        dprintf("$P There is a variant : %\n",
+                deviceConfig->getStr("name"));
         if (deviceConfig->getStr("name") == deviceName) {
             deviceIsActive = !(deviceConfig->getStr("politics") == "ignore");
             heartbeat = deviceConfig->getInt("heartbeat");
-            dprintf("$P found device in the list! "\
-                    "politics=%s   heartbeat=%d\n",
-                    (deviceIsActive ? "show" : "ignore"), heartbeat);
+            dprintf.c("$P found device in the list! "\
+                      "politics=%s   heartbeat=%d\n",
+                      (deviceIsActive ? "show" : "ignore"), heartbeat);
         }
     }
 
