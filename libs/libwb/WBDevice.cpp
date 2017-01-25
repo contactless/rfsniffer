@@ -68,13 +68,14 @@ std::vector<std::string> CWBControl::controlTypeToDefaultName =
 
 
 CWBControl::CWBControl(string_cref name_, ControlType type_, bool readonly_):
-    name(name_), type(type_), readonly(readonly_)
+    name(name_), type(type_), readonly(readonly_), isValueChangeSheduled(false)
 {
     if (name.empty())
         name = controlTypeToDefaultName[type];
 }
 
-CWBControl::CWBControl(): name(""), type(ControlType::Error), readonly(false) {}
+CWBControl::CWBControl(): name(""), type(ControlType::Error), readonly(false),
+    isValueChangeSheduled(false) {}
 
 string_cref CWBControl::metaType() const
 {
@@ -121,9 +122,9 @@ CWBDevice::CWBDevice(string_cref Name, string_cref Description)
     : deviceName(Name), deviceDescription(Description), deviceIsActive(true),
       heartbeat(-1), deviceIsAlive(false), lastMessageReceiveTime(time(NULL))
 {
-	// device is firstly marked as non-alive because 
-	// it's a good idea to drop all /meta/error when creating a device
-	// but they drop only when alive-state changes
+    // device is firstly marked as non-alive because
+    // it's a good idea to drop all /meta/error when creating a device
+    // but they drop only when alive-state changes
 }
 
 
@@ -156,32 +157,30 @@ void CWBDevice::init(CConfigItem config)
 
 void CWBDevice::findAndSetConfigs(CConfigItem *devices)
 {
-    DPRINTF_DECLARE(dprintf, true);
-    dprintf("$P findAndSetConfigs for %s\n", deviceName.c_str());
+    DPRINTF_DECLARE(dprintf, false);
+    dprintf("$P findAndSetConfigs for %\n", deviceName);
     if (!devices)
         return;
-    dprintf("$P devices is %p\n", devices);
+    dprintf.c("$P devices is %p\n", devices);
     // check common settings
     if (devices->getStr("unknown_devices_politics") == "ignore")
         deviceIsActive = false;
 
-    dprintf("$P 2\n");
     // check known devices settings
     if (!devices->getBool("use_devices_list"))
         return;
 
-    dprintf("$P 3\n");
     CConfigItemList devicesConfigsList;
     devices->getList("known_devices", devicesConfigsList);
     for (auto deviceConfig : devicesConfigsList) {
-        dprintf("$P There is a variant : %s\n",
-                deviceConfig->getStr("name").c_str());
+        dprintf("$P There is a variant : %\n",
+                deviceConfig->getStr("name"));
         if (deviceConfig->getStr("name") == deviceName) {
             deviceIsActive = !(deviceConfig->getStr("politics") == "ignore");
             heartbeat = deviceConfig->getInt("heartbeat");
-            dprintf("$P found device in the list! "\
-                    "politics=%s   heartbeat=%d\n",
-                    (deviceIsActive ? "show" : "ignore"), heartbeat);
+            dprintf.c("$P found device in the list! "\
+                      "politics=%s   heartbeat=%d\n",
+                      (deviceIsActive ? "show" : "ignore"), heartbeat);
         }
     }
 
@@ -222,6 +221,7 @@ void CWBDevice::set(string_cref name, string_cref value)
 
     i->second.value = value;
     i->second.changed = true;
+    //i->second.isValueChangeSheduled = false;
 }
 
 void CWBDevice::set(CWBControl::ControlType type, float value)
@@ -231,6 +231,16 @@ void CWBDevice::set(CWBControl::ControlType type, float value)
 
 void CWBDevice::set(string_cref name, float value)
 {
+    set(name, ftoa(value));
+}
+
+
+void CWBDevice::setForAndThen(const string &name, const string &value, int timeFor,
+                              const string &valueThen)
+{
+    DPRINTF_DECLARE(dprintf, false);
+    dprintf("$P (%, %, %, %) called\n", name, value, timeFor, valueThen);
+
     doHeartbeat();
 
     CControlMap::iterator i = deviceControls.find(name);
@@ -238,10 +248,37 @@ void CWBDevice::set(string_cref name, float value)
     if (i == deviceControls.end())
         throw CHaException(CHaException::ErrBadParam, name);
 
-    i->second.value = ftoa(value);
+    i->second.value = value;
     i->second.changed = true;
-}
 
+    i->second.isValueChangeSheduled = true;
+    i->second.timeWhen = time(nullptr) + timeFor;
+    dprintf("$P current_time %, time when %\n", time(nullptr), i->second.timeWhen);
+    i->second.valueThen = valueThen;
+    dprintf("$P value is % will be %\n", i->second.value, i->second.valueThen);
+}
+void CWBDevice::updateScheduled(StringMap &v)
+{
+    DPRINTF_DECLARE(dprintf, false);
+    dprintf("$P start\n");
+    if (!deviceIsActive) // do nothing if device is disabled
+        return;
+
+    const string base = "/devices/" + deviceName;
+
+    for(auto &i : deviceControls) {
+        dprintf("$P       % % %\n", i.second.name, i.second.value, i.second.isValueChangeSheduled);
+        if (i.second.isValueChangeSheduled &&
+                difftime(time(nullptr), i.second.timeWhen) >= 0) {
+            dprintf("$P change % from % to %\n", base + "/controls/" + i.second.name, i.second.value,
+                    i.second.valueThen);
+            i.second.isValueChangeSheduled = false;
+            i.second.value = i.second.valueThen;
+            v[base + "/controls/" + i.second.name] = i.second.value;
+            i.second.changed = false;
+        }
+    }
+}
 
 float CWBDevice::getFloat(string_cref name)
 {

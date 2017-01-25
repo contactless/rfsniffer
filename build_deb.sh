@@ -7,5 +7,5 @@ if [ "$?" -ne "$SUCCESS_CODE" ]; then
 	echo "FAIL, bad directory"
  	exit 0
 fi
-dpkg-buildpackage -rfakeroot -us -uc
+dpkg-buildpackage -rfakeroot -us -uc -j8
 

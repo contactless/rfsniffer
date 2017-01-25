@@ -39,7 +39,7 @@ void CRFProtocol::SetTransmitTiming(const uint16_t *timings)
 */
 string CRFProtocol::Parse(base_type *data, size_t dataLen)
 {
-    DPrintf dprintf = DPrintf().enabled(false);
+    DPRINTF_DECLARE(dprintf, false);
 
     Clean();
     //  Декодирование происходит в три этапа
@@ -54,7 +54,7 @@ string CRFProtocol::Parse(base_type *data, size_t dataLen)
 
     string decodedRaw = DecodeRaw(data, dataLen);
 
-    dprintf("CRFProtocol::Parse - DecodeRaw returns: %s\n", decodedRaw.c_str());
+    dprintf("$P - DecodeRaw returns: \'%\'\n", decodedRaw);
 
     if (!decodedRaw.length())
         return "";
@@ -69,10 +69,10 @@ string CRFProtocol::Parse(base_type *data, size_t dataLen)
         return "";
 
     for (const string &packet : rawPackets)
-        dprintf("\t\tCRFProtocol::Parse - rawPacket: %s\n", packet.c_str());
+        dprintf("\t\t rawPacket: \'%\'\n", packet);
 
     string bits = DecodeBits(rawPackets);
-    dprintf("CRFProtocol::Parse - DecodeBits returns: %s\n", bits.c_str());
+    dprintf("$P returns: \'%\'\n", bits);
 
     if (bits.length()) {
         //      3 - декодируем набор бит в осмысленные данные (команду, температуру etc)

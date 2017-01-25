@@ -140,7 +140,7 @@ string CRFParser::Parse(base_type **data_ptr, size_t *length_ptr)
                 m_Log->Printf(4, "Parse part of packet from %ld size %ld splitted by %c%ld", data - saveStart,
                               packetLen, (isPulse ? '+' : '-'), len);
 
-            //string res = Parse(data, packetLen);
+            // string res = Parse(data, packetLen);
             // Important feature with: packetLen * 2 + 20
             // it's enable tests to work, because some protocols repeats message twice
             // TODO (?) change to maximum repeat count
@@ -171,6 +171,11 @@ string CRFParser::Parse(base_type *data, size_t len)
     if (len < MIN_PACKET_LEN)
         return "";
 
+    // Если указан путь для сохранения - пишем пакет в файл
+    if (m_SavePath.length()) {
+        SaveFile(data, len);
+    }
+
     // Пытаемся декодировать пакет каждым декодером по очереди
     for (CRFProtocol *protocol : m_Protocols) {
         string retval = protocol->Parse(data, len);
@@ -184,17 +189,6 @@ string CRFParser::Parse(base_type *data, size_t len)
             m_Analyzer = new CRFAnalyzer(m_Log);
 
         m_Analyzer->Analyze(data, len);
-    }
-
-    // Если указан путь для сохранения - пишем в файл пакет, который не смогли декодировать
-    if (m_SavePath.length()) {
-        for (CRFProtocol *protocol : m_Protocols) {
-            if (protocol->needDumpPacket()) {
-                m_Log->Printf(3, "Dump packet for %s", protocol->getName().c_str());
-                SaveFile(data, len);
-                return "";
-            }
-        }
     }
 
     return "";

@@ -1,4 +1,5 @@
 #include "../libs/libutils/logging.h"
+#include "../libs/libutils/strutils.h"
 #include "../libs/libutils/Exception.h"
 #include "MqttConnect.h"
 #include "../libs/librf/RFM69OOK.h"
@@ -209,7 +210,6 @@ void CMqttConnection::NewMessage(String message)
         }
 
         if (cmd == "21") {
-            //noolite_rx_0x1492
             string name = string("noolite_rx_0x") + id;
             string t = values["t"], h = values["h"];
             static const string low_battery_control_name = "Low battery";
@@ -233,20 +233,27 @@ void CMqttConnection::NewMessage(String message)
                 dev->set("Humidity", h);
             dev->set(CWBControl::BatteryLow, values["low_bat"]);
 
-        } else if (cmd == "0" || cmd == "4" || cmd == "2") {
-            //noolite_rx_0x1492
+        } else if (cmd == "0" || cmd == "4" || cmd == "2" || cmd == "25") {
             string name = string("noolite_rx_0x") + id;
             static const string movement_control_name = "There is a movement";
+            static const string movement_interval_control_name = "Timeout";
             CWBDevice *dev = m_Devices[name];
             if (!dev) {
-                string desc = string("Noolite Sensor PM111") + " [0x" + id + "]";
+                string desc = string("Noolite Sensor ") + (cmd == "25" ? "PM112" : "PM111" ) + " [0x" + id + "]";
                 dev = new CWBDevice(name, desc);
                 dev->addControl(movement_control_name, CWBControl::Alarm, true);
-
+                if (cmd == "25")
+                    dev->addControl(movement_interval_control_name, CWBControl::Generic, true);
                 CreateDevice(dev);
             }
 
-            if (cmd == "0")
+
+            if (cmd == "25") {
+                // PM112
+                dev->setForAndThen(movement_control_name, "1", strutils::atoi(values["time"]), "0");
+                //dev->set(movement_control_name, "1");
+                dev->set(movement_interval_control_name, values["time"]);
+            } else if (cmd == "0")
                 dev->set(movement_control_name, "0");
             else if (cmd == "2")
                 dev->set(movement_control_name, "1");
@@ -379,7 +386,19 @@ void CMqttConnection::SendAliveness()
     publishStringMap(valuesForUpdate);
 }
 
+void CMqttConnection::SendScheduledChanges()
+{
+    CWBDevice::StringMap valuesForUpdate;
 
+    // read changes into "valuesForUpdate"
+    for (auto dev : m_Devices) {
+        if (dev.second)
+            dev.second->updateScheduled(valuesForUpdate);
+    }
+
+    // do these changes in mqtt
+    publishStringMap(valuesForUpdate);
+}
 
 
 

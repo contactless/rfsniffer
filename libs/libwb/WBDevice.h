@@ -82,6 +82,11 @@ class LIBWB_API CWBControl
     string value;
     string source, sourceType;
 
+    // when timeWhen comes, then valueThen will be written to value
+    bool isValueChangeSheduled;
+    time_t timeWhen;
+    string valueThen;
+
     const string &metaType() const;
 
     const string &stringValue() const;
@@ -132,7 +137,7 @@ class LIBWB_API CWBDevice
     {
         return deviceName;
     };
-    const string &sgetDescription()
+    const string &getDescription()
     {
         return deviceDescription;
     };
@@ -147,6 +152,12 @@ class LIBWB_API CWBDevice
     void set(CWBControl::ControlType type, float value);
     void set(const string &name, const string &value);
     void set(const string &name, float value);
+
+    // Sensor PM112 sends signal to enable smth for given time
+    // So such function is needed...
+    void setForAndThen(const string &name, const string &value, int timeFor, const string &valueThen);
+    void updateScheduled(StringMap &);
+
     float getFloat(const string &name);
     const string &getString(const string &name);
 

@@ -158,9 +158,6 @@ void CLog::Printf(int level, const char *Format, ...)
 
 void CLog::VPrintf(int level, const char *Format, va_list marker)
 {
-    va_list save_marker;
-    va_copy(save_marker, marker);
-
     if (m_iConsoleLogLevel < level && m_iLogLevel < level)
         return;
 
@@ -204,16 +201,18 @@ void CLog::VPrintf(int level, const char *Format, va_list marker)
             printf("%s", Buffer);
     }
 
+    va_list save_marker;
+    va_copy(save_marker, marker);
+
     if (m_iConsoleLogLevel >= level && !m_DisableConsole) {
         vprintf(Format, marker);
-
         if (Format[strlen(Format) - 1] != '\n')
             printf("\n");
     }
 
     if (m_iLogLevel >= level) {
         vfprintf(m_File, Format, save_marker);
-
+        va_end(save_marker);
         if (Format[strlen(Format) - 1] != '\n')
             fprintf(m_File, "\n");
 

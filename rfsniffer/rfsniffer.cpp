@@ -406,9 +406,9 @@ void RFSniffer::tryFixThresh() throw(CHaException)
 
 void RFSniffer::receiveForever() throw(CHaException)
 {
-    DPrintf dprintf = DPrintf().enabled(true);
+    DPRINTF_DECLARE(dprintf, false);
 
-    dprintf("RFSniffer::receiveForever(): DPrintf initiaized\n");
+    dprintf("$P DPrintf initiaized\n");
 
     m_Log->Printf(3, "RF Receiver begins");
 
@@ -423,11 +423,12 @@ void RFSniffer::receiveForever() throw(CHaException)
             devicesConfigPtr.reset(new CConfigItem(devicesConfig));
     }
 
-    dprintf("RFSniffer::receiveForever(): Initialize connection, deviceConfigPtr = %p\n",
-            devicesConfigPtr.get());
+    dprintf.c("$P Initialize connection, deviceConfigPtr = %p\n",
+              devicesConfigPtr.get());
     CMqttConnection conn(args.mqttHost, m_Log, rfm.get(), devicesConfigPtr.get());
 
     CRFParser m_parser(m_Log, (args.bDebug || args.writePackets > 0) ? args.savePath : "");
+
     m_parser.AddProtocol("All");
 
     time_t lastReport = 0, packetStartTime = time(NULL), startTime = time(NULL);
@@ -438,7 +439,7 @@ void RFSniffer::receiveForever() throw(CHaException)
 
     bool readSmthNew = false;
 
-    dprintf("RFSniffer::receiveForever(): Start cycle\n");
+    dprintf("$P Start cycle\n");
 
     while (true) {
         // try is placed here to handle exceptions and just restart, not to crush
@@ -533,6 +534,7 @@ void RFSniffer::receiveForever() throw(CHaException)
                 rfm->setRSSIThreshold(args.rssi);
 
             conn.SendAliveness();
+            conn.SendScheduledChanges();
 
         } catch (CHaException ex) {
             // clean buffer
@@ -552,7 +554,8 @@ void RFSniffer::closeConnections()
 
 void RFSniffer::run(int argc, char **argv)
 {
-    DPrintf::globallyEnable(true);
+    DPrintf::globallyEnable(false);
+    DPrintf::setPrefixLength(40);
 
     readEnvironmentVariables();
     readCommandLineArguments(argc, argv);

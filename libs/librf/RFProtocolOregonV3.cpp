@@ -34,7 +34,8 @@ CRFProtocolOregonV3::~CRFProtocolOregonV3()
 
 string CRFProtocolOregonV3::DecodePacket(const string &raw_)
 {
-    DPrintf dprintf = DPrintf().enabled(false);
+    DPRINTF_DECLARE(dprintf, false);
+
     string raw = raw_;
 
     if (raw.length() < 10)
@@ -49,7 +50,7 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
         if (apos != string::npos)
             raw.resize(apos);
     }
-    dprintf("OregonV3: decodePacket: %s\n", raw.c_str());
+    dprintf("OregonV3: decodePacket: %\n", raw);
 
     std::vector <char> isPulse(raw.size());
     for (int i = 0; i < (int)raw.size(); i++)
@@ -94,14 +95,14 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
 
 
     //packet.resize(packet.length() - 8);
-    dprintf("    OregonV3 decodedBits(%d): %s\n", (int)packet.size(), packet.c_str());
+    dprintf("    OregonV3 decodedBits(%): %\n", packet.size(), packet);
 
     unsigned int crc = 0, originalCRC = -1;
     string hexPacket = "";
 
     if (packet.length() < 48) {
-        dprintf("OregonV3: (only warning: it may be other protocol) Too short packet %s",
-                packet.c_str());
+        dprintf("OregonV3: (only warning: it may be other protocol) "\
+                "Too short packet %s", packet);
         return "";
     }
 
@@ -122,24 +123,24 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
         else if (i == len - 12)
             originalCRC += val << 4;
 
-        dprintf("%d(%d) ", val, crc);
+        dprintf("%(%) ", val, crc);
         snprintf(buffer, sizeof(buffer), "%X", val);
         hexPacket += buffer;
     }
     dprintf("\n");
 
-    dprintf("    OregonV3 decodedData: %s\n", hexPacket.c_str());
+    dprintf("    OregonV3 decodedData: %\n", hexPacket);
 
     if (crc != originalCRC) {
         dprintf("OregonV3: (only warning: it may be other protocol)"\
-                " Bad CRC (calculated %d != %d told) for %s", crc,
-                originalCRC, packet.c_str());
+                " Bad CRC (calculated % != % told) for %", crc,
+                originalCRC, packet);
         return "";
     }
 
 
     if (hexPacket[0] != 'A') {
-        dprintf("OregonV3: First nibble is not 'A'. Data: %s", hexPacket.c_str());
+        dprintf("OregonV3: First nibble is not 'A'. Data: %", hexPacket);
         return "";
     }
 

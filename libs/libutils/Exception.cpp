@@ -91,6 +91,7 @@ CHaException::CHaException(ErrorCodes code, const char *Format, ...)
 #else
     vsnprintf(Buffer, sizeof(Buffer), Format, marker);
 #endif
+    va_end (marker);
     m_code = code;
     m_Message = Buffer;
 }

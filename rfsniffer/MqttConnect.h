@@ -32,6 +32,7 @@ class CMqttConnection
     // Should be called regularly to devices be checked for aliveness
     // and errors be sent if they are not alive
     void SendAliveness();
+    void SendScheduledChanges();
 
   private:
     virtual void on_connect(int rc);

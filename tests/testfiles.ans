@@ -13,6 +13,8 @@ capture-2706-093221.rcf nooLite:flip=1 cmd=15 addr=9a11 fmt=00 crc=a8
 capture-2706-093205.rcf nooLite:flip=0 cmd=15 addr=9a13 fmt=00 crc=fb
 capture-2506-120004.rcf nooLite:flip=0 cmd=5 addr=9a13 fmt=00 crc=52
 capture-2506-115944.rcf nooLite:flip=1 cmd=5 addr=9a13 fmt=00 crc=4e
+capture-2701-015348.rcf nooLite:flip=1 cmd=25 time=5 addr=4b5f fmt=05 crc=49
+capture-2701-015346.rcf nooLite:flip=0 cmd=25 time=5 addr=4b5f fmt=05 crc=a3
 capture-0906-214352.rcf Oregon:type=1D20 id=51 ch=1 low_bat=[01] t=22.6 h=41
 capture-0906-214234.rcf Oregon:type=1D20 id=51 ch=1 low_bat=[01] t=22.6 h=41
 capture-0906-212618.rcf Oregon:type=1D20 id=51 ch=1 low_bat=[01] t=22.7 h=41

@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "RFProtocolNooLite.h"
+#include "../libutils/DebugPrintf.h"
 
 static const range_type g_timing_pause[7] = {
     { 380, 750 },
@@ -176,6 +177,7 @@ string CRFProtocolNooLite::DecodePacket(const string &raw_)
 string CRFProtocolNooLite::DecodeData(const string
                                       &bits) // Ïðåîáðàçîâàíèå áèò â äàííûå
 {
+    DPRINTF_DECLARE(dprintf, false);
     uint8_t packet[20];
     size_t packetLen = sizeof(packet);
 
@@ -184,6 +186,11 @@ string CRFProtocolNooLite::DecodeData(const string
 
     if (packetLen < 5)
         return bits;
+
+    dprintf("$P bits: (%), packet: (", bits);
+    for (int i = 0; i < packetLen && dprintf.isActive(); i++)
+        dprintf.c("%02X ", (int)packet[i]);
+    dprintf(")\n");
 
     // DEBUG
     int calculated_crc = crc8(packet, packetLen - 1);
@@ -194,9 +201,11 @@ string CRFProtocolNooLite::DecodeData(const string
                       received_crc, calculated_crc);
         return "";
     }
+    int crc = received_crc;
 
     int fmt = packet[packetLen - 2];
     switch (fmt) {
+        // PM111
         case 0: {
             // for cmd = 0 | 2 | 4
             // motion sensor (PM111) (repeats >= 2)
@@ -205,16 +214,31 @@ string CRFProtocolNooLite::DecodeData(const string
             bool sync = (packet[0] & 8) != 0;
             int cmd = packet[0] >> 4;
             return String::ComposeFormat("flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
-                                         (int)((packet[2] << 8) + packet[1]), (int)packet[3], (int)packet[4])
+                                         (int)((packet[2] << 8) + packet[1]), fmt, crc)
                    + ((cmd == 0 || cmd == 2 || cmd == 4)  ? " __repeat=2" : "");
         }
+        // connecting noolite devices send this message
         case 1: {
-            int type = packet[3];
-            return String::ComposeFormat("cmd=%02x b0=%02x type=%d addr=%04x fmt=%02x crc=%02x",
-                                         (int)packet[0], (int)packet[1],
-                                         type,
-                                         (int)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (int)fmt,
-                                         (int)packet[packetLen - 1]);
+            bool sync = (packet[0] & 8) != 0;
+            int cmd = packet[0] >> 4;
+            return String::ComposeFormat("flip=%d cmd=%d unknown=%02x addr=%04x fmt=%02x crc=%02x", sync, cmd,
+                                         (int)packet[1], (int)((packet[3] << 8) + packet[2]), fmt, crc);
+        }
+
+        // PM112
+        case 5: {
+            //  format is
+            // 80 19 01 5F 4B 05 49
+            // 0x80 - 00 или 80 - что-то вроде flip. Сначала идут три сообщения с 80, потом три с 00
+            // 0x19 - видимо команда
+            // 0x01 - время включения. Подразумевается от 5 секунд до 22 минут (5сек * x)
+            // 5F4B - адрес
+            // OxO5 - формат
+            // 0x49 - crc
+            bool sync = (packet[0] & 0x80) != 0;
+            int cmd = packet[1];
+            return String::ComposeFormat("flip=%d cmd=%d time=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
+                                         (int)packet[2] * 5, (int)((packet[4] << 8) + packet[3]), fmt, crc);
         }
 
         case 7:

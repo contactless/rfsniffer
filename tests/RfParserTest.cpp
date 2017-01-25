@@ -227,6 +227,7 @@ void RfParserTest(string path)
     //parser.AddProtocol(new CRFProtocolLivolo());
     //parser.AddProtocol(new CRFProtocolX10());
     //parser.AddProtocol(new CRFProtocolRaex());
+    //parser.AddProtocol(new CRFProtocolNooLite());
     //parser.AddProtocol("Oregon");
     parser.AddProtocol("All");
 
