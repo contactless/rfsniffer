@@ -424,6 +424,7 @@ void RFSniffer::receiveForever() throw(CHaException)
     }
 
     dprintf.c("$P Initialize connection, deviceConfigPtr = %p\n",
+
               devicesConfigPtr.get());
     CMqttConnection conn(args.mqttHost, m_Log, rfm.get(), devicesConfigPtr.get());
 

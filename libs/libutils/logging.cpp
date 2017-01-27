@@ -161,6 +161,9 @@ void CLog::VPrintf(int level, const char *Format, va_list marker)
     if (m_iConsoleLogLevel < level && m_iLogLevel < level)
         return;
 
+    va_list save_marker;
+    va_copy(save_marker, marker);
+
     LOCK(lock);
 
     if (m_iLogLevel >= level) {
