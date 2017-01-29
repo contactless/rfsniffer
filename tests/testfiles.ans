@@ -3,6 +3,8 @@ capture-2708-132756.rcf X10:D2ON
 capture-2708-132933.rcf X10:D2ON
 capture-0307-215444.rcf nooLite:flip=1 cmd=4 addr=9a13 fmt=00 crc=76
 capture-0307-215449.rcf nooLite:flip=0 cmd=4 addr=9a13 fmt=00 crc=6a
+capture-2901-155816.rcf nooLite:flip=0 cmd=4 addr=ab91 fmt=00 crc=ae
+capture-2901-155817.rcf nooLite:flip=1 cmd=4 addr=ab91 fmt=00 crc=b2
 capture-2706-190620.rcf nooLite:flip=0 cmd=21 type=2 t=29.6 h=39 s3=ff low_bat=0 addr=1492 fmt=07 crc=ec
 capture-2706-143835.rcf nooLite:flip=1 cmd=21 type=2 t=30.3 h=43 s3=ff low_bat=0 addr=1492 fmt=07 crc=d3
 capture-2706-093124.rcf nooLite:flip=1 cmd=5 addr=9a12 fmt=00 crc=e5

@@ -496,7 +496,7 @@ void RFSniffer::receiveForever() throw(CHaException)
             readSmthNew = false;
 
             // try get more data and sleep if fail
-            if (waitForData(lircFD, 3000000)) {
+            if (waitForData(lircFD, 1000000)) {
                 // do not try to read much, because it easier to process it by small parts
                 //size_t tryToReadCount = std::min(normalMessageLength, remainingDataCount());
 

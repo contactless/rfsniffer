@@ -177,7 +177,7 @@ string CRFProtocolNooLite::DecodePacket(const string &raw_)
 string CRFProtocolNooLite::DecodeData(const string
                                       &bits) // Ïðåîáðàçîâàíèå áèò â äàííûå
 {
-    DPRINTF_DECLARE(dprintf, false);
+    DPRINTF_DECLARE(dprintf, true);
     uint8_t packet[20];
     size_t packetLen = sizeof(packet);
 
@@ -186,6 +186,59 @@ string CRFProtocolNooLite::DecodeData(const string
 
     if (packetLen < 5)
         return bits;
+        
+    
+    // TODO check length
+    // TODO 
+    /*
+		if fmt == 0:
+            if len(args_data) != 0:
+               return
+        elif fmt == 1:
+            if len(args_data) != 8:
+               return
+        elif fmt == 3:
+            if len(args_data) != 32:
+               return
+        elif fmt == 4:
+            if len(args_data) != 0:
+               return
+        elif fmt == 5:
+            if len(args_data) != 8:
+                return 
+        elif fmt == 6:
+            if len(args_data) != 16:
+                return
+        elif fmt == 7:
+            if len(args_data) != 32:
+               return
+        else:
+            return
+    */
+    // TODO CMD 6, 24
+    
+    /*
+    #                        [ (FLIP) CMD  ] [           RGB          ] [   ?  ] [      ADDR     ] [ FMT  ] [ CRC  ]
+    #                        1FCCCC
+    #ch:2 r:1 g:1 b:1        110110          10000000 10000000 10000000 00000000 10011111 10100100 11000000 11001011  fmt=3, cmd=6
+    #ch:2 r:1 g:1 b:2        100110          10000000 10000000 01000000 00000000 10011111 10100100 11000000 11101101  fmt=3 
+    #ch:2 r:255 g:255 b:255  110110          11111111 11111111 11111111 00000000 10011111 10100100 11000000 10110001  fmt=3
+    #ch:14 r:1 g:1 b:2       110110          10000000 10000000 01000000 00000000 11111111 10100100 11000000 00110010  fmt=3
+    #ch:14 r:1 g:1 b:2       100110          10000000 10000000 01000000 00000000 11111111 10100100 11000000 01100110  fmt=3
+    #ch:15 r:1 g:1 b:2       110110          10000000 10000000 01000000 00000000 11111111 10100100 11000000 00110010  fmt=3
+    #                                                                   
+    #ch:2 switch mode        11     01001000                                     10011111 10100100 00100000 00010101  fmt=4, cmd=18
+    #ch:2 switch color       11     10001000                                     10011111 10100100 00100000 00000100  fmt=4, cmd=17
+    #                                                                   [LEVEL ]
+    #ch:2 lvl=46             110110                                     01110100 10011111 10100100 10000000 10010100  fmt=1
+    #
+    #ch:2 cmd=10             110101                                              10011111 10100100 00000000 00010001  fmt=0
+    #ch:2 off_ch             110000                                              10011111 10100100 00000000 10000100  fmt=0
+    #                                                                   [ TIME ]
+    #                        11     00011000                            00100110 10100000 01000100 10100000 00110110  fmt=5, cmd=24
+    #                                                          [      TIME     ]
+    #                        11     10011000                   10000000 10011000 10100000 01000100 01100000 00100001  fmt=6 ch:5 cmd=25 timeout=(25*256+1)*5 
+    */
 
     dprintf("$P bits: (%), packet: (", bits);
     for (int i = 0; i < packetLen && dprintf.isActive(); i++)
@@ -204,25 +257,58 @@ string CRFProtocolNooLite::DecodeData(const string
     int crc = received_crc;
 
     int fmt = packet[packetLen - 2];
+    //                  0  1   2  3  4  5  6   7
+    int fmt2length[] = {5, 8, -1, 9, 6, 7, 8, 10};
+    if (fmt < 0 || fmt >= sizeof(fmt2length) / sizeof(int) || fmt2length[fmt] != packetLen) {
+        m_Log->Printf(3,
+                      "CRFProtocolNooLite::DecodeData - Incorrect packet - strange fmt=%d, received_len=%d",
+                      fmt, packetLen);
+        return "";
+    }
+    
     switch (fmt) {
-        // PM111
+        // PM111, outer button PK311, ...
         case 0: {
-            // for cmd = 0 | 2 | 4
-            // motion sensor (PM111) (repeats >= 2)
-            // something strange (PT111 in some modes) (repeats = 1)
-            // so demand repeats >= 2
             bool sync = (packet[0] & 8) != 0;
             int cmd = packet[0] >> 4;
-            return String::ComposeFormat("flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
-                                         (int)((packet[2] << 8) + packet[1]), fmt, crc)
-                   + ((cmd == 0 || cmd == 2 || cmd == 4)  ? " __repeat=2" : "");
+            if (cmd == 0 || cmd == 2) {
+                // for cmd = 0 | 2
+                // motion sensor (PM111) (repeats >= 2)
+                // something strange (PT111 in some modes) (repeats = 1)
+                // so demand repeats >= 2
+                return String::ComposeFormat("flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
+                                             (int)((packet[2] << 8) + packet[1]), fmt, crc);
+                      // + " __repeat=2";
+            } 
+            else {    
+                // command 4 and everything else
+                return String::ComposeFormat("flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
+                                             (int)((packet[2] << 8) + packet[1]), fmt, crc);
+            }
+            
         }
         // connecting noolite devices send this message
+        // or setting level
         case 1: {
             bool sync = (packet[0] & 8) != 0;
             int cmd = packet[0] >> 4;
-            return String::ComposeFormat("flip=%d cmd=%d unknown=%02x addr=%04x fmt=%02x crc=%02x", sync, cmd,
+            return String::ComposeFormat("flip=%d cmd=%d level=%02x addr=%04x fmt=%02x crc=%02x", sync, cmd,
                                          (int)packet[1], (int)((packet[3] << 8) + packet[2]), fmt, crc);
+        }
+        
+        // untested
+        case 3: {
+            bool sync = (packet[0] & 8) != 0;
+            int cmd = packet[0] >> 4;
+            return String::ComposeFormat("flip=%d cmd=%d r=%d g=%d b=%d unknown=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
+                                         (int)packet[1], (int)packet[2], (int)packet[3], (int)packet[4], (int)((packet[6] << 8) + packet[5]), fmt, crc);
+        }
+        // untested
+        case 4: {
+            bool sync = (packet[0] & 0x80) != 0;
+            int cmd = packet[1];
+            return String::ComposeFormat("flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
+                                         (int)((packet[3] << 8) + packet[2]), fmt, crc);
         }
 
         // PM112
@@ -240,8 +326,17 @@ string CRFProtocolNooLite::DecodeData(const string
             return String::ComposeFormat("flip=%d cmd=%d time=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
                                          (int)packet[2] * 5, (int)((packet[4] << 8) + packet[3]), fmt, crc);
         }
+        
+        // untested
+        case 6:  {
+            bool sync = (packet[0] & 0x80) != 0;
+            int cmd = packet[1];
+            return String::ComposeFormat("flip=%d cmd=%d time=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
+                                         (int)((packet[3] << 8) + packet[2]) * 5, (int)((packet[5] << 8) + packet[4]), fmt, crc);
+        }
 
-        case 7:
+		// PT111 and ...
+        case 7: {
             if (packet[1] == 21) {
                 int type = (packet[3] >> 4) & 7;
                 int t_raw = ((packet[3] & 0xF) << 8) | packet[2];
@@ -286,8 +381,9 @@ string CRFProtocolNooLite::DecodeData(const string
                            (int)packet[1], (int)packet[2], (int)packet[3], (int)packet[4], (int)packet[5],
                            (int)((packet[7] << 8) + packet[6]), (int)packet[8], (int)packet[9]);
             }
+        }
         default:
-            m_Log->Printf(3, "len=%d addr=%04x fmt=%02x crc=%02x", packetLen,
+            m_Log->Printf(3, "unknown_format=true len=%d addr=%04x fmt=%02x crc=%02x", packetLen,
                           (int)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (int)fmt,
                           (int)packet[packetLen - 1]);
             m_Log->PrintBuffer(3, packet, packetLen);
