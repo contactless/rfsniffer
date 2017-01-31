@@ -431,6 +431,7 @@ void RFSniffer::receiveForever() throw(CHaException)
     CRFParser m_parser(m_Log, (args.bDebug || args.writePackets > 0) ? args.savePath : "");
 
     m_parser.AddProtocol("All");
+    //m_parser.AddProtocol(new CRFProtocolNooLite());
 
     time_t lastReport = 0, packetStartTime = time(NULL), startTime = time(NULL);
     int lastRSSI = -1000, minGoodRSSI = 0;
@@ -454,6 +455,7 @@ void RFSniffer::receiveForever() throw(CHaException)
             if (readSmthNew) {
                 size_t parsedLength;
                 std::vector<string> results = m_parser.ParseToTheEnd(dataBegin, readDataCount(), &parsedLength);
+                dprintf("$P parsed sequence of % symbols\n", parsedLength);
 
                 if (parsedLength == 0) {
                     if (readDataCount() > maxMessageLength) {

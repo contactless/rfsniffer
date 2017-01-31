@@ -51,7 +51,7 @@ static const char *g_nooLite_Commands[] = {
     //     поле «Данные к команде_x».)
     NULL
 };
-
+static int g_nooLite_Commands_len = 21;
 
 CRFProtocolNooLite::CRFProtocolNooLite()
     : CRFProtocol(g_timing_pause, g_timing_pulse, 0, 1, "aAaAaAaAaAaAaAaAaAaAaAc")
@@ -78,6 +78,12 @@ CRFProtocolNooLite::nooLiteCommandType CRFProtocolNooLite::getCommand(const stri
     return nlcmd_error;
 }
 
+const char * CRFProtocolNooLite::getDescription(int cmd) {
+    if (cmd < 0 || cmd >= g_nooLite_Commands_len)
+        return g_nooLite_Commands[cmd];
+    else
+        return "unknown";
+}
 
 // The 1-Wire CRC scheme is described in Maxim Application Note 27:
 // "Understanding and Using Cyclic Redundancy Checks with Maxim iButton Products"
@@ -177,7 +183,7 @@ string CRFProtocolNooLite::DecodePacket(const string &raw_)
 string CRFProtocolNooLite::DecodeData(const string
                                       &bits) // Ïðåîáðàçîâàíèå áèò â äàííûå
 {
-    DPRINTF_DECLARE(dprintf, true);
+    DPRINTF_DECLARE(dprintf, false);
     uint8_t packet[20];
     size_t packetLen = sizeof(packet);
 
@@ -186,36 +192,6 @@ string CRFProtocolNooLite::DecodeData(const string
 
     if (packetLen < 5)
         return bits;
-        
-    
-    // TODO check length
-    // TODO 
-    /*
-		if fmt == 0:
-            if len(args_data) != 0:
-               return
-        elif fmt == 1:
-            if len(args_data) != 8:
-               return
-        elif fmt == 3:
-            if len(args_data) != 32:
-               return
-        elif fmt == 4:
-            if len(args_data) != 0:
-               return
-        elif fmt == 5:
-            if len(args_data) != 8:
-                return 
-        elif fmt == 6:
-            if len(args_data) != 16:
-                return
-        elif fmt == 7:
-            if len(args_data) != 32:
-               return
-        else:
-            return
-    */
-    // TODO CMD 6, 24
     
     /*
     #                        [ (FLIP) CMD  ] [           RGB          ] [   ?  ] [      ADDR     ] [ FMT  ] [ CRC  ]

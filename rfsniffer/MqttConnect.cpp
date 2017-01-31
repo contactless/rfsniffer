@@ -222,8 +222,8 @@ void CMqttConnection::NewMessage(String message)
             case 25: // set as 1 for a while
             {
                 bool enableForAWhile = (cmdInt == 24 || cmdInt == 25); 
-                static const string control_name = "State";
-                static const string interval_control_name = "Timeout";
+                static const string control_name = "state";
+                static const string interval_control_name = "timeout";
                 CWBDevice *dev = m_Devices[name];
                 if (!dev) {
                     string desc = string("Noolite switch ") + " [0x" + id + "]";
@@ -290,6 +290,22 @@ void CMqttConnection::NewMessage(String message)
                     dev->set("Humidity", h);
                 dev->set(CWBControl::BatteryLow, values["low_bat"]);
                 break;
+            }
+            
+            default: {
+                CWBDevice *dev = m_Devices[name];
+                static const string cmd_control_name = "command", 
+                                    cmd_desc_control_name = "command_description";
+                if (!dev) {
+                    string desc = string("Noolite device ") + " [0x" + id + "]";
+                    dev = new CWBDevice(name, desc);
+                    dev->addControl(cmd_control_name, CWBControl::Generic, true);
+                    dev->addControl(cmd_desc_control_name, CWBControl::Text, true);
+                    CreateDevice(dev);
+                }
+                dev->set(cmd_control_name, cmd);
+                dev->set(cmd_desc_control_name, CRFProtocolNooLite::getDescription(cmdInt));
+                break;  
             }
         }
     

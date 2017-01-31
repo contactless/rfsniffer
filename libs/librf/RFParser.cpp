@@ -130,11 +130,11 @@ string CRFParser::Parse(base_type **data_ptr, size_t *length_ptr)
     for(base_type *ptr = data; ptr - data < length; ptr++) {
         bool isPulse = CRFProtocol::isPulse(*ptr);
         base_type len = CRFProtocol::getLengh(*ptr);
-        bool badInterval1 = ((!isPulse && len > splitDelay) || (isPulse && len < splitPulse));
-        bool badInterval2 =
+        //bool badInterval1 = ((!isPulse && len > splitDelay) || (isPulse && len < splitPulse));
+        bool badInterval =
             (( isPulse && (len < m_minPulse || len > m_maxPulse)) ||
              (!isPulse && (len < m_minPause || len > m_maxPause)));
-        if (badInterval2) {
+        if (badInterval) {
             size_t packetLen = ptr - data;
             if (packetLen > 50)
                 m_Log->Printf(4, "Parse part of packet from %ld size %ld splitted by %c%ld", data - saveStart,
@@ -177,11 +177,21 @@ string CRFParser::Parse(base_type *data, size_t len)
     }
 
     // Пытаемся декодировать пакет каждым декодером по очереди
+    std::vector<string> decoded;
     for (CRFProtocol *protocol : m_Protocols) {
         string retval = protocol->Parse(data, len);
         if (retval.length())
-            return retval;  // В случае успеха возвращаем результат
+            decoded.push_back(retval);  // В случае успеха возвращаем результат
     }
+    
+    if (decoded.size() > 0) {
+        if (decoded.size() > 1) {
+            m_Log->Printf(3, "CRFParser parsing is ambigous! Variants are:\n");
+            for (const string &decodedOne : decoded)
+                m_Log->Printf(3, "\t\t%s\n", decodedOne.c_str());
+        }
+        return decoded[0];
+    } 
 
     // В случае неуспеха пытаемся применить анализатор
     if (b_RunAnalyzer) {

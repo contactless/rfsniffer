@@ -45,7 +45,8 @@ class RFLIB_API CRFProtocolNooLite :
     // Кодирование
     virtual string bits2timings(const string &bits);
     virtual string data2bits(const string &data);
-    nooLiteCommandType getCommand(const string &name);
+    static nooLiteCommandType getCommand(const string &name);
+    static const char *getDescription(int cmd);
 
   private:
     unsigned char getByte(const string &bits, size_t first, size_t len = 8);

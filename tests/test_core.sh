@@ -45,7 +45,10 @@ do
 	# cut first word (it's test filename)
     # and get answer 
 	ANSWER=`echo $LINE | cut -d '#' -f -1 | cut -d $' ' -f 2-`
-	check_for_presence $SIMULATE_RECEIVE_LOG "$ANSWER"
+    if ! [ -z "$ANSWER" ]
+    then
+        check_for_presence $SIMULATE_RECEIVE_LOG "$ANSWER"
+    fi
 done < $TEST_DESCRIPTIVE_FILE
 
 
