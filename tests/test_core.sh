@@ -4,7 +4,8 @@ if ! [ -d "testfiles" ]; then
 	cd tests
 fi
 
-TEST_DESCRIPTIVE_FILE="testfiles.ans"
+TEST_DESCRIPTIVE_FILE="testfiles.desc"
+TEST_LIST_FILE="testfiles.list"
 SIMULATE_RECEIVE_LOG="simulate_receive.log"
 
 
@@ -41,8 +42,9 @@ echo "    Try to find all required occurences in output...."
 # read file line by line
 while read LINE; 
 do 
-	# cut first word (it's test filename) 
-	ANSWER=`echo $LINE  | cut -d ' ' -f 2-`
+	# cut first word (it's test filename)
+    # and get answer 
+	ANSWER=`echo $LINE | cut -d '#' -f -1 | cut -d $' ' -f 2-`
 	check_for_presence $SIMULATE_RECEIVE_LOG "$ANSWER"
 done < $TEST_DESCRIPTIVE_FILE
 

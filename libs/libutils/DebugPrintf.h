@@ -144,6 +144,12 @@ class DPrintf
             (*this) << (++iter > 0 ? ", " : "") << i.first << "->" << i.second;
         (*this) << "]";
     }
+    
+    template <typename T1, typename T2>
+    DPrintf &operator<<(const std::pair<T1, T2> &t)
+    {
+        (*this) << "(" << t.first << ", " << t.second << ")";
+    }
 
 
     /*! Intelligent output function - just-'%'-style formatting

@@ -10,6 +10,7 @@
 #include <dirent.h>
 #include "../libs/libutils/logging.h"
 #include "../libs/libutils/Exception.h"
+#include "../libs/libutils/DebugPrintf.h"
 #include "../libs/librf/RFParser.h"
 #include "../libs/librf/RFProtocolLivolo.h"
 #include "../libs/librf/RFProtocolX10.h"
@@ -163,7 +164,11 @@ void getAllTestFiles( string path, string_vector &result )
 
 bool OneTest(const string_pair &test, CLog *log, CRFParser &parser)
 {
+    DPRINTF_DECLARE(dprint, true);
     String file_name = test.first, exp_result = test.second;
+    
+    if (file_name.empty())
+        return true;
 
     // expected values
     String exp_type, exp_value;
@@ -173,7 +178,7 @@ bool OneTest(const string_pair &test, CLog *log, CRFParser &parser)
     String res_type, res_value;
     String::Map res_values;
 
-    // printf("Test #%d: %s\n", (int)(test - Tests), (*test)[1]);
+    dprint("Test %\n", test);
 
     try {
         exp_result.SplitByExactlyOneDelimiter(":", exp_type, exp_value);
@@ -252,8 +257,10 @@ void RfParserTest(string path)
         if (test_file.is_open()) {
             String test;
             while (std::getline(test_file, test)) {
+                String testWitoutComment, comment;
+                test.SplitByFirstOccurenceDelimiter('#', testWitoutComment, comment);
                 String file, answer;
-                test.SplitByFirstOccurenceDelimiter(' ', file, answer);
+                testWitoutComment.SplitByFirstOccurenceDelimiter(' ', file, answer);
                 //std::cout << "Test: " << file << " & " << answer << std::endl;;
                 allPassed &= OneTest(std::pair<string, string>(file, answer), log, parser);
             }
