@@ -253,7 +253,7 @@ void RfParserTest(string path)
     // read tests from descriptive file
     {
         std::ifstream test_file;
-        test_file.open("tests/testfiles.ans");
+        test_file.open("tests/testfiles.desc");
         if (test_file.is_open()) {
             String test;
             while (std::getline(test_file, test)) {

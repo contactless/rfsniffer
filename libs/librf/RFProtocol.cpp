@@ -91,6 +91,7 @@ string CRFProtocol::Parse(base_type *data, size_t dataLen)
 
 string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)
 {
+    DPRINTF_DECLARE(dprintf, false);
     string decodedRaw, decodedRawRev;
 
     for (size_t i = 0; i < dataLen; i++) {
@@ -161,7 +162,7 @@ string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)
             }
         }
     }
-
+    dprintf("$P %\n", decodedRaw);
     if (m_InvertPacket)
         // TODO Remove and fix RST
         return decodedRaw + (m_Debug ? "[XXX]" : "?") +

@@ -16,6 +16,9 @@ class RFLIB_API CRFParser
     string m_SavePath;
     base_type m_minPause, m_maxPause, m_minPulse, m_maxPulse;
 
+    std::vector<string> parsedResults;
+    std::vector<base_type> previousInputData, inputData;
+    
   public:
     static const int MIN_PACKET_LEN =
         50; // Минимально возможная длина пакета
@@ -27,6 +30,10 @@ class RFLIB_API CRFParser
     //  AddProtocol  добавляет декодер к общему пулу декодеров
     void AddProtocol(CRFProtocol *);
     void AddProtocol(string protocol = "all");
+
+    // Определяет, может ли сигнал (импульс или пауза) быть корректным для какого-либо протокола
+    bool IsGoodSignal(base_type signal);
+    bool IsGoodSignal(bool isPulse, base_type length);
 
     /*  Пытается декодировать пакет пулом декодеров.
         Декодеры перебираются по очереди
@@ -50,11 +57,17 @@ class RFLIB_API CRFParser
     // and parsed length
     std::vector<string> ParseToTheEnd(base_type *data, size_t length, size_t *readLength);
 
+    // add some data to parse
+    void AddInputData(base_type dataElement);
+    void AddInputData(base_type *data, size_t len);
+    // get all results parsed from all data given by AddInputData
+    std::vector<string> ExtractParsed();
+
     //  Включает анализатор для пакетов, которые не получилось декодировать. Пока не реализованно
     void EnableAnalyzer();
 
     //  Сохраняет пакет в файл
-    void SaveFile(base_type *data, size_t size);
+    void SaveFile(base_type *data, size_t size, const char *prefix = "capture");
 
     // Устанавливает путь для сохранения пакетов
     void SetSavePath(string savePath);

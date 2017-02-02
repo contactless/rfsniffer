@@ -70,22 +70,11 @@ class RFSniffer
     // lirc
     int lircFD;
     // lirc_t buffer
-    //const static size_t maxMessageLength = (1 << 17);
-    const static size_t maxMessageLength = (1 << 25);
-    const static size_t dataSize = maxMessageLength * 2;
-    lirc_t data[dataSize];
-    lirc_t *const dataBegin;
-    lirc_t *const dataEnd;
-    lirc_t *dataPtr;
-    inline size_t remainingDataCount()
-    {
-        return dataEnd - dataPtr;
-    }
-    inline size_t readDataCount()
-    {
-        return dataPtr - dataBegin;
-    }
-
+    const static size_t maxMessageLength = (1 << 17);
+    //const static size_t maxMessageLength = (1 << 25);
+    const static size_t dataBuffSize = maxMessageLength * 2;
+    
+    lirc_t dataBuff[dataBuffSize];
 
     // utils
     bool waitForData(int fd, unsigned long maxusec);

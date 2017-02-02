@@ -278,9 +278,9 @@ void RFSniffer::initRFM()
     rfm->initialize();
 
     if (args.bDumpAllRegs) {
-        char *Buffer = (char *)data;
+        char *Buffer = (char *)dataBuff;
         char *BufferPtr = Buffer;
-        size_t BufferSize = dataSize;
+        size_t BufferSize = dataBuffSize;
         for (int i = 0; i <= 0x4F; i++) {
             byte cur = rfm->readReg(i);
             BufferPtr += snprintf(BufferPtr, BufferSize - (BufferPtr - Buffer), "Reg_%02X = %02x ", i, cur);
@@ -375,7 +375,7 @@ void RFSniffer::tryJustScan() throw(CHaException)
         while (difftime(time(NULL), startTime) < scanTime) {
             if (!waitForData(lircFD, 100))
                 continue;
-            int result = read(lircFD, (void *)data, dataSize);
+            int result = read(lircFD, (void *)dataBuff, dataBuffSize);
             if (result == -1 && errno == EAGAIN)
                 result = 0;
             if (result == 0 && args.bLircPedantic) {
@@ -383,7 +383,7 @@ void RFSniffer::tryJustScan() throw(CHaException)
                 break;
             }
             for (size_t i = 0; i < result; i++) {
-                if (CRFProtocol::isPulse(data[i]))
+                if (CRFProtocol::isPulse(dataBuff[i]))
                     pulses++;
             }
         }
@@ -431,117 +431,101 @@ void RFSniffer::receiveForever() throw(CHaException)
     CRFParser m_parser(m_Log, (args.bDebug || args.writePackets > 0) ? args.savePath : "");
 
     m_parser.AddProtocol("All");
-    //m_parser.AddProtocol(new CRFProtocolNooLite());
+    //m_parser.AddProtocol("nooLite");
 
     time_t lastReport = 0, packetStartTime = time(NULL), startTime = time(NULL);
     int lastRSSI = -1000, minGoodRSSI = 0;
 
     //string lastParsed = "";
     time_t lastRecognizedPacketTime = time(NULL);
+    time_t lastRegularWorkTime = time(NULL);
 
     bool readSmthNew = false;
 
     dprintf("$P Start cycle\n");
 
     while (true) {
+        DPRINTF_DECLARE(dprintf, false);
         // try is placed here to handle exceptions and just restart, not to crush
         try {
             // notice that writePackets is 0 if corresponding command line argument is not set
             if (args.writePackets > 0 && difftime(time(NULL), startTime) > args.writePackets)
                 break;
-
-
-            // try recognize packets
-            if (readSmthNew) {
-                size_t parsedLength;
-                std::vector<string> results = m_parser.ParseToTheEnd(dataBegin, readDataCount(), &parsedLength);
-                dprintf("$P parsed sequence of % symbols\n", parsedLength);
-
-                if (parsedLength == 0) {
-                    if (readDataCount() > maxMessageLength) {
-                        dataPtr = dataBegin; // clean buffer
-                        m_Log->Printf(3, "RF Received too long message or just a lot of trash RSSI=%d (%d)", lastRSSI,
-                                      minGoodRSSI);
-                    }
-                } else {
-                    // copy [dataBegin + parsedLength, dataPtr) to [dataBegin, dataPtr - parsedLength)
-                    for (lirc_t *p = data; p < dataPtr - parsedLength; p++)
-                        *p = *(p + parsedLength);
-                    // and shift pointer
-                    dataPtr -= parsedLength;
-
-                    // run over all parsed results and make messages about them
-                    for (const string &parsedResult : results) {
-                        // disabled because replicas a needed to distinguish some messages
-                        //if (time(NULL) - lastRecognizedPacketTime < 2 && parsedResult == lastParsed) {
-                        //  m_Log->Printf(3, "RF Received [but duplicate of previous one]");
-                        //  continue;
-                        //}
-
-                        //lastParsed = parsedResult;
-
-                        // This output is important for testing!
-                        // upd: can't rely on it
-                        m_Log->Printf(3, "RF Received: %s (parsed from %u lirc_t). RSSI=%d (%d)",
-                                      parsedResult.c_str(), parsedLength, lastRSSI, minGoodRSSI);
-                        // Test output
-                        if (args.bCoreTestMod)
-                            fprintf(stderr, "TEST_RF_RECEIVED %s\n", parsedResult.c_str());
-                        conn.NewMessage(parsedResult);
-                        if (minGoodRSSI > lastRSSI)
-                            minGoodRSSI = lastRSSI;
-
-                    }
-                }
-
+            
+            
+            dprintf("$P process all parsed messages\n"); 
+            for (const string &parsedResult : m_parser.ExtractParsed()) {                
+                m_Log->Printf(3, "RF Received: %s (parsed from %u lirc_t). RSSI=%d (%d)",
+                              parsedResult.c_str(), lastRSSI, minGoodRSSI);
+                if (args.bCoreTestMod)
+                    fprintf(stderr, "TEST_RF_RECEIVED %s\n", parsedResult.c_str());
+                conn.NewMessage(parsedResult);
+                
             }
-            readSmthNew = false;
-
+            /*
+            if (rfm) {
+                rfm->receiveEnd();
+                rfm->receiveBegin();
+            }
+            */
             // try get more data and sleep if fail
-            if (waitForData(lircFD, 1000000)) {
+            const int waitDataReadUsec = 1000000;
+            if (waitForData(lircFD, waitDataReadUsec)) {
                 // do not try to read much, because it easier to process it by small parts
                 //size_t tryToReadCount = std::min(normalMessageLength, remainingDataCount());
-
-                int resultBytes = read(lircFD, (void *)dataPtr, remainingDataCount() * sizeof(lirc_t));
+                dprintf("$P before read() call\n");
+                int resultBytes = read(lircFD, (void *)dataBuff, sizeof(dataBuff));
+                dprintf("$P after read() call\n");
+                
+                /*if (resultBytes == 0) {
+                    if (args.bLircPedantic) {
+                        m_Log->Printf(0, "read() failed [during endless cycle]\n");
+                    }
+                    break;
+                }*/
+                
+                dprintf("$P % bytes were read from lirc device\n", resultBytes);
+                
                 // I hope this never happen
                 while (resultBytes % sizeof(lirc_t) != 0) {
                     m_Log->Printf(3, "Bad amount (amount % 4 != 0) of bytes read from lirc");
-                    usleep(1000000);
-                    int remainBytes = 4 - resultBytes % sizeof(lirc_t);
-                    int readTailBytes = read(lircFD, (void *)((char *)dataPtr + resultBytes), remainBytes);
+                    usleep(waitDataReadUsec);
+                    int remainBytes = sizeof(lirc_t) - resultBytes % sizeof(lirc_t);
+                    int readTailBytes = read(lircFD, (void *)((char *)dataBuff + resultBytes), remainBytes);
                     if (readTailBytes != -1)
                         resultBytes += readTailBytes;
                 }
 
                 int result = resultBytes / sizeof(lirc_t);
-                dataPtr += result;
-
-                if (result != 0) {
-                    readSmthNew = true;
-                    packetStartTime = time(NULL);
-                    if (lastReport != time(NULL) && result >= 32) {
-                        m_Log->Printf(args.writePackets ? 3 : 4, "RF got data %ld bytes. RSSI=%d", (int)result, lastRSSI);
-                        lastReport = time(NULL);
-                    }
+                
+                /// pass data to parser
+                dprintf("$P before AddInputData() call\n");
+                m_parser.AddInputData(dataBuff, result);
+                dprintf("$P after AddInputData() call\n");
+                
+                if (lastReport != time(NULL) && result >= 32) {
+                    m_Log->Printf(args.writePackets ? 3 : 4, "RF got data %ld bytes. RSSI=%d", (int)result, lastRSSI);
+                    lastReport = time(NULL);
                 }
-
-                if (result == 0 && args.bLircPedantic) {
-                    m_Log->Printf(0, "read() failed [during endless cycle]\n");
-                    break;
-                }
+                
                 if (rfm)
                     lastRSSI = rfm->readRSSI();
             }
+            dprintf("$P after read more\n");
+                
 
             if (rfm && args.rssi < 0)
                 rfm->setRSSIThreshold(args.rssi);
 
-            conn.SendAliveness();
-            conn.SendScheduledChanges();
+            // do regular work, but not very often
+            if (lastRegularWorkTime != time(NULL)) {
+                lastRegularWorkTime = time(NULL);
+                conn.SendAliveness();
+                conn.SendScheduledChanges();
+            }
 
         } catch (CHaException ex) {
             // clean buffer
-            dataPtr = dataBegin;
             m_Log->Printf(0, "Exception %s", ex.GetExplanation().c_str());
         }
     }
@@ -549,7 +533,10 @@ void RFSniffer::receiveForever() throw(CHaException)
 
 void RFSniffer::closeConnections()
 {
-    rfm->receiveEnd();
+    DPRINTF_DECLARE(dprintf, false);
+    dprintf("$P called\n");
+    if (rfm)
+        rfm->receiveEnd();
     if (lircFD > 0)
         close(lircFD);
 
@@ -557,7 +544,7 @@ void RFSniffer::closeConnections()
 
 void RFSniffer::run(int argc, char **argv)
 {
-    DPrintf::globallyEnable(false);
+    DPrintf::globallyEnable(false); 
     DPrintf::setPrefixLength(40);
 
     readEnvironmentVariables();
@@ -590,10 +577,7 @@ RFSniffer::RFSniffer():
     configJson(nullptr),
     mySPI(nullptr),
     rfm(nullptr),
-    lircFD(-1),
-    dataBegin(data),
-    dataEnd(data + dataSize),
-    dataPtr(data)
+    lircFD(-1)
 {
 
 }

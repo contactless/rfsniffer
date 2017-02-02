@@ -14,6 +14,8 @@
 #include "RFProtocolMotionSensor.h"
 #include "RFAnalyzer.h"
 
+#include "../libutils/DebugPrintf.h"
+
 using std::string;
 
 CRFParser::CRFParser(CLog *log, string SavePath)
@@ -52,13 +54,14 @@ void CRFParser::AddProtocol(string protocol)
     else if (protocol == "MotionSensor")
         AddProtocol(new CRFProtocolMotionSensor());
     else if (protocol == "All") {
+        
+        AddProtocol(new CRFProtocolNooLite());
         AddProtocol(new CRFProtocolX10());
         AddProtocol(new CRFProtocolRST());
         AddProtocol(new CRFProtocolRaex());
         AddProtocol(new CRFProtocolLivolo());
         AddProtocol(new CRFProtocolOregon());
         AddProtocol(new CRFProtocolOregonV3());
-        AddProtocol(new CRFProtocolNooLite());
         AddProtocol(new CRFProtocolRubitek());
         //AddProtocol(new CRFProtocolMotionSensor());
     } else
@@ -71,7 +74,7 @@ void CRFParser::AddProtocol(CRFProtocol *p)
 {
     p->setLog(m_Log);
     m_Protocols.push_back(p);
-    //  setMinMax();
+    // setMinMax();
 }
 
 
@@ -88,9 +91,10 @@ std::vector<string> CRFParser::ParseToTheEnd(base_type *data, size_t length,
     // recognize and add result to "results".
     // Add only unique strings.
     // Notice that used Parse changes data and length
-    while (!(str = Parse(&data, &length)).empty())
+    while (!(str = Parse(&data, &length)).empty()) {
         if (std::find(results.begin(), results.end(), str) == results.end())
             results.push_back(str);
+    }
 
     *readLengthToReturn = data - dataBegin;
     return results;
@@ -114,6 +118,15 @@ string CRFParser::ParseRepetitive(base_type *data, size_t length, size_t *readLe
     return ret;
 }
 
+
+bool CRFParser::IsGoodSignal(base_type signal) {
+    return IsGoodSignal(CRFProtocol::isPulse(signal), CRFProtocol::getLengh(signal));
+}
+bool CRFParser::IsGoodSignal(bool isPulse, base_type len) {
+    return !(( isPulse && (len < m_minPulse * 0.8 || len > m_maxPulse * 1.2)) ||
+             (!isPulse && (len < m_minPause * 0.8 || len > m_maxPause * 1.2)));
+}
+
 string CRFParser::Parse(base_type **data_ptr, size_t *length_ptr)
 {
     if (m_maxPause == 0)
@@ -130,11 +143,7 @@ string CRFParser::Parse(base_type **data_ptr, size_t *length_ptr)
     for(base_type *ptr = data; ptr - data < length; ptr++) {
         bool isPulse = CRFProtocol::isPulse(*ptr);
         base_type len = CRFProtocol::getLengh(*ptr);
-        //bool badInterval1 = ((!isPulse && len > splitDelay) || (isPulse && len < splitPulse));
-        bool badInterval =
-            (( isPulse && (len < m_minPulse || len > m_maxPulse)) ||
-             (!isPulse && (len < m_minPause || len > m_maxPause)));
-        if (badInterval) {
+        if (!IsGoodSignal(isPulse, len)) {
             size_t packetLen = ptr - data;
             if (packetLen > 50)
                 m_Log->Printf(4, "Parse part of packet from %ld size %ld splitted by %c%ld", data - saveStart,
@@ -168,14 +177,18 @@ string CRFParser::Parse(base_type **data_ptr, size_t *length_ptr)
 
 string CRFParser::Parse(base_type *data, size_t len)
 {
+    DPRINTF_DECLARE(dprintf, false);
+    dprintf("$P Parse begin (len = %)\n", len);
     if (len < MIN_PACKET_LEN)
         return "";
-
+    
+    //dprintf("$P Saving file\n");
     // Если указан путь для сохранения - пишем пакет в файл
     if (m_SavePath.length()) {
         SaveFile(data, len);
     }
-
+    
+    dprintf("$P Decoding\n");
     // Пытаемся декодировать пакет каждым декодером по очереди
     std::vector<string> decoded;
     for (CRFProtocol *protocol : m_Protocols) {
@@ -184,15 +197,19 @@ string CRFParser::Parse(base_type *data, size_t len)
             decoded.push_back(retval);  // В случае успеха возвращаем результат
     }
     
+    
+    dprintf("$P Decoded\n");
     if (decoded.size() > 0) {
         if (decoded.size() > 1) {
             m_Log->Printf(3, "CRFParser parsing is ambigous! Variants are:\n");
             for (const string &decodedOne : decoded)
                 m_Log->Printf(3, "\t\t%s\n", decodedOne.c_str());
         }
+        dprintf("$P parsed\n");
         return decoded[0];
     } 
 
+    dprintf("$P not parsed\n");
     // В случае неуспеха пытаемся применить анализатор
     if (b_RunAnalyzer) {
         if (!m_Analyzer)
@@ -204,8 +221,58 @@ string CRFParser::Parse(base_type *data, size_t len)
     return "";
 }
 
+// add some data to parse
+void CRFParser::AddInputData(base_type signal) {
+    DPRINTF_DECLARE(dprintf, false);
+    
+    inputData.push_back(signal);
+    
+    if (!IsGoodSignal(signal)) {
+    //if (CRFProtocol::getLengh(signal) > 200000) {
+        
+        
+        if (inputData.size() < MIN_PACKET_LEN) {
+            inputData.clear();
+            return;
+        }
+        dprintf("$P IN\n");
+        string parsed = Parse(inputData.data(), inputData.size());
+        
+        if (parsed.empty() && previousInputData.size() > 0)
+        {
+            std::vector<base_type> previousTwoData(3, 1e6);
+            previousTwoData.insert(previousTwoData.end(), previousInputData.begin(), previousInputData.end());
+            previousTwoData.insert(previousTwoData.end(), inputData.begin(), inputData.end());
+            parsed = Parse(previousTwoData.data(), previousTwoData.size());
+            
+        }
+        
+        if (!parsed.empty()) {
+            parsedResults.push_back(parsed);
+        }
+        
+        previousInputData.clear();
+        std::swap(inputData, previousInputData);
+        
+        if (CRFProtocol::getLengh(signal) > 40000)
+            previousInputData.clear();
+            
+        inputData.push_back(signal);
+        dprintf("$P OUT\n");
+    }
+}
 
-
+// add some data to parse
+void CRFParser::AddInputData(base_type *data, size_t len) {
+    for (base_type *i = data; i != data + len; i++)
+        AddInputData(*i);
+}
+// get all results parsed from all data given by AddInputData
+std::vector<string> CRFParser::ExtractParsed() {
+    std::vector<string> parsed;
+    std::swap(parsed, parsedResults);
+    return parsed;
+}
 
 
 void CRFParser::EnableAnalyzer()
@@ -213,14 +280,15 @@ void CRFParser::EnableAnalyzer()
     b_RunAnalyzer = true;
 }
 
-void CRFParser::SaveFile(base_type *data, size_t size)
+void CRFParser::SaveFile(base_type *data, size_t size, const char *prefix)
 {
 #ifndef WIN32
     if (m_SavePath.length()) {
+        static int internalNumber = 0;
         time_t Time = time(NULL);
         char DateStr[100], FileName[1024];
         strftime(DateStr, sizeof(DateStr), "%d%m-%H%M%S", localtime(&Time));
-        snprintf(FileName, sizeof(FileName),  "%s/capture-%s.rcf", m_SavePath.c_str(), DateStr);
+        snprintf(FileName, sizeof(FileName),  "%s/%s-%s-%03d.rcf", m_SavePath.c_str(), prefix, DateStr, (++internalNumber) % 1000);
         m_Log->Printf(3, "Write to file %s %ld signals\n", FileName, size);
         int of = open(FileName, O_WRONLY | O_CREAT, S_IRUSR | S_IRGRP);
 
