@@ -144,7 +144,7 @@ class DPrintf
             (*this) << (++iter > 0 ? ", " : "") << i.first << "->" << i.second;
         (*this) << "]";
     }
-    
+
     template <typename T1, typename T2>
     DPrintf &operator<<(const std::pair<T1, T2> &t)
     {
@@ -161,9 +161,8 @@ class DPrintf
     template<typename... Args>
     inline int operator()(const char *format, Args... args)
     {
-        /*if (checkIfCFormat(format))
-            return cFormatPrint(format, args...);
-        else*/
+        if (!isActive())
+            return 0;
         return formatPrint(format, args...);
     }
 

@@ -451,68 +451,80 @@ void RFSniffer::receiveForever() throw(CHaException)
             // notice that writePackets is 0 if corresponding command line argument is not set
             if (args.writePackets > 0 && difftime(time(NULL), startTime) > args.writePackets)
                 break;
-            
-            
-            dprintf("$P process all parsed messages\n"); 
-            for (const string &parsedResult : m_parser.ExtractParsed()) {                
+
+
+            dprintf("$P process all parsed messages\n");
+            for (const string &parsedResult : m_parser.ExtractParsed()) {
                 m_Log->Printf(3, "RF Received: %s (parsed from %u lirc_t). RSSI=%d (%d)",
                               parsedResult.c_str(), lastRSSI, minGoodRSSI);
                 if (args.bCoreTestMod)
                     fprintf(stderr, "TEST_RF_RECEIVED %s\n", parsedResult.c_str());
-                conn.NewMessage(parsedResult);
-                
+                try {
+                    conn.NewMessage(parsedResult);
+                } catch (CHaException ex) {
+                    m_Log->Printf(0, "conn.NewMessage failed: Exception", ex.GetExplanation().c_str());
+                }
             }
-            /*
-            if (rfm) {
-                rfm->receiveEnd();
-                rfm->receiveBegin();
-            }
-            */
+
+            // do not read very often
+            usleep(200000);
             // try get more data and sleep if fail
             const int waitDataReadUsec = 1000000;
             if (waitForData(lircFD, waitDataReadUsec)) {
+                /*
+                 * This strange thing is needed to lessen received trash
+                 */
+                if (rfm) {
+                    rfm->receiveEnd();
+                    usleep(10000);
+                    rfm->receiveBegin();
+                }
+
                 // do not try to read much, because it easier to process it by small parts
                 //size_t tryToReadCount = std::min(normalMessageLength, remainingDataCount());
                 dprintf("$P before read() call\n");
                 int resultBytes = read(lircFD, (void *)dataBuff, sizeof(dataBuff));
                 dprintf("$P after read() call\n");
-                
-                /*if (resultBytes == 0) {
+
+                if (resultBytes == 0) {
                     if (args.bLircPedantic) {
                         m_Log->Printf(0, "read() failed [during endless cycle]\n");
                     }
-                    break;
-                }*/
-                
-                dprintf("$P % bytes were read from lirc device\n", resultBytes);
-                
-                // I hope this never happen
-                while (resultBytes % sizeof(lirc_t) != 0) {
-                    m_Log->Printf(3, "Bad amount (amount % 4 != 0) of bytes read from lirc");
-                    usleep(waitDataReadUsec);
-                    int remainBytes = sizeof(lirc_t) - resultBytes % sizeof(lirc_t);
-                    int readTailBytes = read(lircFD, (void *)((char *)dataBuff + resultBytes), remainBytes);
-                    if (readTailBytes != -1)
-                        resultBytes += readTailBytes;
-                }
+                    if (args.bCoreTestMod) {
+                        // normal exiting
+                        break;
+                    }
+                } else {
+                    dprintf("$P % bytes were read from lirc device\n", resultBytes);
 
-                int result = resultBytes / sizeof(lirc_t);
-                
-                /// pass data to parser
-                dprintf("$P before AddInputData() call\n");
-                m_parser.AddInputData(dataBuff, result);
-                dprintf("$P after AddInputData() call\n");
-                
-                if (lastReport != time(NULL) && result >= 32) {
-                    m_Log->Printf(args.writePackets ? 3 : 4, "RF got data %ld bytes. RSSI=%d", (int)result, lastRSSI);
-                    lastReport = time(NULL);
+                    // I hope this never happen
+                    while (resultBytes % sizeof(lirc_t) != 0) {
+                        m_Log->Printf(3, "Bad amount (amount % 4 != 0) of bytes read from lirc");
+                        usleep(waitDataReadUsec);
+                        int remainBytes = sizeof(lirc_t) - resultBytes % sizeof(lirc_t);
+                        int readTailBytes = read(lircFD, (void *)((char *)dataBuff + resultBytes), remainBytes);
+                        if (readTailBytes != -1)
+                            resultBytes += readTailBytes;
+                    }
+
+                    int result = resultBytes / sizeof(lirc_t);
+
+                    /// pass data to parser
+                    dprintf("$P before AddInputData() call\n");
+                    m_parser.AddInputData(dataBuff, result);
+                    dprintf("$P after AddInputData() call\n");
+
+                    if (lastReport != time(NULL) && result >= 32) {
+                        m_Log->Printf(args.writePackets ? 3 : 4, "RF got data %ld bytes. RSSI=%d", (int)result, lastRSSI);
+                        lastReport = time(NULL);
+                    }
+
+                    if (rfm)
+                        lastRSSI = rfm->readRSSI();
                 }
-                
-                if (rfm)
-                    lastRSSI = rfm->readRSSI();
             }
             dprintf("$P after read more\n");
-                
+
 
             if (rfm && args.rssi < 0)
                 rfm->setRSSIThreshold(args.rssi);
@@ -525,7 +537,6 @@ void RFSniffer::receiveForever() throw(CHaException)
             }
 
         } catch (CHaException ex) {
-            // clean buffer
             m_Log->Printf(0, "Exception %s", ex.GetExplanation().c_str());
         }
     }
@@ -544,7 +555,7 @@ void RFSniffer::closeConnections()
 
 void RFSniffer::run(int argc, char **argv)
 {
-    DPrintf::globallyEnable(false); 
+    DPrintf::globallyEnable(false);
     DPrintf::setPrefixLength(40);
 
     readEnvironmentVariables();
@@ -570,6 +581,7 @@ void RFSniffer::run(int argc, char **argv)
     }
 
     closeConnections();
+    m_Log->Printf(0, "RFSNIFFER FINISHED\n");
 }
 
 RFSniffer::RFSniffer():

@@ -36,7 +36,8 @@ rm  -v -f $LIRC
 
 echo "create fifo ($LIRC) instead of character device"
 
-mkfifo $LIRC
+#mkfifo $LIRC
+rm $LIRC
 
 echo "take $EXE as executable rfsniffer"
 
@@ -59,7 +60,7 @@ fi
 echo "Start testing (run: $CMD)"
 
 # run rfsniffer
-eval "$CMD &"
+#eval "$CMD &"
 
 if [ -z "$TESTS_DESCR" ]; then
     for file in `find $TESTS_FOLDER -type f -name "*.rcf" | sort`
@@ -91,16 +92,16 @@ else
     done < $TESTS_DESCR
 fi
 
-
+eval "$CMD"
 
 
 # wait for job (CMD) completion
-if ! wait -n
-then
-	sleep 5
-	kill %1
-	kill %2
-	kill %3
-fi
+#if ! wait -n
+#then
+#	sleep 5
+#	kill %1
+#	kill %2
+#	kill %3
+#fi
 
-rm -v -f $LIRC
+rm -vf $LIRC

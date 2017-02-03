@@ -101,7 +101,8 @@ string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)
             int pos = 0;
             for (; m_PulseLengths[pos][0]; pos++) {
                 if (len >= m_PulseLengths[pos][0] && len <= m_PulseLengths[pos][1]) {
-                    decodedRaw += c2s('A' + pos);
+                    //decodedRaw += c2s('A' + pos);
+                    decodedRaw += 'A' + pos;
                     break;
                 }
             }
@@ -109,15 +110,18 @@ string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)
             if (!m_PulseLengths[pos][0]) {
                 if (m_Debug) // Если включена отладка - явно пишем длины плохих пауз
                     decodedRaw += string("[") + itoa(len) + "]";
-                else
-                    decodedRaw += "?";
+                else {
+                    //decodedRaw += "?";
+                    decodedRaw += '?';
+                }
             }
 
             if (m_InvertPacket) {
                 pos = 0;
                 for (; m_ZeroLengths[pos][0]; pos++) {
                     if (len >= m_ZeroLengths[pos][0] && len <= m_ZeroLengths[pos][1]) {
-                        decodedRawRev += c2s('a' + pos);
+                        //decodedRawRev += c2s('a' + pos);
+                        decodedRawRev += 'a' + pos;
                         break;
                     }
                 }
@@ -125,15 +129,18 @@ string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)
                 if (!m_ZeroLengths[pos][0]) {
                     if (m_Debug) // Если включена отладка - явно пишем длины плохих пауз
                         decodedRawRev += string("[") + itoa(len) + "]";
-                    else
-                        decodedRawRev += "?";
+                    else {
+                        //decodedRawRev += "?";
+                        decodedRawRev += '?';
+                    }
                 }
             }
         } else {
             int pos = 0;
             for (; m_ZeroLengths[pos][0]; pos++) {
                 if (len >= m_ZeroLengths[pos][0] && len <= m_ZeroLengths[pos][1]) {
-                    decodedRaw += c2s('a' + pos);
+                    //decodedRaw += c2s('a' + pos);
+                    decodedRaw += 'a' + pos;
                     break;
                 }
             }
@@ -141,15 +148,18 @@ string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)
             if (!m_ZeroLengths[pos][0]) {
                 if (m_Debug)
                     decodedRaw += string("[") + itoa(len) + "]";
-                else
-                    decodedRaw += "?";
+                else {
+                    //decodedRaw += "?";
+                    decodedRaw += '?';
+                }
             }
 
             if (m_InvertPacket) {
                 pos = 0;
                 for (; m_PulseLengths[pos][0]; pos++) {
                     if (len >= m_PulseLengths[pos][0] && len <= m_PulseLengths[pos][1]) {
-                        decodedRawRev += c2s('A' + pos);
+                        //decodedRawRev += c2s('A' + pos);
+                        decodedRawRev += 'A' + pos;
                         break;
                     }
                 }
@@ -157,8 +167,10 @@ string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)
             if (!m_PulseLengths[pos][0]) {
                 if (m_Debug)
                     decodedRawRev += string("[") + itoa(len) + "}";
-                else
-                    decodedRawRev += "?";
+                else {
+                    //decodedRawRev += "?";
+                    decodedRawRev += '?';
+                }
             }
         }
     }

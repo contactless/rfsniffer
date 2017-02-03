@@ -18,7 +18,7 @@ class RFLIB_API CRFParser
 
     std::vector<string> parsedResults;
     std::vector<base_type> previousInputData, inputData;
-    
+
   public:
     static const int MIN_PACKET_LEN =
         50; // Минимально возможная длина пакета

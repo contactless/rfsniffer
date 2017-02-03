@@ -78,7 +78,8 @@ CRFProtocolNooLite::nooLiteCommandType CRFProtocolNooLite::getCommand(const stri
     return nlcmd_error;
 }
 
-const char * CRFProtocolNooLite::getDescription(int cmd) {
+const char *CRFProtocolNooLite::getDescription(int cmd)
+{
     if (cmd < 0 || cmd >= g_nooLite_Commands_len)
         return g_nooLite_Commands[cmd];
     else
@@ -142,7 +143,9 @@ string CRFProtocolNooLite::DecodePacket(const string &raw_)
 {
     String raw = String(raw_);
 
-    if (raw.length() < 10 )
+    // shortest nooLite message - 5 bytes - 40 bits - 40 signals at minimum
+    // TODO move this logic to RFProtocol
+    if (raw.length() < 40)
         return "";
 
     String::Vector v = raw.Split('d');
@@ -192,17 +195,17 @@ string CRFProtocolNooLite::DecodeData(const string
 
     if (packetLen < 5)
         return bits;
-    
+
     /*
     #                        [ (FLIP) CMD  ] [           RGB          ] [   ?  ] [      ADDR     ] [ FMT  ] [ CRC  ]
     #                        1FCCCC
     #ch:2 r:1 g:1 b:1        110110          10000000 10000000 10000000 00000000 10011111 10100100 11000000 11001011  fmt=3, cmd=6
-    #ch:2 r:1 g:1 b:2        100110          10000000 10000000 01000000 00000000 10011111 10100100 11000000 11101101  fmt=3 
+    #ch:2 r:1 g:1 b:2        100110          10000000 10000000 01000000 00000000 10011111 10100100 11000000 11101101  fmt=3
     #ch:2 r:255 g:255 b:255  110110          11111111 11111111 11111111 00000000 10011111 10100100 11000000 10110001  fmt=3
     #ch:14 r:1 g:1 b:2       110110          10000000 10000000 01000000 00000000 11111111 10100100 11000000 00110010  fmt=3
     #ch:14 r:1 g:1 b:2       100110          10000000 10000000 01000000 00000000 11111111 10100100 11000000 01100110  fmt=3
     #ch:15 r:1 g:1 b:2       110110          10000000 10000000 01000000 00000000 11111111 10100100 11000000 00110010  fmt=3
-    #                                                                   
+    #
     #ch:2 switch mode        11     01001000                                     10011111 10100100 00100000 00010101  fmt=4, cmd=18
     #ch:2 switch color       11     10001000                                     10011111 10100100 00100000 00000100  fmt=4, cmd=17
     #                                                                   [LEVEL ]
@@ -213,7 +216,7 @@ string CRFProtocolNooLite::DecodeData(const string
     #                                                                   [ TIME ]
     #                        11     00011000                            00100110 10100000 01000100 10100000 00110110  fmt=5, cmd=24
     #                                                          [      TIME     ]
-    #                        11     10011000                   10000000 10011000 10100000 01000100 01100000 00100001  fmt=6 ch:5 cmd=25 timeout=(25*256+1)*5 
+    #                        11     10011000                   10000000 10011000 10100000 01000100 01100000 00100001  fmt=6 ch:5 cmd=25 timeout=(25*256+1)*5
     */
 
     dprintf("$P bits: (%), packet: (", bits);
@@ -241,7 +244,7 @@ string CRFProtocolNooLite::DecodeData(const string
                       fmt, packetLen);
         return "";
     }
-    
+
     switch (fmt) {
         // PM111, outer button PK311, ...
         case 0: {
@@ -254,14 +257,13 @@ string CRFProtocolNooLite::DecodeData(const string
                 // so demand repeats >= 2
                 return String::ComposeFormat("flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
                                              (int)((packet[2] << 8) + packet[1]), fmt, crc);
-                      // + " __repeat=2";
-            } 
-            else {    
+                // + " __repeat=2";
+            } else {
                 // command 4 and everything else
                 return String::ComposeFormat("flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
                                              (int)((packet[2] << 8) + packet[1]), fmt, crc);
             }
-            
+
         }
         // connecting noolite devices send this message
         // or setting level
@@ -271,13 +273,15 @@ string CRFProtocolNooLite::DecodeData(const string
             return String::ComposeFormat("flip=%d cmd=%d level=%02x addr=%04x fmt=%02x crc=%02x", sync, cmd,
                                          (int)packet[1], (int)((packet[3] << 8) + packet[2]), fmt, crc);
         }
-        
+
         // untested
         case 3: {
             bool sync = (packet[0] & 8) != 0;
             int cmd = packet[0] >> 4;
-            return String::ComposeFormat("flip=%d cmd=%d r=%d g=%d b=%d unknown=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
-                                         (int)packet[1], (int)packet[2], (int)packet[3], (int)packet[4], (int)((packet[6] << 8) + packet[5]), fmt, crc);
+            return String::ComposeFormat("flip=%d cmd=%d r=%d g=%d b=%d unknown=%d addr=%04x fmt=%02x crc=%02x",
+                                         sync, cmd,
+                                         (int)packet[1], (int)packet[2], (int)packet[3], (int)packet[4], (int)((packet[6] << 8) + packet[5]),
+                                         fmt, crc);
         }
         // untested
         case 4: {
@@ -302,7 +306,7 @@ string CRFProtocolNooLite::DecodeData(const string
             return String::ComposeFormat("flip=%d cmd=%d time=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
                                          (int)packet[2] * 5, (int)((packet[4] << 8) + packet[3]), fmt, crc);
         }
-        
+
         // untested
         case 6:  {
             bool sync = (packet[0] & 0x80) != 0;
@@ -311,7 +315,7 @@ string CRFProtocolNooLite::DecodeData(const string
                                          (int)((packet[3] << 8) + packet[2]) * 5, (int)((packet[5] << 8) + packet[4]), fmt, crc);
         }
 
-		// PT111 and ...
+        // PT111 and ...
         case 7: {
             if (packet[1] == 21) {
                 int type = (packet[3] >> 4) & 7;

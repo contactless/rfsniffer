@@ -54,7 +54,7 @@ void CRFParser::AddProtocol(string protocol)
     else if (protocol == "MotionSensor")
         AddProtocol(new CRFProtocolMotionSensor());
     else if (protocol == "All") {
-        
+
         AddProtocol(new CRFProtocolNooLite());
         AddProtocol(new CRFProtocolX10());
         AddProtocol(new CRFProtocolRST());
@@ -65,7 +65,7 @@ void CRFParser::AddProtocol(string protocol)
         AddProtocol(new CRFProtocolRubitek());
         //AddProtocol(new CRFProtocolMotionSensor());
     } else
-        throw CHaException(CHaException::ErrBadParam, protocol);
+        throw CHaException(CHaException::ErrBadParam, "AddProtocol - no such protocol: " + protocol);
 
     setMinMax();
 }
@@ -119,10 +119,12 @@ string CRFParser::ParseRepetitive(base_type *data, size_t length, size_t *readLe
 }
 
 
-bool CRFParser::IsGoodSignal(base_type signal) {
+bool CRFParser::IsGoodSignal(base_type signal)
+{
     return IsGoodSignal(CRFProtocol::isPulse(signal), CRFProtocol::getLengh(signal));
 }
-bool CRFParser::IsGoodSignal(bool isPulse, base_type len) {
+bool CRFParser::IsGoodSignal(bool isPulse, base_type len)
+{
     return !(( isPulse && (len < m_minPulse * 0.8 || len > m_maxPulse * 1.2)) ||
              (!isPulse && (len < m_minPause * 0.8 || len > m_maxPause * 1.2)));
 }
@@ -181,13 +183,13 @@ string CRFParser::Parse(base_type *data, size_t len)
     dprintf("$P Parse begin (len = %)\n", len);
     if (len < MIN_PACKET_LEN)
         return "";
-    
+
     //dprintf("$P Saving file\n");
     // Если указан путь для сохранения - пишем пакет в файл
     if (m_SavePath.length()) {
         SaveFile(data, len);
     }
-    
+
     dprintf("$P Decoding\n");
     // Пытаемся декодировать пакет каждым декодером по очереди
     std::vector<string> decoded;
@@ -196,8 +198,8 @@ string CRFParser::Parse(base_type *data, size_t len)
         if (retval.length())
             decoded.push_back(retval);  // В случае успеха возвращаем результат
     }
-    
-    
+
+
     dprintf("$P Decoded\n");
     if (decoded.size() > 0) {
         if (decoded.size() > 1) {
@@ -207,7 +209,7 @@ string CRFParser::Parse(base_type *data, size_t len)
         }
         dprintf("$P parsed\n");
         return decoded[0];
-    } 
+    }
 
     dprintf("$P not parsed\n");
     // В случае неуспеха пытаемся применить анализатор
@@ -222,53 +224,51 @@ string CRFParser::Parse(base_type *data, size_t len)
 }
 
 // add some data to parse
-void CRFParser::AddInputData(base_type signal) {
-    DPRINTF_DECLARE(dprintf, false);
-    
+void CRFParser::AddInputData(base_type signal)
+{
     inputData.push_back(signal);
-    
     if (!IsGoodSignal(signal)) {
-    //if (CRFProtocol::getLengh(signal) > 200000) {
-        
-        
+        //if (CRFProtocol::getLengh(signal) > 200000) {
         if (inputData.size() < MIN_PACKET_LEN) {
             inputData.clear();
             return;
         }
+        DPRINTF_DECLARE(dprintf, false);
         dprintf("$P IN\n");
         string parsed = Parse(inputData.data(), inputData.size());
-        
-        if (parsed.empty() && previousInputData.size() > 0)
-        {
+
+        if (parsed.empty() && previousInputData.size() > 0) {
             std::vector<base_type> previousTwoData(3, 1e6);
             previousTwoData.insert(previousTwoData.end(), previousInputData.begin(), previousInputData.end());
             previousTwoData.insert(previousTwoData.end(), inputData.begin(), inputData.end());
             parsed = Parse(previousTwoData.data(), previousTwoData.size());
-            
+
         }
-        
+
         if (!parsed.empty()) {
             parsedResults.push_back(parsed);
         }
-        
+
         previousInputData.clear();
         std::swap(inputData, previousInputData);
-        
+
         if (CRFProtocol::getLengh(signal) > 40000)
             previousInputData.clear();
-            
+
         inputData.push_back(signal);
         dprintf("$P OUT\n");
     }
 }
 
 // add some data to parse
-void CRFParser::AddInputData(base_type *data, size_t len) {
+void CRFParser::AddInputData(base_type *data, size_t len)
+{
     for (base_type *i = data; i != data + len; i++)
         AddInputData(*i);
 }
 // get all results parsed from all data given by AddInputData
-std::vector<string> CRFParser::ExtractParsed() {
+std::vector<string> CRFParser::ExtractParsed()
+{
     std::vector<string> parsed;
     std::swap(parsed, parsedResults);
     return parsed;
@@ -288,7 +288,8 @@ void CRFParser::SaveFile(base_type *data, size_t size, const char *prefix)
         time_t Time = time(NULL);
         char DateStr[100], FileName[1024];
         strftime(DateStr, sizeof(DateStr), "%d%m-%H%M%S", localtime(&Time));
-        snprintf(FileName, sizeof(FileName),  "%s/%s-%s-%03d.rcf", m_SavePath.c_str(), prefix, DateStr, (++internalNumber) % 1000);
+        snprintf(FileName, sizeof(FileName),  "%s/%s-%s-%03d.rcf", m_SavePath.c_str(), prefix, DateStr,
+                 (++internalNumber) % 1000);
         m_Log->Printf(3, "Write to file %s %ld signals\n", FileName, size);
         int of = open(FileName, O_WRONLY | O_CREAT, S_IRUSR | S_IRGRP);
 

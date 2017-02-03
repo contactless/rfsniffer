@@ -208,20 +208,18 @@ void CMqttConnection::NewMessage(String message)
             m_Log->Printf(3, "Msg from nooLite INCORRECT %s", value.c_str());
             return;
         }
-        
-        int idInt = id.IntValue(), cmdInt = cmd.IntValue();
-        
-        string name = string("noolite_rx_0x") + id;
-        
+
+        int cmdInt = cmd.IntValue();
+
         switch (cmdInt) {
             // Motion sensors PM111, PM112, ...
             case 0: // set 0
             case 2: // set 1
             case 4: // change value between 0 and 1
             case 24:
-            case 25: // set as 1 for a while
-            {
-                bool enableForAWhile = (cmdInt == 24 || cmdInt == 25); 
+            case 25: { // set as 1 for a while
+                string name = string("noolite_rx_0x_switch") + id;
+                bool enableForAWhile = (cmdInt == 24 || cmdInt == 25);
                 static const string control_name = "state";
                 static const string interval_control_name = "timeout";
                 CWBDevice *dev = m_Devices[name];
@@ -238,20 +236,19 @@ void CMqttConnection::NewMessage(String message)
                     dev->setForAndThen(control_name, "1", values["time"].IntValue(), "0");
                     //dev->set(control_name, "1");
                     dev->set(interval_control_name, values["time"]);
-                
-                }
-                else if (cmd == "0")
+
+                } else if (cmd == "0")
                     dev->set(control_name, "0");
                 else if (cmd == "2")
                     dev->set(control_name, "1");
-                else if (cmd == "4") 
+                else if (cmd == "4")
                     dev->set(control_name, dev->getString(control_name) == "1" ? "0" : "1");
-                
+
                 break;
             }
-            
-            case 6: // set brightness 
-            {
+
+            case 6: { // set brightness
+                string name = string("noolite_rx_0x_color") + id;
                 static const string control_name = "Color";
                 CWBDevice *dev = m_Devices[name];
                 if (!dev) {
@@ -261,13 +258,13 @@ void CMqttConnection::NewMessage(String message)
                     CreateDevice(dev);
                 }
                 dev->set(control_name, String::ComposeFormat("%s;%s;%s",
-                        values["r"].c_str(), values["g"].c_str(), values["b"].c_str()));
-                break;   
+                         values["r"].c_str(), values["g"].c_str(), values["b"].c_str()));
+                break;
             }
-            
+
             // Temperature sensor
-            case 21: // puts info about temperature and humidity
-            {
+            case 21: { // puts info about temperature and humidity
+                string name = string("noolite_rx_0x_th") + id;
                 string t = values["t"], h = values["h"];
                 static const string low_battery_control_name = "Low battery";
                 CWBDevice *dev = m_Devices[name];
@@ -291,10 +288,11 @@ void CMqttConnection::NewMessage(String message)
                 dev->set(CWBControl::BatteryLow, values["low_bat"]);
                 break;
             }
-            
+
             default: {
+                string name = string("noolite_rx_0x_unknown") + id;
                 CWBDevice *dev = m_Devices[name];
-                static const string cmd_control_name = "command", 
+                static const string cmd_control_name = "command",
                                     cmd_desc_control_name = "command_description";
                 if (!dev) {
                     string desc = string("Noolite device ") + " [0x" + id + "]";
@@ -305,10 +303,10 @@ void CMqttConnection::NewMessage(String message)
                 }
                 dev->set(cmd_control_name, cmd);
                 dev->set(cmd_desc_control_name, CRFProtocolNooLite::getDescription(cmdInt));
-                break;  
+                break;
             }
         }
-    
+
     } else if (type == "Oregon") {
         m_Log->Printf(3, "Msg from Oregon %s", value.c_str());
 

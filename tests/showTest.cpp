@@ -15,7 +15,7 @@ int main(int argc, char **argv)
     int splitLength = 10000; // defines where to make new line
     if (argc > 1)
         sscanf(argv[1], "%d", &splitLength);
-    
+
     int N = 1000000;
     unsigned long int data[N];
     N = fread(data, 4, N, stdin);

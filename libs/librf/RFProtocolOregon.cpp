@@ -290,7 +290,8 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
 
     string raw = raw_;
 
-    if (raw.length() < 10)
+    // 48 chars in minimal binary packet -> 48 signals at minimum
+    if (raw.length() < 96)
         return "";
 
 

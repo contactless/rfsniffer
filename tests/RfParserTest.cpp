@@ -166,7 +166,7 @@ bool OneTest(const string_pair &test, CLog *log, CRFParser &parser)
 {
     DPRINTF_DECLARE(dprint, true);
     String file_name = test.first, exp_result = test.second;
-    
+
     if (file_name.empty())
         return true;
 
