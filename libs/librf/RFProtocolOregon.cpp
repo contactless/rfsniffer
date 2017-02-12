@@ -304,7 +304,7 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
         if (apos != string::npos)
             raw.resize(apos);
     }
-    dprintf("OregonV2 decodePacket: %s\n", raw.c_str());
+    dprintf("$P decodePacket: %\n", raw);
 
     std::vector <char> isPulse(raw.size());
     for (int i = 0; i < (int)raw.size(); i++)
@@ -370,11 +370,11 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
     string hexPacket = "";
 
     if (packet.length() < 48) {
-        dprintf("OregonV2: (only warning: it may be other protocol) Too short packet %s",
+        dprintf("$P (only warning: it may be other protocol) Too short packet %s\n",
                 packet.c_str());
         return "";
     }
-
+    dprintf("$P decoded bits = %\n", packet);
     int len = packet.length();
     while (len % 4)
         len--;
@@ -395,13 +395,15 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
         hexPacket += buffer;
     }
 
+    dprintf("$P decoded data = %\n", hexPacket);
+
     if (crc != originalCRC) {
-        dprintf("OregonV2: (only warning: it may be other protocol) Bad CRC for %s", packet.c_str());
+        dprintf("$P (only warning: it may be other protocol) Bad CRC for %s", packet.c_str());
         return "";
     }
 
     if (hexPacket[0] != 'A') {
-        dprintf("OregonV2: First nibble is not 'A'. Data: %s", hexPacket.c_str());
+        dprintf("$P First nibble is not 'A'. Data: %s", hexPacket.c_str());
         return "";
     }
 

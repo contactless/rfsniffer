@@ -186,7 +186,7 @@ string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)
 bool CRFProtocol::SplitPackets(const string &rawData, string_vector &rawPackets)
 {
     String(rawData).Split(m_PacketDelimeter, rawPackets);
-    return rawPackets.size() > 1;
+    return rawPackets.size() > 0;
 }
 
 string CRFProtocol::DecodeBits(string_vector &rawPackets)

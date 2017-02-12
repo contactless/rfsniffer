@@ -26,7 +26,10 @@ RFSniffer::RFSnifferArgs::RFSnifferArgs():
     mqttHost("localhost"),
 
     scannerParams(""),
+
     writePackets(0),
+    bDumpAllLircStream(false),
+
     savePath("."),
     inverted(false)
 {
@@ -123,7 +126,7 @@ void RFSniffer::readEnvironmentVariables()
 void RFSniffer::readCommandLineArguments(int argc, char **argv)
 {
     // I don't know why, but signed is essential (though it should by by default??)
-    for (signed char c = ' '; c != -1; c = getopt(argc, argv, "Ds:m:l:TS:f:r:tw:c:i")) {
+    for (signed char c = ' '; c != -1; c = getopt(argc, argv, "Ds:m:l:TS:f:r:tw:Wc:i")) {
         switch (c) {
             case ' ':
                 // just nothing, for first iteration to avoid repetitive getopt
@@ -180,6 +183,10 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
                 args.bDumpAllRegs = true;
                 break;
 
+            case 'W':
+                args.bDumpAllLircStream = true;
+                break;
+
             case 'w':
                 args.writePackets = atoi(optarg);
                 break;
@@ -197,7 +204,7 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
                 printf("-l <lirc device> - set custom lirc device. Default %s\n", args.lircDevice.c_str());
                 printf("-m <mqtt host> - set custom mqtt host. Default %s\n", args.mqttHost.c_str());
                 printf("-w <seconds> - write to file all packets for <secods> second and exit\n");
-
+                printf("-W - write all data from lirc device to file until signal from keyboard\n");
                 printf("-S -<low level>..-<high level>/<seconds for step> - scan for noise. \n");
                 printf("-r <RSSI> - reset RSSI Threshold after each packet. 0 - Disabled. Default %d\n",
                        (int)args.rssi);
@@ -403,6 +410,47 @@ void RFSniffer::tryFixThresh() throw(CHaException)
     }
 }
 
+void RFSniffer::tryDumpAllLircStream()
+{
+    if (!args.bDumpAllLircStream)
+        return;
+
+    DPRINTF_DECLARE(dprintf, false);
+
+    m_Log->Printf(3, "Saving all data from lirs device started.\n"\
+                  "Print any button to finish\n" \
+                  "Lirc fd is %d\n", lircFD);
+
+    if (rfm)
+        rfm->receiveBegin();
+
+    std::vector<lirc_t> lircData;
+    while (true) {
+        if (waitForData(lircFD, 100000)) {
+            int resultBytes = read(lircFD, (void *)dataBuff, sizeof(dataBuff));
+            m_Log->Printf(3, "Read %d bytes\n", resultBytes);
+
+            // I hope this never happen
+            while (resultBytes % sizeof(lirc_t) != 0) {
+                m_Log->Printf(3, "Bad amount (amount % 4 != 0) of bytes read from lirc");
+                usleep(1000);
+                int remainBytes = sizeof(lirc_t) - resultBytes % sizeof(lirc_t);
+                int readTailBytes = read(lircFD, (void *)((char *)dataBuff + resultBytes), remainBytes);
+                if (readTailBytes != -1)
+                    resultBytes += readTailBytes;
+            }
+            int result = resultBytes / sizeof(lirc_t);
+            lircData.insert(lircData.end(), dataBuff, dataBuff + result);
+        }
+        if (waitForData(0, 100000))
+            break;
+    }
+
+    CRFParser::SaveFile(lircData.data(), lircData.size(), "dump-all", args.savePath, m_Log);
+
+    closeConnections();
+    exit(0);
+}
 
 void RFSniffer::receiveForever() throw(CHaException)
 {
@@ -562,7 +610,6 @@ void RFSniffer::run(int argc, char **argv)
     readCommandLineArguments(argc, argv);
     tryReadConfigFile();
 
-
     // important to initialize m_Log after reading config file
     m_Log = CLog::Default();
     m_Log->Printf(0, "Using SPI device %s, lirc device %s, mqtt on %s", args.spiDevice.c_str(),
@@ -575,6 +622,7 @@ void RFSniffer::run(int argc, char **argv)
         openLirc();
         tryJustScan(); // something test feature written by https://github.com/avp-avp, it may be broken
         tryFixThresh();
+        tryDumpAllLircStream();
         receiveForever();
     } catch (CHaException ex) {
         m_Log->Printf(0, "Exception %s", ex.GetExplanation().c_str());

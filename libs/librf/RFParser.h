@@ -69,6 +69,8 @@ class RFLIB_API CRFParser
     //  Сохраняет пакет в файл
     void SaveFile(base_type *data, size_t size, const char *prefix = "capture");
 
+    static void SaveFile(base_type *data, size_t size, const char *prefix, string savePath, CLog *log);
+
     // Устанавливает путь для сохранения пакетов
     void SetSavePath(string savePath);
   private:

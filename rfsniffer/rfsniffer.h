@@ -52,7 +52,10 @@ class RFSniffer
         string mqttHost;
 
         string scannerParams;
+
         int writePackets;
+        bool bDumpAllLircStream;
+
         string savePath;
         bool inverted;
 
@@ -92,6 +95,9 @@ class RFSniffer
     void openLirc() throw(CHaException);
     void tryJustScan() throw(CHaException);
     void tryFixThresh() throw(CHaException);
+
+    // only dump all data that will be read from lirc device
+    void tryDumpAllLircStream();
 
     // core work
     void receiveForever() throw(CHaException);

@@ -1,5 +1,5 @@
 # you can use comments
-# delimeter between filename and answer is tab
+# delimeter between filename and answer is first space in the line
 
 capture-2708-132748.rcf X10:D2ON
 capture-2708-132756.rcf X10:D2ON
@@ -62,6 +62,11 @@ ism-test-41d890077f.rcf Oregon:type=F824 id=42 ch=1 low_bat=0 t=26.7 h=39
 ism-test-df05ec91e6.rcf Oregon:type=F824 id=42 ch=1 low_bat=0 t=26.6 h=39
 ism-test-7031d3158b.rcf Oregon:type=F824 id=42 ch=1 low_bat=0 t=26.4 h=39
 ism-test-7b8d00e86c.rcf Oregon:type=F824 id=42 ch=1 low_bat=0 t=26.3 h=40
+
+# Oregon thermometer thn132n (EC40)
+# capture-0302-120656.rcf Oregon:type=???
+# Oregon thgn132n (1D20) with negative temperature
+# capture-0302-120711.rcf Oregon:type=???
 
 capture-1304-214720.rcf Livolo:00110011110100010001000
 capture-1304-214730.rcf Livolo:00110011110100010010000

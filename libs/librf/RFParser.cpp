@@ -282,19 +282,25 @@ void CRFParser::EnableAnalyzer()
 
 void CRFParser::SaveFile(base_type *data, size_t size, const char *prefix)
 {
+    SaveFile(data, size, prefix, m_SavePath, m_Log);
+}
+
+void CRFParser::SaveFile(base_type *data, size_t size, const char *prefix, string savePath,
+                         CLog *log)
+{
 #ifndef WIN32
-    if (m_SavePath.length()) {
+    if (savePath.length()) {
         static int internalNumber = 0;
         time_t Time = time(NULL);
         char DateStr[100], FileName[1024];
         strftime(DateStr, sizeof(DateStr), "%d%m-%H%M%S", localtime(&Time));
-        snprintf(FileName, sizeof(FileName),  "%s/%s-%s-%03d.rcf", m_SavePath.c_str(), prefix, DateStr,
+        snprintf(FileName, sizeof(FileName),  "%s/%s-%s-%03d.rcf", savePath.c_str(), prefix, DateStr,
                  (++internalNumber) % 1000);
-        m_Log->Printf(3, "Write to file %s %ld signals\n", FileName, size);
+        log->Printf(3, "Write to file %s %ld signals\n", FileName, size);
         int of = open(FileName, O_WRONLY | O_CREAT, S_IRUSR | S_IRGRP);
 
         if (of == -1) {
-            m_Log->Printf(3, "error opening %s\n", FileName);
+            log->Printf(3, "error opening %s\n", FileName);
             return;
         };
 
