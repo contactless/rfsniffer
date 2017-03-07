@@ -73,7 +73,7 @@ class RFSniffer
     // lirc
     int lircFD;
     // lirc_t buffer
-    const static size_t maxMessageLength = (1 << 17);
+    const static size_t maxMessageLength = (1 << 14);
     //const static size_t maxMessageLength = (1 << 25);
     const static size_t dataBuffSize = maxMessageLength * 2;
 

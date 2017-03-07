@@ -15,7 +15,7 @@ string c2s(char c)
 
 CRFProtocol::CRFProtocol(range_array_type zeroLengths, range_array_type pulseLengths, int bits,
                          int minRepeat, string PacketDelimeter)
-    : m_ZeroLengths(zeroLengths), m_PulseLengths(pulseLengths), m_Bits(bits), m_MinRepeat(minRepeat),
+    : m_ZeroLengths(zeroLengths), m_PulseLengths(pulseLengths), m_MinRepeat(minRepeat), m_Bits(bits),
       m_PacketDelimeter(PacketDelimeter), m_InvertPacket(true)
 {
     m_Debug = false;
@@ -65,11 +65,11 @@ string CRFProtocol::Parse(base_type *data, size_t dataLen)
     */
     string_vector rawPackets;
     SplitPackets(decodedRaw, rawPackets);
-    if (rawPackets.size() < m_MinRepeat)
+    if ((int)rawPackets.size() < m_MinRepeat)
         return "";
 
     for (const string &packet : rawPackets)
-        dprintf("\t\t rawPacket: \'%\'\n", packet);
+        dprintf("$P \t\t rawPacket: \'%\'\n", packet);
 
     string bits = DecodeBits(rawPackets);
     dprintf("$P returns: \'%\'\n", bits);
@@ -93,6 +93,11 @@ string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)
 {
     DPRINTF_DECLARE(dprintf, false);
     string decodedRaw, decodedRawRev;
+
+    dprintf("$P signals to decode (first 50): ");
+    for (int i = 0; i < 50 && dprintf.isActive(); i++)
+        dprintf.c("%c%d (%d), ", (isPulse(data[i]) ? '+' : '-'), getLengh(data[i]), data[i]);
+    dprintf("\n");
 
     for (size_t i = 0; i < dataLen; i++) {
         base_type len = getLengh(data[i]);
@@ -210,7 +215,7 @@ string CRFProtocol::DecodeBits(string_vector &rawPackets)
         if (decoded == "")
             continue;
 
-        if (m_Bits && decoded.length() != m_Bits)
+        if (m_Bits && (int)decoded.length() != m_Bits)
             continue;
 
         if (res.length()) {
@@ -423,9 +428,9 @@ void CRFProtocol::EncodePacket(const string &bits, uint16_t bitrate, uint8_t *bu
     memset(buffer, 0, bufferSize);
 
     size_t bitNum = 0;
-    for_each (string, timings, i) {
-        bool pulse = *i < 'a';
-        uint16_t len = pulse ? m_SendTimingPulses[*i - 'A'] : m_SendTimingPulses[*i - 'a'];
+    for (const char i : timings) {
+        bool pulse = i < 'a';
+        uint16_t len = pulse ? m_SendTimingPulses[i - 'A'] : m_SendTimingPulses[i - 'a'];
         uint16_t bits = len /
                         bitLen; // TODO Округление для некратного битрейта?
 

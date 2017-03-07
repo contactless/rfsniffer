@@ -8,5 +8,6 @@
 
 int main()
 {
-    return system("tests/test_core.sh");
+    int ret = system("tests/test_core.sh");
+    return WEXITSTATUS(ret);
 }

@@ -1,6 +1,8 @@
 #ifndef __THREAD_H
 #define __THREAD_H
 
+#include <unistd.h>
+
 #include "libutils.h"
 #include "locks.h"
 

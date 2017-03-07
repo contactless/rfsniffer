@@ -479,7 +479,6 @@ void RFSniffer::receiveForever() throw(CHaException)
     CRFParser m_parser(m_Log, (args.bDebug || args.writePackets > 0) ? args.savePath : "");
 
     m_parser.AddProtocol("All");
-    //m_parser.AddProtocol("nooLite");
 
     time_t lastReport = 0, packetStartTime = time(NULL), startTime = time(NULL);
     int lastRSSI = -1000, minGoodRSSI = 0;
@@ -530,7 +529,7 @@ void RFSniffer::receiveForever() throw(CHaException)
 
                 // do not try to read much, because it easier to process it by small parts
                 //size_t tryToReadCount = std::min(normalMessageLength, remainingDataCount());
-                dprintf("$P before read() call\n");
+                dprintf("$P before read() call (can read % bytes) \n", sizeof(dataBuff));
                 int resultBytes = read(lircFD, (void *)dataBuff, sizeof(dataBuff));
                 dprintf("$P after read() call\n");
 
@@ -539,6 +538,7 @@ void RFSniffer::receiveForever() throw(CHaException)
                         m_Log->Printf(0, "read() failed [during endless cycle]\n");
                     }
                     if (args.bCoreTestMod) {
+                        dprintf("$P No more input data. Exiting!\n");
                         // normal exiting
                         break;
                     }
@@ -604,7 +604,10 @@ void RFSniffer::closeConnections()
 void RFSniffer::run(int argc, char **argv)
 {
     DPrintf::globallyEnable(false);
+    DPrintf::setDefaultOutputStream(fopen("rfs.log", "wt"));
     DPrintf::setPrefixLength(40);
+
+
 
     readEnvironmentVariables();
     readCommandLineArguments(argc, argv);

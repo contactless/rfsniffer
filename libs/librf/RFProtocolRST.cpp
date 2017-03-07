@@ -33,12 +33,12 @@ string CRFProtocolRST::DecodePacket(const string &packet)
 {
     string bits;
 
-    for_each_const(string, packet, s) {
-        if (*s == 'b' ) {
+    for (const char s : packet) {
+        if (s == 'b' ) {
             bits += "0";
-        } else if (*s == 'c') {
+        } else if (s == 'c') {
             bits += "1";
-        } else if (*s == 'A') {
+        } else if (s == 'A') {
             continue;
         } else
             return "";

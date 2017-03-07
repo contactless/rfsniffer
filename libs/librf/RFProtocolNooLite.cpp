@@ -124,7 +124,7 @@ bool CRFProtocolNooLite::bits2packet(const string &bits, uint8_t *packet, size_t
     while (reverseBits.length() % 8)
         reverseBits += '0';
 
-    for (unsigned int i = 0; i < bytes; i++) {
+    for (uint32_t i = 0; i < bytes; i++) {
         packet[bytes - 1 - i] = (uint8_t)bits2long(reverseBits.substr(i * 8,
                                 8));// min(8, reverseBits.length() - i * 8)));
     }
@@ -158,16 +158,17 @@ string CRFProtocolNooLite::DecodePacket(const string &raw_)
 
     for(const String &i : v) {
         res = ManchesterDecode('a' + i, false, 'a', 'b', 'A', 'B');
-        string tmp = bits2timings(res);
-        uint8_t tmpBuffer[100];
-        size_t tmpBufferSize = sizeof(tmpBuffer);
-        EncodePacket(res, 2000, tmpBuffer, tmpBufferSize);
+        // unused code (and dangerous: "[100]")
+        //~ string tmp = bits2timings(res);
+        //~ uint8_t tmpBuffer[100];
+        //~ size_t tmpBufferSize = sizeof(tmpBuffer);
+        //~ EncodePacket(res, 2000, tmpBuffer, tmpBufferSize);
 
         if (res.length() >= 37) {
-            uint8_t packet[20];
-            size_t packetLen = sizeof(packet);
+            std::vector<uint8_t> packet(raw.size());
+            size_t packetLen = packet.size() * sizeof(uint8_t);
 
-            if (bits2packet(res, packet, &packetLen))
+            if (bits2packet(res, packet.data(), &packetLen))
                 return res;
             /*  TODO
             unsigned char packetCrc = crc8(packet, packetLen);

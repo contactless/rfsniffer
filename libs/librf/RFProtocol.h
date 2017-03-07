@@ -8,9 +8,9 @@
 #define PULSE_MASK      0x00FFFFFF
 
 // В качестве базового типа для lirc используем ulong
-typedef unsigned long base_type;
-typedef  base_type range_type[2];
-typedef  const range_type *range_array_type;
+typedef uint32_t base_type;
+typedef base_type range_type[2];
+typedef const range_type *range_array_type;
 
 string c2s(char c);
 

@@ -9,6 +9,8 @@
 #include <map>
 #include <unordered_map>
 
+
+
 /*! The predestination of this class is to do debug output in functions (or just blocks {...})
  *  it may be enabled and disabled in every function by one modification
  *  in first line: DPrintf dprintf; or DPrintf dprintf = DPrintf().disabled();
@@ -113,6 +115,7 @@ class DPrintf
         for (auto i : t)
             (*this) << (++iter > 0 ? ", " : "") << i;
         (*this) << "]";
+        return *this;
     }
 
     template <typename T>
@@ -123,6 +126,7 @@ class DPrintf
         for (auto i : t)
             (*this) << (++iter > 0 ? ", " : "") << i;
         (*this) << "]";
+        return *this;
     }
 
     template <typename T1, typename T2>
@@ -133,6 +137,7 @@ class DPrintf
         for (auto i : t)
             (*this) << (++iter > 0 ? ", " : "") << i.first << "->" << i.second;
         (*this) << "]";
+        return *this;
     }
 
     template <typename T1, typename T2>
@@ -143,12 +148,14 @@ class DPrintf
         for (auto i : t)
             (*this) << (++iter > 0 ? ", " : "") << i.first << "->" << i.second;
         (*this) << "]";
+        return *this;
     }
 
     template <typename T1, typename T2>
     DPrintf &operator<<(const std::pair<T1, T2> &t)
     {
         (*this) << "(" << t.first << ", " << t.second << ")";
+        return *this;
     }
 
 

@@ -19,7 +19,7 @@
 using std::string;
 
 CRFParser::CRFParser(CLog *log, string SavePath)
-    : b_RunAnalyzer(false), m_Analyzer(NULL), m_Log(log), m_SavePath(SavePath),
+    : b_RunAnalyzer(false), m_Analyzer(nullptr), m_Log(log), m_SavePath(SavePath),
       m_maxPause(0)
 {
 }
@@ -27,11 +27,12 @@ CRFParser::CRFParser(CLog *log, string SavePath)
 
 CRFParser::~CRFParser()
 {
-    for_each(CRFProtocolList, m_Protocols, i) {
-        delete *i;
+    for (CRFProtocol *i : m_Protocols) {
+        delete i;
     }
 
-    delete m_Analyzer;
+    if (m_Analyzer != nullptr)
+        delete m_Analyzer;
 }
 
 void CRFParser::AddProtocol(string protocol)
@@ -54,7 +55,6 @@ void CRFParser::AddProtocol(string protocol)
     else if (protocol == "MotionSensor")
         AddProtocol(new CRFProtocolMotionSensor());
     else if (protocol == "All") {
-
         AddProtocol(new CRFProtocolNooLite());
         AddProtocol(new CRFProtocolX10());
         AddProtocol(new CRFProtocolRST());
@@ -242,7 +242,6 @@ void CRFParser::AddInputData(base_type signal)
             previousTwoData.insert(previousTwoData.end(), previousInputData.begin(), previousInputData.end());
             previousTwoData.insert(previousTwoData.end(), inputData.begin(), inputData.end());
             parsed = Parse(previousTwoData.data(), previousTwoData.size());
-
         }
 
         if (!parsed.empty()) {

@@ -2,6 +2,9 @@
  * It seems to be a manual test.
  * */
 
+
+#include <unistd.h>
+
 #include "../libs/libutils/logging.h"
 #include "../libs/libutils/Exception.h"
 #include "mosquittopp.h"
@@ -33,7 +36,7 @@ class TestMqttConnection
 };
 
 TestMqttConnection::TestMqttConnection()
-    : m_isConnected(false), mosquittopp("TestMqttConnection")
+    : mosquittopp("TestMqttConnection"), m_isConnected(false)
 {
     m_Server  = "192.168.1.20";
     m_Log = CLog::GetLog("Main");

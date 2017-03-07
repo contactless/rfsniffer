@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+#include <unistd.h>
 
 #include "../libs/libutils/DebugPrintf.h"
 #include "../libs/libutils/strutils.h"
@@ -16,8 +17,9 @@ void MqttTest();
 
 int main(int argc, char *argv[])
 {
+
     // activate function-debug output
-    DPrintf::globallyEnable();
+    DPrintf::globallyEnable(false);
     DPrintf::setPrefixLength(50);
     if (0) {
         DPRINTF_DECLARE(dprint, true);
@@ -72,22 +74,46 @@ int main(int argc, char *argv[])
 
     srand(time(NULL));
 
+    DPRINTF_DECLARE(dprintf, false);
+
     if (path.length()) {
+        dprintf("$P Before RfParserTest\n");
         RfParserTest(path);
+        dprintf("$P After RfParserTest\n");
     }
 
-    if (bTestLog)
+    if (bTestLog) {
+        dprintf("$P Before LogTest\n");
         LogTest();
+        dprintf("$P After LogTest\n");
+    }
 
-    if (bTestParser)
+    if (bTestParser) {
+        dprintf("$P Before RfParserTest 2\n");
         RfParserTest("");
+        dprintf("$P After RfParserTest 2\n");
+    }
 
-    if (bTestRfm)
+    if (bTestRfm) {
+        dprintf("$P Before Rfm69Test\n");
         Rfm69Test();
+        dprintf("$P After Rfm69Test\n");
+    }
 
-    if (bTestSniffer)
+    if (bTestSniffer) {
+        dprintf("$P Before SnifferTest\n");
         SnifferTest();
+        dprintf("$P After SnifferTest\n");
+    }
 
-    if (bTestMqtt)
+    if (bTestMqtt) {
+        dprintf("$P Before MqttTest\n");
         MqttTest();
+        dprintf("$P After MqttTest\n");
+    }
+
+    dprintf("$P end of tests\n");
+
+    return 0;
+
 }

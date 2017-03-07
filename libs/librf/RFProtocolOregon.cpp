@@ -366,7 +366,7 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
         }
     }
 
-    unsigned int crc = 0, originalCRC = -1;
+    uint32_t crc = 0, originalCRC = -1;
     string hexPacket = "";
 
     if (packet.length() < 48) {
@@ -382,7 +382,7 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
     for (int i = 0; i < len; i += 4) {
         string portion = reverse(packet.substr(i, 4));
         char buffer[20];
-        unsigned int val = bits2long(portion);
+        uint32_t val = bits2long(portion);
 
         if (i > 0 && i < len - 16)
             crc += val;
