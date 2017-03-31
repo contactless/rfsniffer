@@ -384,6 +384,22 @@ void CMqttConnection::NewMessage(String message)
         }
 
         dev->set(type, value);
+    } else if (type == "HS24Bits") {
+        int msg = values["msg_id"].IntValue(), ch = values["msg_id"].IntValue();
+        
+        string name = String::ComposeFormat("hs24bits_%d_%d", msg, ch);
+        
+        static const string control_name = "state";
+        
+        CWBDevice *dev = m_Devices[name];
+        if (!dev) {
+            string desc = String::ComposeFormat("HS24Bits %d (%d)", msg, ch);
+            dev = new CWBDevice(name, desc);
+            dev->addControl(control_name, CWBControl::Switch, true);
+            CreateDevice(dev);
+        }
+        
+        dev->setForAndThen(control_name, "1", 10, "0");        
     }
 
     SendUpdate();

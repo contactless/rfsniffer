@@ -63,6 +63,7 @@ void CRFParser::AddProtocol(string protocol)
         AddProtocol(new CRFProtocolOregon());
         AddProtocol(new CRFProtocolOregonV3());
         AddProtocol(new CRFProtocolRubitek());
+        AddProtocol(new CRFProtocolHS24Bits());
         //AddProtocol(new CRFProtocolMotionSensor());
     } else
         throw CHaException(CHaException::ErrBadParam, "AddProtocol - no such protocol: " + protocol);
