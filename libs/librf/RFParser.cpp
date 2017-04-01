@@ -12,6 +12,7 @@
 #include "RFProtocolNooLite.h"
 #include "RFProtocolRubitek.h"
 #include "RFProtocolMotionSensor.h"
+#include "RFProtocolHS24Bit.h"
 #include "RFAnalyzer.h"
 
 #include "../libutils/DebugPrintf.h"
@@ -63,7 +64,7 @@ void CRFParser::AddProtocol(string protocol)
         AddProtocol(new CRFProtocolOregon());
         AddProtocol(new CRFProtocolOregonV3());
         AddProtocol(new CRFProtocolRubitek());
-        AddProtocol(new CRFProtocolHS24Bits());
+        AddProtocol(new CRFProtocolHS24Bit());
         //AddProtocol(new CRFProtocolMotionSensor());
     } else
         throw CHaException(CHaException::ErrBadParam, "AddProtocol - no such protocol: " + protocol);
@@ -180,7 +181,7 @@ string CRFParser::Parse(base_type **data_ptr, size_t *length_ptr)
 
 string CRFParser::Parse(base_type *data, size_t len)
 {
-    DPRINTF_DECLARE(dprintf, false);
+    DPRINTF_DECLARE(dprintf, true);
     dprintf("$P Parse begin (len = %)\n", len);
     if (len < MIN_PACKET_LEN)
         return "";

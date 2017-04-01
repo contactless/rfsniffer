@@ -108,8 +108,6 @@ class String : public std::string
     static String ValueOf(float f, int digits = 2);
 
     static String ValueOf(int i);
-    
-    static String ValueOf(int i, int base);
 
     inline int IntValue() const
     {

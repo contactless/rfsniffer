@@ -156,7 +156,10 @@ String String::ValueOf(float f, int digits)
     return ftoa(f, digits);
 }
 
-
+String String::ValueOf(int i)
+{
+    return itoa(i);
+}
 
 int BufferWriter::printf(const char *format, ...)
 {

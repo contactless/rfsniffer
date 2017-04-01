@@ -1,11 +1,12 @@
 #pragma once
 #include "RFProtocol.h"
-class RFLIB_API CRFProtocolHS24Bits :
+
+class RFLIB_API CRFProtocolHS24Bit :
     public CRFProtocol
 {
   public:
-    CRFProtocolHS24Bits();
-    virtual ~CRFProtocolHS24Bits();
+    CRFProtocolHS24Bit();
+    virtual ~CRFProtocolHS24Bit();
 
     virtual string getName()
     {
