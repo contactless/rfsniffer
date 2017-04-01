@@ -89,6 +89,7 @@ capture-1408-204138.rcf RST:id=1b00 h=46 t=14.1
 capture-1004-105819.rcf RST:id=1b10 h=82 t=29.1
 
 # HS Chip 24 bits 
+# motion sensor
 dump-all-3103-215824-001.rcf HS24Bits:msg_id=149194 ch=10
 dump-all-3103-213852-001.rcf HS24Bits:msg_id=149194 ch=6
 

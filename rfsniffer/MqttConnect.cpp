@@ -165,7 +165,8 @@ void CMqttConnection::NewMessage(String message)
         lastMessageCount++;
         // if lastMessageCount == lastMessageNeedCount then go through block
         if (lastMessageCount > lastMessageNeedCount) {
-            if (difftime(time(NULL), lastMessageReceiveTime) < 2)
+            // if too often of field "flip" exists then skip message
+            if (difftime(time(NULL), lastMessageReceiveTime) < 2 || values.count("flip") > 0)
                 return;
             else {
                 lastMessageCount = 1;
