@@ -386,7 +386,7 @@ void CMqttConnection::NewMessage(String message)
 
         dev->set(type, value);
     } else if (type == "HS24Bits") {
-        int msg = values["msg_id"].IntValue(), ch = values["msg_id"].IntValue();
+        int msg = values["msg_id"].IntValue(), ch = values["ch"].IntValue();
         
         string name = String::ComposeFormat("hs24bits_%d_%d", msg, ch);
         
