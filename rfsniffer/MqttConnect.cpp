@@ -371,7 +371,26 @@ void CMqttConnection::NewMessage(String message)
         }
 
         dev->set("Command", value);
-    } else if (type == "Raex" || type == "Livolo" || type == "Rubitek" ) {
+    } else if (type=="Livolo" || type=="VHome") {
+		const string addr = values["addr"], cmd = values["cmd"];
+
+		CWBDevice *dev = m_Devices[type+addr];
+		if (!dev)
+		{
+			dev = new CWBDevice(type+addr, type + " " + addr);
+			CreateDevice(dev);
+		}
+
+		if (!dev->controlExists(cmd))
+		{
+			dev->addControl(cmd, CWBControl::Switch, true);
+			CreateDevice(dev);
+		}
+
+		//dev->set(cmd, "1");
+        dev->set(cmd, dev->getString(cmd) != "0" ? "0" : "1");
+		m_Log->Printf(3, "Msg from %s %s. Set %s to %sq", type.c_str(), message.c_str(), cmd.c_str(), dev->getString(cmd).c_str());
+	} else if (type == "Raex" || type == "Rubitek" ) {
         m_Log->Printf(3, "Msg from remote control (Raex | Livolo | Rubitek) %s", message.c_str());
 
         CWBDevice *dev = m_Devices["Remotes"];

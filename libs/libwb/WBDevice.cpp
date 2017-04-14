@@ -204,6 +204,10 @@ void CWBDevice::addControl(const string &name, ControlType type, bool readonly)
     addControl(CWBControl(name, type, readonly));
 }
 
+bool CWBDevice::controlExists(const string &name)
+{
+	return deviceControls.count(name);
+}
 
 void CWBDevice::set(CWBControl::ControlType type, string_cref value)
 {

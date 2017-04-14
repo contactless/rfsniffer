@@ -146,6 +146,7 @@ class LIBWB_API CWBDevice
 #endif
     void addControl(const CWBControl &device);
     void addControl(const string &name, CWBControl::ControlType type, bool readonly = true);
+    bool controlExists(const string &name);
     bool sourceExists(const string &source);
     void setBySource(const string &source, const string &sourceType, string value);
     void set(CWBControl::ControlType type, const string &value);
