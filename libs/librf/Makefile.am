@@ -4,6 +4,6 @@ librf_la_SOURCES = RFParser.cpp RFProtocol.cpp RFProtocolLivolo.cpp RFProtocolRS
 		RFParser.h RFProtocol.h RFProtocolLivolo.h RFProtocolRST.h RFProtocolRaex.h RFProtocolX10.h spidev_lib++.h RFM69OOK.cpp RFM69OOK.h RFProtocolRubitek.cpp 
 
 AM_CFLAGS = -pthread
-AM_CXXFLAGS = -pthread -std=c++0x
+AM_CXXFLAGS = -pthread -std=c++0x -pg
 librf_la_LDFLAGS = -all-static
 
