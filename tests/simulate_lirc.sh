@@ -43,7 +43,10 @@ echo "take $EXE as executable rfsniffer"
 
 CMD="$EXE -T -l $LIRC"
 
-CMD="valgrind --error-exitcode=180 -q $CMD"
+# note
+if ! [[ $TARGET_ARCH == arm* ]]; then
+    CMD="valgrind --error-exitcode=180 -q $CMD"
+fi
 
 # Make sure only root can run our script
 if [[ $EUID -ne 0 ]]; then
