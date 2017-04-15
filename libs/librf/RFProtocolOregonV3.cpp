@@ -63,6 +63,7 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
 
 
     string packet = "0101";
+    packet.reserve(raw.size());
     char demand_next_c = 0;
 
     for (char c : raw) {
@@ -75,18 +76,18 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
         }
         switch (c) {
             case 'b':
-                packet += '1';
+                packet.push_back('1');
                 demand_next_c = 'B';
                 break;
             case 'B':
-                packet += '0';
+                packet.push_back('0');
                 demand_next_c = 'b';
                 break;
             case 'c':
-                packet += '0';
+                packet.push_back('0');
                 break;
             case 'C':
-                packet += '1';
+                packet.push_back('1');
                 break;
             default:
                 return "";

@@ -16,6 +16,7 @@ string c2s(char c);
 
 class RFLIB_API CRFProtocol
 {
+    typedef std::deque<base_type>::iterator InputContainerIterator;
   protected:
     range_array_type m_ZeroLengths, m_PulseLengths;
     int m_MinRepeat, m_Bits;
@@ -24,6 +25,12 @@ class RFLIB_API CRFProtocol
     CLog *m_Log;
     const uint16_t *m_SendTimingPauses;
     const uint16_t *m_SendTimingPulses;
+    
+    int m_CurrentRepeat;
+    int64_t m_LastParsedTime;
+    string m_LastParsed;
+    
+    static const int MAX_DELAY_BETWEEN_PACKETS = 500000;
 
     string ManchesterDecode(const string &, bool expectPulse, char shortPause, char longPause,
                             char shortPulse, char longPulse);
@@ -53,6 +60,8 @@ class RFLIB_API CRFProtocol
     };
 
     // Раскодируем пакет
+    string Parse(InputContainerIterator first, InputContainerIterator last, int64_t inputTime);
+    
     virtual string Parse(base_type *, size_t len);
     virtual string DecodeRaw(base_type *data,
                              size_t dataLen);  // Декодирование строки по длинам
@@ -94,5 +103,6 @@ class RFLIB_API CRFProtocol
         m_Log = log;
     };
     void getMinMax(base_type *minPause, base_type *maxPause, base_type *minPulse, base_type *maxPulse);
+    bool isGoodSignal(base_type signal);
 };
 

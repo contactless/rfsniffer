@@ -16,7 +16,7 @@ string c2s(char c)
 CRFProtocol::CRFProtocol(range_array_type zeroLengths, range_array_type pulseLengths, int bits,
                          int minRepeat, string PacketDelimeter)
     : m_ZeroLengths(zeroLengths), m_PulseLengths(pulseLengths), m_MinRepeat(minRepeat), m_Bits(bits),
-      m_PacketDelimeter(PacketDelimeter), m_InvertPacket(true)
+      m_PacketDelimeter(PacketDelimeter), m_InvertPacket(true), m_CurrentRepeat(0)
 {
     m_Debug = false;
     m_InvertPacket = false;
@@ -32,6 +32,28 @@ void CRFProtocol::SetTransmitTiming(const uint16_t *timings)
 {
     m_SendTimingPauses = m_SendTimingPulses = timings;
     while (*m_SendTimingPulses++);
+}
+
+
+string CRFProtocol::Parse(InputContainerIterator first, InputContainerIterator last, int64_t inputTime) {
+    std::vector<base_type> input;
+    input.insert(input.begin(), first, last);
+    string parsed = Parse(input.data(), input.size());
+    if (parsed.empty())
+        return "";
+    if (parsed != lastParsed) {
+        m_LastParsed = parsed;
+        m_LastParsedTime = inputTime;
+        m_CurrentRepeat = 0;
+    }
+    ++m_CurrentRepeat;
+    if (inputTime - m_LastParsedTime > MAX_DELAY_BETWEEN_PACKETS)
+        m_CurrentRepeat = 1;
+        
+    if (m_CurrentRepeat >= m_MinRepeat) {
+        m_CurrentRepeat = 0;
+        return parsed;
+    }
 }
 
 /*
@@ -92,7 +114,7 @@ string CRFProtocol::Parse(base_type *data, size_t dataLen)
 string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)
 {
     DPRINTF_DECLARE(dprintf, false);
-    string decodedRaw, decodedRawRev;
+    string decodedRaw;
 
     dprintf("$P signals to decode (first 50): ");
     for (int i = 0; i < 50 && dprintf.isActive(); i++)
@@ -102,12 +124,12 @@ string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)
     for (size_t i = 0; i < dataLen; i++) {
         base_type len = getLengh(data[i]);
 
-        if (isPulse(data[i])) {
+        if (isPulse(data[i]) ^ m_InvertPacket) {
             int pos = 0;
             for (; m_PulseLengths[pos][0]; pos++) {
                 if (len >= m_PulseLengths[pos][0] && len <= m_PulseLengths[pos][1]) {
                     //decodedRaw += c2s('A' + pos);
-                    decodedRaw += 'A' + pos;
+                    decodedRaw.push_back('A' + pos);
                     break;
                 }
             }
@@ -116,36 +138,15 @@ string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)
                 if (m_Debug) // Если включена отладка - явно пишем длины плохих пауз
                     decodedRaw += string("[") + itoa(len) + "]";
                 else {
-                    //decodedRaw += "?";
-                    decodedRaw += '?';
+                    decodedRaw.push_back('?');
                 }
             }
 
-            if (m_InvertPacket) {
-                pos = 0;
-                for (; m_ZeroLengths[pos][0]; pos++) {
-                    if (len >= m_ZeroLengths[pos][0] && len <= m_ZeroLengths[pos][1]) {
-                        //decodedRawRev += c2s('a' + pos);
-                        decodedRawRev += 'a' + pos;
-                        break;
-                    }
-                }
-
-                if (!m_ZeroLengths[pos][0]) {
-                    if (m_Debug) // Если включена отладка - явно пишем длины плохих пауз
-                        decodedRawRev += string("[") + itoa(len) + "]";
-                    else {
-                        //decodedRawRev += "?";
-                        decodedRawRev += '?';
-                    }
-                }
-            }
         } else {
             int pos = 0;
             for (; m_ZeroLengths[pos][0]; pos++) {
                 if (len >= m_ZeroLengths[pos][0] && len <= m_ZeroLengths[pos][1]) {
-                    //decodedRaw += c2s('a' + pos);
-                    decodedRaw += 'a' + pos;
+                    decodedRaw.push_back('a' + pos);
                     break;
                 }
             }
@@ -154,38 +155,13 @@ string CRFProtocol::DecodeRaw(base_type *data, size_t dataLen)
                 if (m_Debug)
                     decodedRaw += string("[") + itoa(len) + "]";
                 else {
-                    //decodedRaw += "?";
-                    decodedRaw += '?';
-                }
-            }
-
-            if (m_InvertPacket) {
-                pos = 0;
-                for (; m_PulseLengths[pos][0]; pos++) {
-                    if (len >= m_PulseLengths[pos][0] && len <= m_PulseLengths[pos][1]) {
-                        //decodedRawRev += c2s('A' + pos);
-                        decodedRawRev += 'A' + pos;
-                        break;
-                    }
-                }
-            }
-            if (!m_PulseLengths[pos][0]) {
-                if (m_Debug)
-                    decodedRawRev += string("[") + itoa(len) + "}";
-                else {
-                    //decodedRawRev += "?";
-                    decodedRawRev += '?';
+                    decodedRaw.push_back('?');
                 }
             }
         }
     }
     dprintf("$P %\n", decodedRaw);
-    if (m_InvertPacket)
-        // TODO Remove and fix RST
-        return decodedRaw + (m_Debug ? "[XXX]" : "?") +
-               decodedRawRev; // Для корректной работы в случае, если в результате бага драйвера "паузы/сигналы инвертированы"
-    else
-        return decodedRaw;
+    return decodedRaw;
 }
 
 bool CRFProtocol::SplitPackets(const string &rawData, string_vector &rawPackets)
@@ -475,3 +451,12 @@ void CRFProtocol::getMinMax(base_type *minPause, base_type *maxPause, base_type 
     }
 }
 
+bool CRFProtocol::isGoodSignal(base_type signal) {
+    range_array_type lengths = isPulse(signal) ? m_PulseLengths : m_ZeroLengths;
+    int len = getLengh(signal);
+    for (int pos = 0; lengths[pos][0]; pos++) {
+        if (lengths[pos][0] <= len && len <= lengths[pos][1])
+            return true;
+    }
+    return false;
+}

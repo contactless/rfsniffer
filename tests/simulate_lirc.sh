@@ -5,6 +5,7 @@
 # to mqtt and then to web-interface
 
 LIRC="./lirc_rfm_test_device"
+GPROF_REPORT="./gprof_report.log"
 
 if ! [[ $# -gt 1 ]]; then
     echo "Need more arguments"
@@ -43,10 +44,8 @@ echo "take $EXE as executable rfsniffer"
 
 CMD="$EXE -T -l $LIRC"
 
-# note
-if ! [[ $TARGET_ARCH == arm* ]]; then
-    CMD="valgrind --error-exitcode=180 -q $CMD"
-fi
+# with enabled valgrind
+VCMD="valgrind --error-exitcode=180 -q $CMD"
 
 # Make sure only root can run our script
 if [[ $EUID -ne 0 ]]; then
@@ -61,7 +60,7 @@ fi
 #echo "Clean mqtt tree"
 #mqtt-delete-retained '/devices/#'
 
-echo "Start testing (run: $CMD)"
+echo "Genering input file (it will be read as lirc device)"
 
 # run rfsniffer
 #eval "$CMD &"
@@ -96,16 +95,25 @@ else
     done < $TESTS_DESCR
 fi
 
+echo "Start testing"
+
+# note
+if ! [[ `arch` == arm* ]]; then
+    echo "Run with Valgrind"
+    eval "$VCMD"
+else
+    echo "Not using valgrind on armel"
+fi
+
+echo "Run for gprof and results (run: $CMD)"
 eval "$CMD"
 
-
-# wait for job (CMD) completion
-#if ! wait -n
-#then
-#	sleep 5
-#	kill %1
-#	kill %2
-#	kill %3
-#fi
+if ! [[ `arch` == arm* ]]; then
+    echo "Run gprof"
+    eval "gprof $EXE" > $GPROF_REPORT
+    echo "See for report in $GPROF_REPORT"
+else
+    echo "Not using gprof on arm"
+fi
 
 rm -vf $LIRC

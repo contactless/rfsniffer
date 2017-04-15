@@ -2,5 +2,6 @@
 
 configs/wb-homa-rfsniffer.schema.json => usr/share/wb-mqtt-confed/schemas/wb-homa-rfsniffer.schema.json
 rfsniffer/wb-homa-rfsniffer => usr/bin/wb-homa-rfsniff
+rfsniffer/wb-homa-rfsniffer-dbg => usr/bin/wb-homa-rfsniffer-dbg
 
 configs/wb-homa-rfsniffer.conf.*.generated usr/share/wb-homa-rfsniffer/

@@ -24,6 +24,7 @@ CRFParser::CRFParser(CLog *log, string SavePath)
     : b_RunAnalyzer(false), m_Analyzer(nullptr), m_Log(log), m_SavePath(SavePath),
       m_maxPause(0)
 {
+    m_InputTime = 0;
 }
 
 
@@ -80,12 +81,13 @@ void CRFParser::AddProtocol(CRFProtocol *p)
 {
     p->setLog(m_Log);
     m_Protocols.push_back(p);
+    m_ProtocolsBegins.push_back(m_InputData.begin());
     // setMinMax();
 }
 
 
 
-
+/*
 std::vector<string> CRFParser::ParseToTheEnd(base_type *data, size_t length,
         size_t *readLengthToReturn)
 {
@@ -104,14 +106,14 @@ std::vector<string> CRFParser::ParseToTheEnd(base_type *data, size_t length,
 
     *readLengthToReturn = data - dataBegin;
     return results;
-}
+}*/
 
 
 // Tries to recognize packet from begin of data.
 // If data was recognised then returned string have non-zero length,
 // otherwise returned string is empty.
 // In every case read length (or just skipped) will be written to "readLength"
-string CRFParser::ParseRepetitive(base_type *data, size_t length, size_t *readLength)
+/*string CRFParser::ParseRepetitive(base_type *data, size_t length, size_t *readLength)
 {
     base_type *data2 = data;
     size_t length2 = length;
@@ -122,7 +124,7 @@ string CRFParser::ParseRepetitive(base_type *data, size_t length, size_t *readLe
         *readLength = length;
     }
     return ret;
-}
+}*/
 
 
 bool CRFParser::IsGoodSignal(base_type signal)
@@ -232,37 +234,75 @@ string CRFParser::Parse(base_type *data, size_t len)
 // add some data to parse
 void CRFParser::AddInputData(base_type signal)
 {
-    inputData.push_back(signal);
+    m_InputData.push_back(signal);
+    m_InputTime += CRFProtocol::getLengh(signal);
+    
+    bool beginWasShifted = false;
+    
+    for (int i = 0; i < (int)m_Protocols.size(); i++) {
+        CRFProtocol* protocol = m_Protocols[i];
+        InputContainer::iterator &protocolBegin = m_ProtocolsBegins[i];
+        
+        int packetLen = m_InputData.end() - protocolBegin;
+        
+        if (!protocol->IsGoodSignal(signal)) {
+            beginWasShifted = true;
+            if (packetLen < MIN_PACKET_LEN) {
+                protocolBegin = m_InputData.end();
+                continue;
+            }
+            
+            string parsed = protocol->Parse(protocolBegin, m_InputData.end(), m_InputTime);
+            if (!parsed.empty()) {
+                m_ParsedResults.push_back(parsed);
+            }
+            
+            protocolBegin = m_InputData.end();
+        }
+        else {
+            if (packetLen > MAX_PACKET_LEN) {
+                protocolBegin = m_InputData.end();
+                beginWasShifted = true;
+            }
+        }
+    }
+    
+    if (beginWasShifted) {
+        auto newBegin = std::min_element(m_ProtocolsBegins.begin(), m_ProtocolsBegins.end());
+        m_InputData.erase(m_InputData.begin(), newBegin);
+    }
+    /*
+    
     if (!IsGoodSignal(signal)) {
         //if (CRFProtocol::getLengh(signal) > 200000) {
-        if (inputData.size() < MIN_PACKET_LEN) {
-            inputData.clear();
+        if (m_InputData.size() < MIN_PACKET_LEN) {
+            m_InputData.clear();
             return;
         }
         DPRINTF_DECLARE(dprintf, false);
         dprintf("$P IN\n");
-        string parsed = Parse(inputData.data(), inputData.size());
+        string parsed = Parse(m_InputData.data(), m_InputData.size());
 
         if (parsed.empty() && previousInputData.size() > 0) {
             std::vector<base_type> previousTwoData(3, 1e6);
             previousTwoData.insert(previousTwoData.end(), previousInputData.begin(), previousInputData.end());
-            previousTwoData.insert(previousTwoData.end(), inputData.begin(), inputData.end());
+            previousTwoData.insert(previousTwoData.end(), m_InputData.begin(), m_InputData.end());
             parsed = Parse(previousTwoData.data(), previousTwoData.size());
         }
 
         if (!parsed.empty()) {
-            parsedResults.push_back(parsed);
+            m_ParsedResults.push_back(parsed);
         }
 
         previousInputData.clear();
-        std::swap(inputData, previousInputData);
+        std::swap(m_InputData, previousInputData);
 
         if (CRFProtocol::getLengh(signal) > 40000)
             previousInputData.clear();
 
-        inputData.push_back(signal);
+        m_InputData.push_back(signal);
         dprintf("$P OUT\n");
-    }
+    }*/
 }
 
 // add some data to parse
@@ -275,7 +315,7 @@ void CRFParser::AddInputData(base_type *data, size_t len)
 std::vector<string> CRFParser::ExtractParsed()
 {
     std::vector<string> parsed;
-    std::swap(parsed, parsedResults);
+    std::swap(parsed, m_ParsedResults);
     return parsed;
 }
 
