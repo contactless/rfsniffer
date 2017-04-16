@@ -1,4 +1,4 @@
-AM_CXXFLAGS = -I../include/ -std=c++0x
+AM_CXXFLAGS = -I../include/ -std=c++0x -Wall
 
 bin_PROGRAMS = wb-homa-rfsniffer wb-homa-rfsniffer-dbg
 

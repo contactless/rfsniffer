@@ -1,4 +1,5 @@
 AM_CXXFLAGS = -DRFSNIFFER -std=c++0x
+AM_LIBTOOLFLAGS = -no-suppress
 CPPFLAGS = -std=c++0x
 
 # ACLOCAL_AMFLAGS = -I m4

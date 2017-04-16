@@ -453,7 +453,7 @@ string CRFProtocol::data2bits(const string &data)
 {
     throw CHaException(CHaException::ErrNotImplemented, "CRFProtocol::data2bits");
 }
-
+/*
 void CRFProtocol::getMinMax(base_type *minPause, base_type *maxPause, base_type *minPulse,
                             base_type *maxPulse)
 {
@@ -471,11 +471,11 @@ void CRFProtocol::getMinMax(base_type *minPause, base_type *maxPause, base_type 
         *minPause = std::min (*minPause, m_ZeroLengths[pos][0]);
         *maxPause = std::max (*maxPause, m_ZeroLengths[pos][1]);
     }
-}
+}*/
 
 bool CRFProtocol::IsGoodSignal(base_type signal) {
     range_array_type lengths = isPulse(signal) ? m_PulseLengths : m_ZeroLengths;
-    int len = getLengh(signal);
+    size_t len = getLengh(signal);
     for (int pos = 0; lengths[pos][0]; pos++) {
         if (lengths[pos][0] <= len && len <= lengths[pos][1])
             return true;

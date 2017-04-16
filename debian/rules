@@ -4,13 +4,19 @@
 	dh $@ --with autoreconf --parallel
 
 override_dh_autoreconf:
-	dh_autoreconf --as-needed
+	autoreconf -fvi -W all
+	# dh_autoreconf --as-needed -W all
 
 DEB_HOST_MULTIARCH  ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 override_dh_auto_configure:
 	./configs/generate_configs.py --directory configs/ --generate
-	dh_auto_configure -- --enable-static --enable-plugins --enable-doxygen
+	dh_auto_configure -- --disable-silent-rules
+	#dh_auto_configure -- --enable-static --enable-plugins --enable-doxygen
+
+override_dh_auto_build:
+	dh_auto_build -O--parallel 
+	#-- --disable-silent-rules
 
 #override_dh_auto_install:
 #dh_auto_install

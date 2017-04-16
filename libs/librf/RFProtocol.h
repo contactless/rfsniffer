@@ -56,7 +56,9 @@ class RFLIB_API CRFProtocol
     */
     CRFProtocol(range_array_type zeroLengths, range_array_type pulseLengths, int bits, int minRepeat,
                 string PacketDelimeter );
+                
     virtual ~CRFProtocol();
+    
     void checkInverted(bool inverted)
     {
         m_InvertPacket = inverted;
@@ -105,7 +107,7 @@ class RFLIB_API CRFProtocol
     {
         m_Log = log;
     };
-    void getMinMax(base_type *minPause, base_type *maxPause, base_type *minPulse, base_type *maxPulse);
+    //void getMinMax(base_type *minPause, base_type *maxPause, base_type *minPulse, base_type *maxPulse);
     bool IsGoodSignal(base_type signal);
     /// pulse: +pulse_len, pause: -pause_len
     static int SignedRepresentation(base_type signal);

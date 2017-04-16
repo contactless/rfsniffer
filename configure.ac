@@ -2,6 +2,7 @@ AC_INIT([rfsniffer], [0.1], [avp@avp.name])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_LANG([C++])
+# AC_LANG_WERROR
 AM_PROG_AR
 #AC_PROG_CXX
 #AM_PROG_LIBTOOL
@@ -16,6 +17,8 @@ AC_DEFINE([RFSNIFFER],[1],[Wiren board rfm sniffer])
 AC_DEFINE([USE_CONFIG], [1], [Use JSON Config])
 
 AC_SEARCH_LIBS([_ZNK4Json5Value4sizeEv], [jsoncpp], [], [])
+
+AM_SILENT_RULES([no])
 
 AC_CONFIG_FILES([
  Makefile
