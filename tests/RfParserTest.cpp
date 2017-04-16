@@ -24,7 +24,7 @@
 
 string DecodeFile(CRFParser *parser, CLog *log, const char *fileName)
 {
-    DPRINTF_DECLARE(dprintf, true);
+    DPRINTF_DECLARE(dprintf, false);
     dprintf("$P Start\n");
 
     base_type *data = new base_type[MAX_SIZE];
@@ -80,7 +80,7 @@ void getAllTestFiles( string path, string_vector &result )
 
 bool OneTest(const string_pair &test, CLog *log, CRFParser &parser)
 {
-    DPRINTF_DECLARE(dprintf, true);
+    DPRINTF_DECLARE(dprintf, false);
     dprintf("$P Start test=%\n", test);
 
     String file_name = test.first, exp_result = test.second;
@@ -154,7 +154,7 @@ bool OneTest(const string_pair &test, CLog *log, CRFParser &parser)
 
 void RfParserTest(string path)
 {
-    DPRINTF_DECLARE(dprintf, true);
+    DPRINTF_DECLARE(dprintf, false);
     dprintf("$P Start\n");
 
     bool allPassed = true;

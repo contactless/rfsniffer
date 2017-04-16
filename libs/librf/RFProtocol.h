@@ -26,7 +26,7 @@ class RFLIB_API CRFProtocol
     const uint16_t *m_SendTimingPauses;
     const uint16_t *m_SendTimingPulses;
     
-    int m_CurrentRepeat;
+    int m_CurrentRepeat, m_InnerRepeat;
     int64_t m_LastParsedTime;
     string m_LastParsed;
     
@@ -44,6 +44,9 @@ class RFLIB_API CRFProtocol
     void SetTransmitTiming(const uint16_t *timings);
 
   public:
+  
+    void ClearRetainedInputData();
+    
     /*
         zeroLengths - Массив длинн пауз.
         pulseLengths - Массив длинн сигналов
@@ -62,9 +65,9 @@ class RFLIB_API CRFProtocol
     // Раскодируем пакет
     string Parse(InputContainerIterator first, InputContainerIterator last, int64_t inputTime);
     
-    virtual string Parse(base_type *, size_t len);
-    virtual string DecodeRaw(base_type *data,
-                             size_t dataLen);  // Декодирование строки по длинам
+    virtual string Parse(InputContainerIterator first, InputContainerIterator last);
+    virtual string DecodeRaw(InputContainerIterator first, 
+                             InputContainerIterator last);  // Декодирование строки по длинам
     virtual bool SplitPackets(const string &rawData,
                               string_vector &rawPackets); // Нарезка по пакетам
     virtual string DecodeBits(string_vector
@@ -103,6 +106,8 @@ class RFLIB_API CRFProtocol
         m_Log = log;
     };
     void getMinMax(base_type *minPause, base_type *maxPause, base_type *minPulse, base_type *maxPulse);
-    bool isGoodSignal(base_type signal);
+    bool IsGoodSignal(base_type signal);
+    /// pulse: +pulse_len, pause: -pause_len
+    static int SignedRepresentation(base_type signal);
 };
 

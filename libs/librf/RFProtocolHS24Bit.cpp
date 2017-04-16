@@ -35,7 +35,7 @@ CRFProtocolHS24Bit::~CRFProtocolHS24Bit()
 
 string CRFProtocolHS24Bit::DecodePacket(const string &packet)
 {
-    DPRINTF_DECLARE(dprintf, true);
+    DPRINTF_DECLARE(dprintf, false);
     dprintf("$P Enter\n");
     string bits;
     if (packet.length() != 48)
@@ -59,7 +59,7 @@ string CRFProtocolHS24Bit::DecodePacket(const string &packet)
 string CRFProtocolHS24Bit::DecodeData(const string &bits)
 {
     
-    DPRINTF_DECLARE(dprintf, true);
+    DPRINTF_DECLARE(dprintf, false);
     dprintf("$P Enter\n");
     if (bits.size() != 24) {
         dprintf("$P bits.size() != 24 - broken invariant for this protocol");

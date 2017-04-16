@@ -1,5 +1,6 @@
 #pragma once
 #include <deque>
+#include <memory>
 
 #include "stdafx.h"
 #include "rflib.h"
@@ -14,11 +15,9 @@ class RFLIB_API CRFParser
     typedef std::string string;
     
     CLog *m_Log;
-    std::vector<CRFProtocol*> m_Protocols;
-    std::vector<InputContainer::iterator> m_ProtocolsBegins;
-    
-    bool b_RunAnalyzer;
-    CRFAnalyzer *m_Analyzer;
+    std::vector<std::unique_ptr<CRFProtocol>> m_Protocols;
+    std::vector<int> m_ProtocolsBegins;
+
     string m_SavePath;
 
     std::vector<string> m_ParsedResults;
@@ -38,40 +37,31 @@ class RFLIB_API CRFParser
     void AddProtocol(CRFProtocol *);
     void AddProtocol(string protocol = "all");
 
-    // Определяет, может ли сигнал (импульс или пауза) быть корректным для какого-либо протокола
-    bool IsGoodSignal(base_type signal);
-    bool IsGoodSignal(bool isPulse, base_type length);
-
-    /*  Пытается декодировать пакет пулом декодеров.
-        Декодеры перебираются по очереди
-        В случае успеха возвращает строку вида <Имя декодера>:<Результат декодирования>
-    */
+    
     // Пытается декодировать всю последовательность [data, data + len) каким-то одним декодером
+    // используется для тестирования
     string Parse(base_type *data, size_t len);
-    // Режет последовательность на пакеты (по длинным паузам и коротким импульсам)
-    // Делает это сначала и одновременно пытается распознать пакеты
-    // Возвращает первый успешный результат, при этом "data_ptr" и "len_ptr" сдвигаются
-    string Parse(base_type **data_ptr, size_t *len_ptr);
-
-    // Tries to recognize packet from begin of data.
-    // If data was recognised then returned string have non-zero length,
-    // otherwise returned string is empty.
-    // In every case read length (or just skipped) will be written to "readLength"
-    // string ParseRepetitive(base_type *data, size_t length, size_t *readLength);
-
-    // Tries to recognize packet from begin of data.
-    // It returns all recognized packets to the end
-    // and parsed length
-    // std::vector<string> ParseToTheEnd(base_type *data, size_t length, size_t *readLength);
+    
+    // Удалает все остаточную информацию о пришедших данных
+    // В том числе входной буфер, указатели на позиции в нем для разных протоколов
+    // Данные о повторах пакетов внутри парсеров протоколов и т. д.
+    void ClearRetainedInputData();
 
     // add some data to parse
+    // При добавлении пришедших данных 
+    // происходит проверка на конец пакета и попытка декодировать 
+    // для каждого протокола 
+    // Результат можно проверить вызовом ExtractParsed
     void AddInputData(base_type dataElement);
     void AddInputData(base_type *data, size_t len);
+    
+    // Если данные заканчиваются раньше, чем наступает признак конца пакета
+    // (приходит импульс/пауза не используемый протоколом)
+    // то стоит вызвать эту функцию, она попробует декодировать то что есть
+    void TryToParseExistingData();
+    
     // get all results parsed from all data given by AddInputData
     std::vector<string> ExtractParsed();
-
-    //  Включает анализатор для пакетов, которые не получилось декодировать. Пока не реализованно
-    void EnableAnalyzer();
 
     //  Сохраняет пакет в файл
     void SaveFile(base_type *data, size_t size, const char *prefix = "capture");
@@ -80,6 +70,4 @@ class RFLIB_API CRFParser
 
     // Устанавливает путь для сохранения пакетов
     void SetSavePath(string savePath);
-  private:
-    void setMinMax();
 };

@@ -54,7 +54,7 @@ static const char *g_nooLite_Commands[] = {
 static int g_nooLite_Commands_len = 21;
 
 CRFProtocolNooLite::CRFProtocolNooLite()
-    : CRFProtocol(g_timing_pause, g_timing_pulse, 0, 1, "aAaAaAaAaAaAaAaAaAaAaAc")
+    : CRFProtocol(g_timing_pause, g_timing_pulse, 0, 1, "AaAaAaAaAaAaAaAaAaAc")
 {
     m_Debug = false;
     SetTransmitTiming(g_transmit_data);
@@ -141,6 +141,8 @@ bool CRFProtocolNooLite::bits2packet(const string &bits, uint8_t *packet, size_t
 
 string CRFProtocolNooLite::DecodePacket(const string &raw_)
 {
+    DPRINTF_DECLARE(dprintf, false);
+    
     String raw = String(raw_);
 
     // shortest nooLite message - 5 bytes - 40 bits - 40 signals at minimum
@@ -158,26 +160,14 @@ string CRFProtocolNooLite::DecodePacket(const string &raw_)
 
     for(const String &i : v) {
         res = ManchesterDecode('a' + i, false, 'a', 'b', 'A', 'B');
-        // unused code (and dangerous: "[100]")
-        //~ string tmp = bits2timings(res);
-        //~ uint8_t tmpBuffer[100];
-        //~ size_t tmpBufferSize = sizeof(tmpBuffer);
-        //~ EncodePacket(res, 2000, tmpBuffer, tmpBufferSize);
-
+        dprintf("$P manch decoded: %\n", res);
         if (res.length() >= 37) {
             std::vector<uint8_t> packet(raw.size());
             size_t packetLen = packet.size() * sizeof(uint8_t);
 
             if (bits2packet(res, packet.data(), &packetLen))
                 return res;
-            /*  TODO
-            unsigned char packetCrc = crc8(packet, packetLen);
-            // check crc;
-
-            if (!packetCrc)
-            {
-                return res;
-            }*/
+           
         }
     }
 
