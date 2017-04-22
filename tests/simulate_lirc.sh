@@ -6,6 +6,7 @@
 
 LIRC="./lirc_rfm_test_device"
 GPROF_REPORT="./gprof_report.log"
+VALGRIND_MASSIF_REPORT="./valgrind_massif_report.log"
 
 if ! [[ $# -gt 1 ]]; then
     echo "Need more arguments"
@@ -43,9 +44,6 @@ rm $LIRC
 echo "take $EXE as executable rfsniffer"
 
 CMD="$EXE -T -l $LIRC"
-
-# with enabled valgrind
-VCMD="valgrind --error-exitcode=180 -q $CMD"
 
 # Make sure only root can run our script
 if [[ $EUID -ne 0 ]]; then
@@ -97,14 +95,6 @@ fi
 
 echo "Start testing"
 
-# note
-if ! [[ `arch` == arm* ]]; then
-    echo "Run with Valgrind"
-    eval "$VCMD"
-else
-    echo "Not using valgrind on armel"
-fi
-
 echo "Run for gprof and results (run: $CMD)"
 eval "$CMD"
 
@@ -115,5 +105,17 @@ if ! [[ `arch` == arm* ]]; then
 else
     echo "Not using gprof on arm"
 fi
+
+# note
+if ! [[ `arch` == arm* ]]; then
+    echo "Run with Valgrind (check memory)"
+    eval "valgrind --error-exitcode=180 -q $CMD"
+    echo "Run with Valgrind (analyse memory consumption)"
+    eval "valgrind --tool=massif --stacks=yes --massif-out-file=$VALGRIND_MASSIF_REPORT --error-exitcode=180 $CMD"
+else
+    echo "Not using valgrind on armel"
+fi
+
+
 
 rm -vf $LIRC

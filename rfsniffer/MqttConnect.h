@@ -43,6 +43,8 @@ class CMqttConnection
     virtual void on_unsubscribe(int mid);
     virtual void on_log(int level, const char *str);
     virtual void on_error();
+    
+    void CreateNooliteTxUniversal(const string &addr);
 
     void publishString(const string &path, const string &value);
     void publishStringMap(const CWBDevice::StringMap &values);

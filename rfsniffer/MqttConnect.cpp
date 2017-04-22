@@ -25,6 +25,45 @@ CMqttConnection::~CMqttConnection()
 }
 
 
+
+void CMqttConnection::CreateNooliteTxUniversal(const string &addr) {
+    string name = String::ComposeFormat("noolite_tx_%s", addr.c_str());
+    
+    CWBDevice *dev = m_Devices[name];
+    
+    if (dev)
+        return;
+    
+    string desc = String::ComposeFormat("Noolite TX %s", addr.c_str());
+    dev = new CWBDevice(name, desc);
+    
+    dev->addControl("level", CWBControl::Range, "0", "1", false);
+    dev->setMax("level", "100");
+    dev->addControl("state", CWBControl::Switch, "0", "2", false);
+    dev->addControl("switch", CWBControl::PushButton, "0", "4", false);
+    dev->addControl("color", CWBControl::Rgb, "0;0;0", "5", false);
+    dev->addControl("slowup", CWBControl::PushButton, "0", "6", false);
+    dev->addControl("slowdown", CWBControl::PushButton, "0", "7", false);
+    dev->addControl("slowswitch", CWBControl::PushButton, "0", "8", false);
+    dev->addControl("slowstop", CWBControl::PushButton, "0", "9", false);
+    dev->addControl("shadow_level", CWBControl::Range, "0", "10", false);
+    dev->setMax("shadow_level", "100");
+    dev->addControl("bind", CWBControl::PushButton, "0", "20", false);
+    dev->addControl("unbind", CWBControl::PushButton, "0", "21", false);
+    
+    CreateDevice(dev);
+    
+    /*
+    'bind'  : { 'value' : 0,
+                'meta': {  'type' : 'pushbutton',
+                           'order' : '20',
+                           'export' : '0', // what is it??
+                        },
+              },
+    */
+}
+
+
 void CMqttConnection::on_connect(int rc)
 {
     m_Log->Printf(1, "mqtt::on_connect(%d)", rc);
@@ -33,9 +72,15 @@ void CMqttConnection::on_connect(int rc)
         m_isConnected = true;
     }
 
-    subscribe(NULL, "/devices/noolite_tx_0xd61/controls/#");
-    subscribe(NULL, "/devices/noolite_tx_0xd62/controls/#");
-    subscribe(NULL, "/devices/noolite_tx_0xd63/controls/#");
+    for (const string &addr : {"0xd61", "0xd62", "0xd63"}) {
+        CreateNooliteTxUniversal(addr);
+        string topic = String::ComposeFormat("/devices/noolite_tx_%s/controls/#", addr.c_str());
+        
+        m_Log->Printf(1, "subscribe to %s", topic.c_str());
+        subscribe(NULL, topic.c_str());
+    }
+    
+    SendUpdate();
 }
 
 void CMqttConnection::on_disconnect(int rc)

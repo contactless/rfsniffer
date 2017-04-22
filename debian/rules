@@ -18,8 +18,9 @@ override_dh_auto_build:
 	dh_auto_build -O--parallel 
 	#-- --disable-silent-rules
 
-#override_dh_auto_install:
-#dh_auto_install
+# important to disable dh_auto_install because it install all binaries to /usr/bin including tests
+override_dh_auto_install:
+	#dh_auto_install
 
 override_dh_auto_test:
 	dh_auto_test -O--parallel

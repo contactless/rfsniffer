@@ -111,7 +111,6 @@ void RFSniffer::readEnvironmentVariables()
     char *spiMinor = getenv("WB_RFM_SPI_MINOR");
 
     if (spiMajor || spiMinor) {
-        char buffer[256];
         // plus 1 because of very strange setting of WB_RFM_SPI_MAJOR
         // it's somehow connected with python driver
         int spiMajorVal = spiMajor ? atoi(spiMajor) + 1 : 32766;
@@ -203,7 +202,7 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
                        "    to disable SPI and RFM put \'do_not_use\' ", args.spiDevice.c_str());
                 printf("-l <lirc device> - set custom lirc device. Default %s\n", args.lircDevice.c_str());
                 printf("-m <mqtt host> - set custom mqtt host. Default %s\n", args.mqttHost.c_str());
-                printf("-w <seconds> - write to file all packets for <secods> second and exit\n");
+                printf("-w <seconds> - [DISABLED] write to file all packets for <secods> second and exit\n");
                 printf("-W - write all data from lirc device to file until signal from keyboard\n");
                 printf("-S -<low level>..-<high level>/<seconds for step> - scan for noise. \n");
                 printf("-r <RSSI> - reset RSSI Threshold after each packet. 0 - Disabled. Default %d\n",
@@ -352,12 +351,12 @@ void RFSniffer::tryJustScan() throw(CHaException)
     int scanTime = 15;
 
     int pos = scannerParams.find("..");
-    if (pos != scannerParams.npos) {
+    if (pos != (int)scannerParams.npos) {
         minLevel = atoi(scannerParams.substr(0, pos));
         scannerParams = scannerParams.substr(pos + 2);
 
         pos = scannerParams.find("/");
-        if (pos != scannerParams.npos) {
+        if (pos != (int)scannerParams.npos) {
             maxLevel = atoi(scannerParams.substr(0, pos));
             scanTime = atoi(scannerParams.substr(pos + 1));
         } else {
@@ -369,6 +368,7 @@ void RFSniffer::tryJustScan() throw(CHaException)
         exit(-1);
     }
 
+    
     int curLevel = minLevel;
 
     while (curLevel < maxLevel) {
@@ -502,8 +502,10 @@ void RFSniffer::receiveForever() throw(CHaException)
 
             dprintf("$P process all parsed messages\n");
             for (const string &parsedResult : m_parser.ExtractParsed()) {
-                m_Log->Printf(3, "RF Received: %s (parsed from %u lirc_t). RSSI=%d (%d)",
+                m_Log->Printf(3, "RF Received: %s. RSSI=%d (%d)",
                               parsedResult.c_str(), lastRSSI, minGoodRSSI);
+                if (minGoodRSSI > lastRSSI)
+                        minGoodRSSI = lastRSSI;
                 if (args.bCoreTestMod)
                     fprintf(stderr, "TEST_RF_RECEIVED %s\n", parsedResult.c_str());
                 try {
@@ -514,9 +516,11 @@ void RFSniffer::receiveForever() throw(CHaException)
             }
 
             // do not read very often
-            usleep(200000);
+            usleep(100000);
+            // process incoming messages
+            conn.loop(500);
             // try get more data and sleep if fail
-            const int waitDataReadUsec = 1000000;
+            const int waitDataReadUsec = 500000;
             if (waitForData(lircFD, waitDataReadUsec)) {
                 /*
                  * This strange thing is needed to lessen received trash
@@ -544,7 +548,7 @@ void RFSniffer::receiveForever() throw(CHaException)
                     }
                 } else {
                     dprintf("$P % bytes were read from lirc device\n", resultBytes);
-
+                    
                     // I hope this never happen
                     while (resultBytes % sizeof(lirc_t) != 0) {
                         m_Log->Printf(3, "Bad amount (amount % 4 != 0) of bytes read from lirc");
