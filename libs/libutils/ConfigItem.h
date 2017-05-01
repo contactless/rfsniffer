@@ -4,8 +4,6 @@
 #include <vector>
 #include <string>
 
-#include "libutils.h"
-#include "strutils.h"
 
 #ifdef USE_CONFIG
 
@@ -16,6 +14,10 @@
 #else
     #   error json.h not found
 #endif
+
+
+#include "strutils.h"
+#include "libutils.h"
 
 #pragma warning (disable: 4275)
 class CConfigItem;

@@ -1,9 +1,25 @@
+wb-homa-rfsniffer (1.0.6) stable; urgency=medium
+  
+  * HS chips (HS1527, HS2241, may be some more) protocol added 
+  * Fixed some bugs
+
+ -- Yuri Pechatnov <yuri.pechatnov@wirenboard.ru>  Mon, 07 Mar 2017 23:59:59 +0000
+
+
+wb-homa-rfsniffer (1.0.5) unstable; urgency=medium
+  
+  * Now can be built in amd64 environment
+  * Fixed some bugs
+
+ -- Yuri Pechatnov <yuri.pechatnov@wirenboard.ru>  Mon, 07 Mar 2017 23:59:59 +0000
+
+
 wb-homa-rfsniffer (1.0.4) stable; urgency=medium
   
   * Improved config - added device description fields
   * Now it's possible to recognise "dead" devices
 
- -- Yuri Pechatnov <yuri.pechatnov@wirenboard.ru>  Mon, 23 Jan 2016 23:59:59 +0000
+ -- Yuri Pechatnov <yuri.pechatnov@wirenboard.ru>  Mon, 23 Jan 2017 23:59:59 +0000
  
 wb-homa-rfsniffer (1.0.3) stable; urgency=medium
   

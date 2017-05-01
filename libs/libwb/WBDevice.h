@@ -80,6 +80,7 @@ class LIBWB_API CWBControl
     bool readonly, changed;
     // "value" - value on control
     string value;
+    string order, max;
     string source, sourceType;
 
     // when timeWhen comes, then valueThen will be written to value
@@ -96,6 +97,8 @@ class LIBWB_API CWBControl
     CWBControl &setSourceType(const string &sourceType_);
 
     CWBControl(const string &name, ControlType type, bool readonly = true);
+    CWBControl(const string &name_, ControlType type_, 
+            const string &initialValue, const string &order_, bool readonly_);
     CWBControl();
 };
 
@@ -146,12 +149,16 @@ class LIBWB_API CWBDevice
 #endif
     void addControl(const CWBControl &device);
     void addControl(const string &name, CWBControl::ControlType type, bool readonly = true);
+    void addControl(const string &name, CWBControl::ControlType type, 
+            const string &initialValue, const string &order, bool readonly);
+    bool controlExists(const string &name);
     bool sourceExists(const string &source);
     void setBySource(const string &source, const string &sourceType, string value);
     void set(CWBControl::ControlType type, const string &value);
     void set(CWBControl::ControlType type, float value);
     void set(const string &name, const string &value);
     void set(const string &name, float value);
+    void setMax(const string &name, const string &max);
 
     // Sensor PM112 sends signal to enable smth for given time
     // So such function is needed...

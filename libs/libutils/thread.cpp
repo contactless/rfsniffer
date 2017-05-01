@@ -35,6 +35,7 @@ DWORD WINAPI ThreadProc(void *param)
 #else
 void *ThreadProc(void *param)
 {
+    /*
     {
         pthread_attr_t attr;
         void *stackaddr;
@@ -47,6 +48,7 @@ void *ThreadProc(void *param)
         //CLog *log=CLog::GetLog("Main");
         //log->Printf(0, "stackaddr = %p, stacksize = %d\n", stackaddr, stacksize );
     }
+    */
 
     try {
         CThread *thread = (CThread *)param;
@@ -71,7 +73,7 @@ void CThread::Start()
     m_hThreadHandle = CreateThread(NULL, 0, ::ThreadProc, this, 0, &ThreadID);
 #else
     pthread_attr_t tattr;
-    pthread_t tid;
+    //pthread_t tid;
     int ret;
 
     size_t size = PTHREAD_STACK_MIN * 4 + 0x4000;

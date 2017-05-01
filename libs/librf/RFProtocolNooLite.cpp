@@ -51,10 +51,10 @@ static const char *g_nooLite_Commands[] = {
     //     поле «Данные к команде_x».)
     NULL
 };
-
+static int g_nooLite_Commands_len = 21;
 
 CRFProtocolNooLite::CRFProtocolNooLite()
-    : CRFProtocol(g_timing_pause, g_timing_pulse, 0, 1, "aAaAaAaAaAaAaAaAaAaAaAc")
+    : CRFProtocol(g_timing_pause, g_timing_pulse, 0, 1, "AaAaAaAaAaAaAaAaAaAc")
 {
     m_Debug = false;
     SetTransmitTiming(g_transmit_data);
@@ -78,6 +78,13 @@ CRFProtocolNooLite::nooLiteCommandType CRFProtocolNooLite::getCommand(const stri
     return nlcmd_error;
 }
 
+const char *CRFProtocolNooLite::getDescription(int cmd)
+{
+    if (cmd < 0 || cmd >= g_nooLite_Commands_len)
+        return g_nooLite_Commands[cmd];
+    else
+        return "unknown";
+}
 
 // The 1-Wire CRC scheme is described in Maxim Application Note 27:
 // "Understanding and Using Cyclic Redundancy Checks with Maxim iButton Products"
@@ -117,7 +124,7 @@ bool CRFProtocolNooLite::bits2packet(const string &bits, uint8_t *packet, size_t
     while (reverseBits.length() % 8)
         reverseBits += '0';
 
-    for (unsigned int i = 0; i < bytes; i++) {
+    for (uint32_t i = 0; i < bytes; i++) {
         packet[bytes - 1 - i] = (uint8_t)bits2long(reverseBits.substr(i * 8,
                                 8));// min(8, reverseBits.length() - i * 8)));
     }
@@ -134,9 +141,13 @@ bool CRFProtocolNooLite::bits2packet(const string &bits, uint8_t *packet, size_t
 
 string CRFProtocolNooLite::DecodePacket(const string &raw_)
 {
+    DPRINTF_DECLARE(dprintf, false);
+    
     String raw = String(raw_);
 
-    if (raw.length() < 10 )
+    // shortest nooLite message - 5 bytes - 40 bits - 40 signals at minimum
+    // TODO move this logic to RFProtocol
+    if (raw.length() < 40)
         return "";
 
     String::Vector v = raw.Split('d');
@@ -149,25 +160,14 @@ string CRFProtocolNooLite::DecodePacket(const string &raw_)
 
     for(const String &i : v) {
         res = ManchesterDecode('a' + i, false, 'a', 'b', 'A', 'B');
-        string tmp = bits2timings(res);
-        uint8_t tmpBuffer[100];
-        size_t tmpBufferSize = sizeof(tmpBuffer);
-        EncodePacket(res, 2000, tmpBuffer, tmpBufferSize);
-
+        dprintf("$P manch decoded: %\n", res);
         if (res.length() >= 37) {
-            uint8_t packet[20];
-            size_t packetLen = sizeof(packet);
+            std::vector<uint8_t> packet(raw.size());
+            size_t packetLen = packet.size() * sizeof(uint8_t);
 
-            if (bits2packet(res, packet, &packetLen))
+            if (bits2packet(res, packet.data(), &packetLen))
                 return res;
-            /*  TODO
-            unsigned char packetCrc = crc8(packet, packetLen);
-            // check crc;
-
-            if (!packetCrc)
-            {
-                return res;
-            }*/
+           
         }
     }
 
@@ -187,6 +187,29 @@ string CRFProtocolNooLite::DecodeData(const string
     if (packetLen < 5)
         return bits;
 
+    /*
+    #                        [ (FLIP) CMD  ] [           RGB          ] [   ?  ] [      ADDR     ] [ FMT  ] [ CRC  ]
+    #                        1FCCCC
+    #ch:2 r:1 g:1 b:1        110110          10000000 10000000 10000000 00000000 10011111 10100100 11000000 11001011  fmt=3, cmd=6
+    #ch:2 r:1 g:1 b:2        100110          10000000 10000000 01000000 00000000 10011111 10100100 11000000 11101101  fmt=3
+    #ch:2 r:255 g:255 b:255  110110          11111111 11111111 11111111 00000000 10011111 10100100 11000000 10110001  fmt=3
+    #ch:14 r:1 g:1 b:2       110110          10000000 10000000 01000000 00000000 11111111 10100100 11000000 00110010  fmt=3
+    #ch:14 r:1 g:1 b:2       100110          10000000 10000000 01000000 00000000 11111111 10100100 11000000 01100110  fmt=3
+    #ch:15 r:1 g:1 b:2       110110          10000000 10000000 01000000 00000000 11111111 10100100 11000000 00110010  fmt=3
+    #
+    #ch:2 switch mode        11     01001000                                     10011111 10100100 00100000 00010101  fmt=4, cmd=18
+    #ch:2 switch color       11     10001000                                     10011111 10100100 00100000 00000100  fmt=4, cmd=17
+    #                                                                   [LEVEL ]
+    #ch:2 lvl=46             110110                                     01110100 10011111 10100100 10000000 10010100  fmt=1
+    #
+    #ch:2 cmd=10             110101                                              10011111 10100100 00000000 00010001  fmt=0
+    #ch:2 off_ch             110000                                              10011111 10100100 00000000 10000100  fmt=0
+    #                                                                   [ TIME ]
+    #                        11     00011000                            00100110 10100000 01000100 10100000 00110110  fmt=5, cmd=24
+    #                                                          [      TIME     ]
+    #                        11     10011000                   10000000 10011000 10100000 01000100 01100000 00100001  fmt=6 ch:5 cmd=25 timeout=(25*256+1)*5
+    */
+
     dprintf("$P bits: (%), packet: (", bits);
     for (int i = 0; i < packetLen && dprintf.isActive(); i++)
         dprintf.c("%02X ", (int)packet[i]);
@@ -204,25 +227,59 @@ string CRFProtocolNooLite::DecodeData(const string
     int crc = received_crc;
 
     int fmt = packet[packetLen - 2];
+    //                  0  1   2  3  4  5  6   7
+    int fmt2length[] = {5, 8, -1, 9, 6, 7, 8, 10};
+    if (fmt < 0 || fmt >= sizeof(fmt2length) / sizeof(int) || fmt2length[fmt] != packetLen) {
+        m_Log->Printf(3,
+                      "CRFProtocolNooLite::DecodeData - Incorrect packet - strange fmt=%d, received_len=%d",
+                      fmt, packetLen);
+        return "";
+    }
+
     switch (fmt) {
-        // PM111
+        // PM111, outer button PK311, ...
         case 0: {
-            // for cmd = 0 | 2 | 4
-            // motion sensor (PM111) (repeats >= 2)
-            // something strange (PT111 in some modes) (repeats = 1)
-            // so demand repeats >= 2
             bool sync = (packet[0] & 8) != 0;
             int cmd = packet[0] >> 4;
-            return String::ComposeFormat("flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
-                                         (int)((packet[2] << 8) + packet[1]), fmt, crc)
-                   + ((cmd == 0 || cmd == 2 || cmd == 4)  ? " __repeat=2" : "");
+            if (cmd == 0 || cmd == 2) {
+                // for cmd = 0 | 2
+                // motion sensor (PM111) (repeats >= 2)
+                // something strange (PT111 in some modes) (repeats = 1)
+                // so demand repeats >= 2
+                return String::ComposeFormat("flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
+                                             (int)((packet[2] << 8) + packet[1]), fmt, crc);
+                // + " __repeat=2";
+            } else {
+                // command 4 and everything else
+                return String::ComposeFormat("flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
+                                             (int)((packet[2] << 8) + packet[1]), fmt, crc);
+            }
+
         }
         // connecting noolite devices send this message
+        // or setting level
         case 1: {
             bool sync = (packet[0] & 8) != 0;
             int cmd = packet[0] >> 4;
-            return String::ComposeFormat("flip=%d cmd=%d unknown=%02x addr=%04x fmt=%02x crc=%02x", sync, cmd,
+            return String::ComposeFormat("flip=%d cmd=%d level=%02x addr=%04x fmt=%02x crc=%02x", sync, cmd,
                                          (int)packet[1], (int)((packet[3] << 8) + packet[2]), fmt, crc);
+        }
+
+        // untested
+        case 3: {
+            bool sync = (packet[0] & 8) != 0;
+            int cmd = packet[0] >> 4;
+            return String::ComposeFormat("flip=%d cmd=%d r=%d g=%d b=%d unknown=%d addr=%04x fmt=%02x crc=%02x",
+                                         sync, cmd,
+                                         (int)packet[1], (int)packet[2], (int)packet[3], (int)packet[4], (int)((packet[6] << 8) + packet[5]),
+                                         fmt, crc);
+        }
+        // untested
+        case 4: {
+            bool sync = (packet[0] & 0x80) != 0;
+            int cmd = packet[1];
+            return String::ComposeFormat("flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
+                                         (int)((packet[3] << 8) + packet[2]), fmt, crc);
         }
 
         // PM112
@@ -241,7 +298,16 @@ string CRFProtocolNooLite::DecodeData(const string
                                          (int)packet[2] * 5, (int)((packet[4] << 8) + packet[3]), fmt, crc);
         }
 
-        case 7:
+        // untested
+        case 6:  {
+            bool sync = (packet[0] & 0x80) != 0;
+            int cmd = packet[1];
+            return String::ComposeFormat("flip=%d cmd=%d time=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
+                                         (int)((packet[3] << 8) + packet[2]) * 5, (int)((packet[5] << 8) + packet[4]), fmt, crc);
+        }
+
+        // PT111 and ...
+        case 7: {
             if (packet[1] == 21) {
                 int type = (packet[3] >> 4) & 7;
                 int t_raw = ((packet[3] & 0xF) << 8) | packet[2];
@@ -286,8 +352,9 @@ string CRFProtocolNooLite::DecodeData(const string
                            (int)packet[1], (int)packet[2], (int)packet[3], (int)packet[4], (int)packet[5],
                            (int)((packet[7] << 8) + packet[6]), (int)packet[8], (int)packet[9]);
             }
+        }
         default:
-            m_Log->Printf(3, "len=%d addr=%04x fmt=%02x crc=%02x", packetLen,
+            m_Log->Printf(3, "unknown_format=true len=%d addr=%04x fmt=%02x crc=%02x", packetLen,
                           (int)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (int)fmt,
                           (int)packet[packetLen - 1]);
             m_Log->PrintBuffer(3, packet, packetLen);

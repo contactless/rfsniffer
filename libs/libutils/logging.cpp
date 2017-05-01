@@ -98,8 +98,8 @@ CLog *CLog::GetLog(string Name)
 
 void CLog::CloseAll()
 {
-    for_each(CLogsMap, m_Logs, i) {
-        delete i->second;
+    for (auto i : m_Logs) {
+        delete i.second;
     }
 
     m_Logs.clear();

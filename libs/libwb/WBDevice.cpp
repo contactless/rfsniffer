@@ -68,13 +68,22 @@ std::vector<std::string> CWBControl::controlTypeToDefaultName =
 
 
 CWBControl::CWBControl(string_cref name_, ControlType type_, bool readonly_):
-    name(name_), type(type_), readonly(readonly_), isValueChangeSheduled(false)
+    type(type_), name(name_), readonly(readonly_), isValueChangeSheduled(false)
 {
     if (name.empty())
         name = controlTypeToDefaultName[type];
 }
 
-CWBControl::CWBControl(): name(""), type(ControlType::Error), readonly(false),
+CWBControl::CWBControl(string_cref name_, ControlType type_, 
+            string_cref initialValue, string_cref order_, bool readonly_):
+    type(type_), name(name_), readonly(readonly_), value(initialValue), 
+    order(order_), max(""), isValueChangeSheduled(false)
+{
+    if (name.empty())
+        name = controlTypeToDefaultName[type];
+}
+
+CWBControl::CWBControl(): type(ControlType::Error), name(""), readonly(false),
     isValueChangeSheduled(false) {}
 
 string_cref CWBControl::metaType() const
@@ -204,6 +213,16 @@ void CWBDevice::addControl(const string &name, ControlType type, bool readonly)
     addControl(CWBControl(name, type, readonly));
 }
 
+void CWBDevice::addControl(const string &name, CWBControl::ControlType type, 
+        const string &initialValue, const string &order, bool readonly) 
+{
+    addControl(CWBControl(name, type, initialValue, order, readonly));       
+}
+
+bool CWBDevice::controlExists(const string &name)
+{
+	return deviceControls.count(name);
+}
 
 void CWBDevice::set(CWBControl::ControlType type, string_cref value)
 {
@@ -232,6 +251,17 @@ void CWBDevice::set(CWBControl::ControlType type, float value)
 void CWBDevice::set(string_cref name, float value)
 {
     set(name, ftoa(value));
+}
+
+void CWBDevice::setMax(string_cref name, string_cref max)
+{
+    CControlMap::iterator i = deviceControls.find(name);
+
+    if (i == deviceControls.end())
+        throw CHaException(CHaException::ErrBadParam, name);
+
+    i->second.max = max;
+    i->second.changed = true;
 }
 
 
@@ -311,10 +341,16 @@ void CWBDevice::createDeviceValues(StringMap &v)
     v[base + "/meta/name"] = deviceDescription;
 
     for(const auto &i : deviceControls) {
-        const string controlBase = base + "/controls/" + i.second.name;
-        v[controlBase] = i.second.value;
+        const CWBControl &control = i.second;
+        const string controlBase = base + "/controls/" + control.name;
+        v[controlBase] = control.value;
         v[controlBase + "/meta/type"] = i.second.metaType();
-        v[controlBase + "/meta/order"] = String::ValueOf((int)i.second.type);
+        if (control.order.empty())
+            v[controlBase + "/meta/order"] = String::ValueOf((int)i.second.type);
+        else
+            v[controlBase + "/meta/order"] = control.order;
+        if (!control.max.empty())
+            v[controlBase + "/meta/max"] = control.max;
         if (i.second.readonly)
             v[controlBase + "/meta/readonly"] = "1";
     }

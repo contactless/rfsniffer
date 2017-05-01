@@ -116,10 +116,10 @@ void SnifferTest()
         else if (!waitfordata(fd, 1000000) || data_ptr - data > 10000) {
             string parsedResult = m_parser.Parse(data, data_ptr - data);
             if (parsedResult.length()) {
-                m_Log->Printf(3, "RF Recieved: %s\n", parsedResult.c_str());
+                m_Log->Printf(3, "RF Received: %s\n", parsedResult.c_str());
                 m_bExecute = false;
             } else {
-                m_Log->Printf(10, "Recieved %ld signals. Not decoded\n", data_ptr - data);
+                m_Log->Printf(10, "Received %ld signals. Not decoded\n", data_ptr - data);
             }
             data_ptr = data;
             packetStart = time(NULL);

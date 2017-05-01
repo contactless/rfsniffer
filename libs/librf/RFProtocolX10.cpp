@@ -29,16 +29,16 @@ string CRFProtocolX10::DecodePacket(const string &packet)
 {
     string bits;
 
-    for_each_const(string, packet, i) {
-        if (*i == 'b')
+    for (const char i : packet) {
+        if (i == 'b')
             bits += "0";
-        else if (*i == 'c')
+        else if (i == 'c')
             bits += "1";
-        else if (*i == 'd')
+        else if (i == 'd')
             break;
-        else if (*i == 'A')
+        else if (i == 'A')
             continue;
-        else if (*i == 'B')
+        else if (i == 'B')
             continue;
         else
             return "";

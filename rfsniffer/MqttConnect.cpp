@@ -16,12 +16,51 @@ CMqttConnection::CMqttConnection(string Server, CLog *log, RFM69OOK *rfm,
     m_Log = log;
 
     connect(m_Server.c_str());
-    loop_start();
+    //loop_start();
 }
 
 CMqttConnection::~CMqttConnection()
 {
-    loop_stop(true);
+    //loop_stop(true);
+}
+
+
+
+void CMqttConnection::CreateNooliteTxUniversal(const string &addr) {
+    string name = String::ComposeFormat("noolite_tx_%s", addr.c_str());
+    
+    CWBDevice *dev = m_Devices[name];
+    
+    if (dev)
+        return;
+    
+    string desc = String::ComposeFormat("Noolite TX %s", addr.c_str());
+    dev = new CWBDevice(name, desc);
+    
+    dev->addControl("level", CWBControl::Range, "0", "1", false);
+    dev->setMax("level", "100");
+    dev->addControl("state", CWBControl::Switch, "0", "2", false);
+    dev->addControl("switch", CWBControl::PushButton, "0", "4", false);
+    dev->addControl("color", CWBControl::Rgb, "0;0;0", "5", false);
+    dev->addControl("slowup", CWBControl::PushButton, "0", "6", false);
+    dev->addControl("slowdown", CWBControl::PushButton, "0", "7", false);
+    dev->addControl("slowswitch", CWBControl::PushButton, "0", "8", false);
+    dev->addControl("slowstop", CWBControl::PushButton, "0", "9", false);
+    dev->addControl("shadow_level", CWBControl::Range, "0", "10", false);
+    dev->setMax("shadow_level", "100");
+    dev->addControl("bind", CWBControl::PushButton, "0", "20", false);
+    dev->addControl("unbind", CWBControl::PushButton, "0", "21", false);
+    
+    CreateDevice(dev);
+    
+    /*
+    'bind'  : { 'value' : 0,
+                'meta': {  'type' : 'pushbutton',
+                           'order' : '20',
+                           'export' : '0', // what is it??
+                        },
+              },
+    */
 }
 
 
@@ -32,10 +71,16 @@ void CMqttConnection::on_connect(int rc)
     if (!rc) {
         m_isConnected = true;
     }
-
-    subscribe(NULL, "/devices/noolite_tx_0xd61/controls/#");
-    subscribe(NULL, "/devices/noolite_tx_0xd62/controls/#");
-    subscribe(NULL, "/devices/noolite_tx_0xd63/controls/#");
+    /*
+    for (const string &addr : {"0xd61", "0xd62", "0xd63"}) {
+        CreateNooliteTxUniversal(addr);
+        string topic = String::ComposeFormat("/devices/noolite_tx_%s/controls/#", addr.c_str());
+        
+        m_Log->Printf(1, "subscribe to %s", topic.c_str());
+        subscribe(NULL, topic.c_str());
+    }*/
+    
+    SendUpdate();
 }
 
 void CMqttConnection::on_disconnect(int rc)
@@ -165,7 +210,8 @@ void CMqttConnection::NewMessage(String message)
         lastMessageCount++;
         // if lastMessageCount == lastMessageNeedCount then go through block
         if (lastMessageCount > lastMessageNeedCount) {
-            if (difftime(time(NULL), lastMessageReceiveTime) < 2)
+            // if too often of field "flip" exists then skip message
+            if (difftime(time(NULL), lastMessageReceiveTime) < 2 || values.count("flip") > 0)
                 return;
             else {
                 lastMessageCount = 1;
@@ -202,66 +248,111 @@ void CMqttConnection::NewMessage(String message)
 
         // nooLite:sync=80 cmd=21 type=2 t=24.6 h=39 s3=ff bat=0 addr=1492 fmt=07 crc=a2
 
-        string id = values["addr"], cmd = values["cmd"];
+        String id = values["addr"], cmd = values["cmd"];
 
         if (id.empty() || cmd.empty()) {
             m_Log->Printf(3, "Msg from nooLite INCORRECT %s", value.c_str());
             return;
         }
 
-        if (cmd == "21") {
-            string name = string("noolite_rx_0x") + id;
-            string t = values["t"], h = values["h"];
-            static const string low_battery_control_name = "Low battery";
-            CWBDevice *dev = m_Devices[name];
-            if (!dev) {
-                string desc = string("Noolite Sensor PT111") + " [0x" + id + "]";
-                dev = new CWBDevice(name, desc);
-                dev->addControl("Temperature", CWBControl::Temperature, true);
+        int cmdInt = cmd.IntValue();
 
+        switch (cmdInt) {
+            // Motion sensors PM111, PM112, ...
+            case 0: // set 0
+            case 2: // set 1
+            case 4: // change value between 0 and 1
+            case 24:
+            case 25: { // set as 1 for a while
+                string name = string("noolite_rx_0x_switch") + id;
+                bool enableForAWhile = (cmdInt == 24 || cmdInt == 25);
+                static const string control_name = "state";
+                static const string interval_control_name = "timeout";
+                CWBDevice *dev = m_Devices[name];
+                if (!dev) {
+                    string desc = string("Noolite switch ") + " [0x" + id + "]";
+                    dev = new CWBDevice(name, desc);
+                    dev->addControl(control_name, CWBControl::Switch, true);
+                    if (enableForAWhile)
+                        dev->addControl(interval_control_name, CWBControl::Generic, true);
+                    CreateDevice(dev);
+                }
+                if (enableForAWhile) {
+                    // PM112, ...
+                    dev->setForAndThen(control_name, "1", values["time"].IntValue(), "0");
+                    //dev->set(control_name, "1");
+                    dev->set(interval_control_name, values["time"]);
+
+                } else if (cmd == "0")
+                    dev->set(control_name, "0");
+                else if (cmd == "2")
+                    dev->set(control_name, "1");
+                else if (cmd == "4")
+                    dev->set(control_name, dev->getString(control_name) == "1" ? "0" : "1");
+
+                break;
+            }
+
+            case 6: { // set brightness
+                string name = string("noolite_rx_0x_color") + id;
+                static const string control_name = "Color";
+                CWBDevice *dev = m_Devices[name];
+                if (!dev) {
+                    string desc = string("Noolite color ") + " [0x" + id + "]";
+                    dev = new CWBDevice(name, desc);
+                    dev->addControl(control_name, CWBControl::Rgb, true);
+                    CreateDevice(dev);
+                }
+                dev->set(control_name, String::ComposeFormat("%s;%s;%s",
+                         values["r"].c_str(), values["g"].c_str(), values["b"].c_str()));
+                break;
+            }
+
+            // Temperature sensor
+            case 21: { // puts info about temperature and humidity
+                string name = string("noolite_rx_0x_th") + id;
+                string t = values["t"], h = values["h"];
+                static const string low_battery_control_name = "Low battery";
+                CWBDevice *dev = m_Devices[name];
+                if (!dev) {
+                    string desc = string("Noolite Sensor PT111") + " [0x" + id + "]";
+                    dev = new CWBDevice(name, desc);
+                    dev->addControl("Temperature", CWBControl::Temperature, true);
+
+                    if (h.length() > 0)
+                        dev->addControl("Humidity", CWBControl::RelativeHumidity, true);
+
+
+                    dev->addControl("", CWBControl::BatteryLow, true);
+
+                    CreateDevice(dev);
+                }
+
+                dev->set("Temperature", t);
                 if (h.length() > 0)
-                    dev->addControl("Humidity", CWBControl::RelativeHumidity, true);
-
-
-                dev->addControl("", CWBControl::BatteryLow, true);
-
-                CreateDevice(dev);
+                    dev->set("Humidity", h);
+                dev->set(CWBControl::BatteryLow, values["low_bat"]);
+                break;
             }
 
-            dev->set("Temperature", t);
-            if (h.length() > 0)
-                dev->set("Humidity", h);
-            dev->set(CWBControl::BatteryLow, values["low_bat"]);
-
-        } else if (cmd == "0" || cmd == "4" || cmd == "2" || cmd == "25") {
-            string name = string("noolite_rx_0x") + id;
-            static const string movement_control_name = "There is a movement";
-            static const string movement_interval_control_name = "Timeout";
-            CWBDevice *dev = m_Devices[name];
-            if (!dev) {
-                string desc = string("Noolite Sensor ") + (cmd == "25" ? "PM112" : "PM111" ) + " [0x" + id + "]";
-                dev = new CWBDevice(name, desc);
-                dev->addControl(movement_control_name, CWBControl::Alarm, true);
-                if (cmd == "25")
-                    dev->addControl(movement_interval_control_name, CWBControl::Generic, true);
-                CreateDevice(dev);
+            default: {
+                string name = string("noolite_rx_0x_unknown") + id;
+                CWBDevice *dev = m_Devices[name];
+                static const string cmd_control_name = "command",
+                                    cmd_desc_control_name = "command_description";
+                if (!dev) {
+                    string desc = string("Noolite device ") + " [0x" + id + "]";
+                    dev = new CWBDevice(name, desc);
+                    dev->addControl(cmd_control_name, CWBControl::Generic, true);
+                    dev->addControl(cmd_desc_control_name, CWBControl::Text, true);
+                    CreateDevice(dev);
+                }
+                dev->set(cmd_control_name, cmd);
+                dev->set(cmd_desc_control_name, CRFProtocolNooLite::getDescription(cmdInt));
+                break;
             }
-
-
-            if (cmd == "25") {
-                // PM112
-                dev->setForAndThen(movement_control_name, "1", strutils::atoi(values["time"]), "0");
-                //dev->set(movement_control_name, "1");
-                dev->set(movement_interval_control_name, values["time"]);
-            } else if (cmd == "0")
-                dev->set(movement_control_name, "0");
-            else if (cmd == "2")
-                dev->set(movement_control_name, "1");
-            else if (cmd == "4")
-                dev->set(movement_control_name, dev->getString(movement_control_name) == "1" ? "0" : "1");
-            else
-                dev->set(movement_control_name, "0");
         }
+
     } else if (type == "Oregon") {
         m_Log->Printf(3, "Msg from Oregon %s", value.c_str());
 
@@ -325,7 +416,26 @@ void CMqttConnection::NewMessage(String message)
         }
 
         dev->set("Command", value);
-    } else if (type == "Raex" || type == "Livolo" || type == "Rubitek" ) {
+    } else if (type=="Livolo" || type=="VHome") {
+		const string addr = values["addr"], cmd = values["cmd"];
+
+		CWBDevice *dev = m_Devices[type+addr];
+		if (!dev)
+		{
+			dev = new CWBDevice(type+addr, type + " " + addr);
+			CreateDevice(dev);
+		}
+
+		if (!dev->controlExists(cmd))
+		{
+			dev->addControl(cmd, CWBControl::Switch, true);
+			CreateDevice(dev);
+		}
+
+		//dev->set(cmd, "1");
+        dev->set(cmd, dev->getString(cmd) != "0" ? "0" : "1");
+		m_Log->Printf(3, "Msg from %s %s. Set %s to %sq", type.c_str(), message.c_str(), cmd.c_str(), dev->getString(cmd).c_str());
+	} else if (type == "Raex" || type == "Rubitek" ) {
         m_Log->Printf(3, "Msg from remote control (Raex | Livolo | Rubitek) %s", message.c_str());
 
         CWBDevice *dev = m_Devices["Remotes"];
@@ -339,6 +449,22 @@ void CMqttConnection::NewMessage(String message)
         }
 
         dev->set(type, value);
+    } else if (type == "HS24Bits") {
+        int msg = values["msg_id"].IntValue(), ch = values["ch"].IntValue();
+        
+        string name = String::ComposeFormat("hs24bits_%d_%d", msg, ch);
+        
+        static const string control_name = "state";
+        
+        CWBDevice *dev = m_Devices[name];
+        if (!dev) {
+            string desc = String::ComposeFormat("HS24Bits %d (%d)", msg, ch);
+            dev = new CWBDevice(name, desc);
+            dev->addControl(control_name, CWBControl::Switch, true);
+            CreateDevice(dev);
+        }
+        
+        dev->setForAndThen(control_name, "1", 10, "0");        
     }
 
     SendUpdate();

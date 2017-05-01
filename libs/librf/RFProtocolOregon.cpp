@@ -290,7 +290,8 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
 
     string raw = raw_;
 
-    if (raw.length() < 10)
+    // 48 chars in minimal binary packet -> 48 signals at minimum
+    if (raw.length() < 96)
         return "";
 
 
@@ -303,7 +304,7 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
         if (apos != string::npos)
             raw.resize(apos);
     }
-    dprintf("OregonV2 decodePacket: %s\n", raw.c_str());
+    dprintf("$P decodePacket: %\n", raw);
 
     std::vector <char> isPulse(raw.size());
     for (int i = 0; i < (int)raw.size(); i++)
@@ -365,15 +366,15 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
         }
     }
 
-    unsigned int crc = 0, originalCRC = -1;
+    uint32_t crc = 0, originalCRC = -1;
     string hexPacket = "";
 
     if (packet.length() < 48) {
-        dprintf("OregonV2: (only warning: it may be other protocol) Too short packet %s",
+        dprintf("$P (only warning: it may be other protocol) Too short packet %s\n",
                 packet.c_str());
         return "";
     }
-
+    dprintf("$P decoded bits = %\n", packet);
     int len = packet.length();
     while (len % 4)
         len--;
@@ -381,7 +382,7 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
     for (int i = 0; i < len; i += 4) {
         string portion = reverse(packet.substr(i, 4));
         char buffer[20];
-        unsigned int val = bits2long(portion);
+        uint32_t val = bits2long(portion);
 
         if (i > 0 && i < len - 16)
             crc += val;
@@ -394,13 +395,15 @@ string CRFProtocolOregon::DecodePacket(const string &raw_)
         hexPacket += buffer;
     }
 
+    dprintf("$P decoded data = %\n", hexPacket);
+
     if (crc != originalCRC) {
-        dprintf("OregonV2: (only warning: it may be other protocol) Bad CRC for %s", packet.c_str());
+        dprintf("$P (only warning: it may be other protocol) Bad CRC for %s", packet.c_str());
         return "";
     }
 
     if (hexPacket[0] != 'A') {
-        dprintf("OregonV2: First nibble is not 'A'. Data: %s", hexPacket.c_str());
+        dprintf("$P First nibble is not 'A'. Data: %s", hexPacket.c_str());
         return "";
     }
 

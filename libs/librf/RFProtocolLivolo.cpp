@@ -42,20 +42,20 @@ string CRFProtocolLivolo::DecodePacket(const string &packet)
     string bits;
     bool waitSecondShort = false;
 
-    for_each_const(string, packet, s) {
+    for (const char s : packet) {
         if (waitSecondShort) {
             waitSecondShort = false;
-            if (*s == 'b' || *s == 'B')
+            if (s == 'b' || s == 'B')
                 continue;
             else
                 return "";
 
         }
 
-        if (*s == 'b' || *s == 'B') {
+        if (s == 'b' || s == 'B') {
             bits += "0";
             waitSecondShort = true;
-        } else if (*s == 'c' || *s == 'C') {
+        } else if (s == 'c' || s == 'C') {
             bits += "1";
         }
     }

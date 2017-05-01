@@ -1,7 +1,8 @@
 #include <cstdarg>
 #include <cstdio>
-#include "DebugPrintf.h"
+
 #include "strutils.h"
+#include "DebugPrintf.h"
 
 using strutils::String;
 

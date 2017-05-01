@@ -113,6 +113,7 @@ class String : public std::string
     {
         return atoi(c_str());
     };
+    
 
     inline float FloatValue() const
     {

@@ -8,14 +8,15 @@
 #define PULSE_MASK      0x00FFFFFF
 
 // В качестве базового типа для lirc используем ulong
-typedef unsigned long base_type;
-typedef  base_type range_type[2];
-typedef  const range_type *range_array_type;
+typedef uint32_t base_type;
+typedef base_type range_type[2];
+typedef const range_type *range_array_type;
 
 string c2s(char c);
 
 class RFLIB_API CRFProtocol
 {
+    typedef std::deque<base_type>::iterator InputContainerIterator;
   protected:
     range_array_type m_ZeroLengths, m_PulseLengths;
     int m_MinRepeat, m_Bits;
@@ -24,6 +25,12 @@ class RFLIB_API CRFProtocol
     CLog *m_Log;
     const uint16_t *m_SendTimingPauses;
     const uint16_t *m_SendTimingPulses;
+    
+    int m_CurrentRepeat, m_InnerRepeat;
+    int64_t m_LastParsedTime;
+    string m_LastParsed;
+    
+    static const int MAX_DELAY_BETWEEN_PACKETS = 500000;
 
     string ManchesterDecode(const string &, bool expectPulse, char shortPause, char longPause,
                             char shortPulse, char longPulse);
@@ -37,6 +44,9 @@ class RFLIB_API CRFProtocol
     void SetTransmitTiming(const uint16_t *timings);
 
   public:
+  
+    void ClearRetainedInputData();
+    
     /*
         zeroLengths - Массив длинн пауз.
         pulseLengths - Массив длинн сигналов
@@ -46,16 +56,20 @@ class RFLIB_API CRFProtocol
     */
     CRFProtocol(range_array_type zeroLengths, range_array_type pulseLengths, int bits, int minRepeat,
                 string PacketDelimeter );
+                
     virtual ~CRFProtocol();
+    
     void checkInverted(bool inverted)
     {
         m_InvertPacket = inverted;
     };
 
     // Раскодируем пакет
-    virtual string Parse(base_type *, size_t len);
-    virtual string DecodeRaw(base_type *data,
-                             size_t dataLen);  // Декодирование строки по длинам
+    string Parse(InputContainerIterator first, InputContainerIterator last, int64_t inputTime);
+    
+    virtual string Parse(InputContainerIterator first, InputContainerIterator last);
+    virtual string DecodeRaw(InputContainerIterator first, 
+                             InputContainerIterator last);  // Декодирование строки по длинам
     virtual bool SplitPackets(const string &rawData,
                               string_vector &rawPackets); // Нарезка по пакетам
     virtual string DecodeBits(string_vector
@@ -93,6 +107,9 @@ class RFLIB_API CRFProtocol
     {
         m_Log = log;
     };
-    void getMinMax(base_type *minPause, base_type *maxPause, base_type *minPulse, base_type *maxPulse);
+    //void getMinMax(base_type *minPause, base_type *maxPause, base_type *minPulse, base_type *maxPulse);
+    bool IsGoodSignal(base_type signal);
+    /// pulse: +pulse_len, pause: -pause_len
+    static int SignedRepresentation(base_type signal);
 };
 

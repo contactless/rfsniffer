@@ -1,24 +1,33 @@
 #pragma once
+#include <deque>
+#include <memory>
+
 #include "stdafx.h"
 #include "rflib.h"
 #include "RFProtocol.h"
 
-typedef std::vector<CRFProtocol *> CRFProtocolList;
+
 class CRFAnalyzer;
 
 class RFLIB_API CRFParser
 {
+    typedef std::deque<base_type> InputContainer;
     typedef std::string string;
+    
     CLog *m_Log;
-    CRFProtocolList m_Protocols;
-    bool b_RunAnalyzer;
-    CRFAnalyzer *m_Analyzer;
+    std::vector<std::unique_ptr<CRFProtocol>> m_Protocols;
+    std::vector<int> m_ProtocolsBegins;
+
     string m_SavePath;
-    base_type m_minPause, m_maxPause, m_minPulse, m_maxPulse;
+
+    std::vector<string> m_ParsedResults;
+    InputContainer m_InputData;
+    /// Time calculated as sum of lengths of all pauses and impulses
+    int64_t m_InputTime;
 
   public:
-    static const int MIN_PACKET_LEN =
-        50; // Минимально возможная длина пакета
+    static const int MIN_PACKET_LEN = 50; // Минимально возможная длина пакета
+    static const int MAX_PACKET_LEN = 40000;
 
     //  Конструктор. Принимает в качестве параметра логгер и путь для сохранения файлов. Если путь пустой, файлы не сохраняются
     CRFParser(CLog *log, string savePath = "");
@@ -28,36 +37,37 @@ class RFLIB_API CRFParser
     void AddProtocol(CRFProtocol *);
     void AddProtocol(string protocol = "all");
 
-    /*  Пытается декодировать пакет пулом декодеров.
-        Декодеры перебираются по очереди
-        В случае успеха возвращает строку вида <Имя декодера>:<Результат декодирования>
-    */
+    
     // Пытается декодировать всю последовательность [data, data + len) каким-то одним декодером
+    // используется для тестирования
     string Parse(base_type *data, size_t len);
-    // Режет последовательность на пакеты (по длинным паузам и коротким импульсам)
-    // Делает это сначала и одновременно пытается распознать пакеты
-    // Возвращает первый успешный результат, при этом "data_ptr" и "len_ptr" сдвигаются
-    string Parse(base_type **data_ptr, size_t *len_ptr);
+    
+    // Удалает все остаточную информацию о пришедших данных
+    // В том числе входной буфер, указатели на позиции в нем для разных протоколов
+    // Данные о повторах пакетов внутри парсеров протоколов и т. д.
+    void ClearRetainedInputData();
 
-    // Tries to recognize packet from begin of data.
-    // If data was recognised then returned string have non-zero length,
-    // otherwise returned string is empty.
-    // In every case read length (or just skipped) will be written to "readLength"
-    string ParseRepetitive(base_type *data, size_t length, size_t *readLength);
-
-    // Tries to recognize packet from begin of data.
-    // It returns all recognized packets to the end
-    // and parsed length
-    std::vector<string> ParseToTheEnd(base_type *data, size_t length, size_t *readLength);
-
-    //  Включает анализатор для пакетов, которые не получилось декодировать. Пока не реализованно
-    void EnableAnalyzer();
+    // add some data to parse
+    // При добавлении пришедших данных 
+    // происходит проверка на конец пакета и попытка декодировать 
+    // для каждого протокола 
+    // Результат можно проверить вызовом ExtractParsed
+    void AddInputData(base_type dataElement);
+    void AddInputData(base_type *data, size_t len);
+    
+    // Если данные заканчиваются раньше, чем наступает признак конца пакета
+    // (приходит импульс/пауза не используемый протоколом)
+    // то стоит вызвать эту функцию, она попробует декодировать то что есть
+    void TryToParseExistingData();
+    
+    // get all results parsed from all data given by AddInputData
+    std::vector<string> ExtractParsed();
 
     //  Сохраняет пакет в файл
-    void SaveFile(base_type *data, size_t size);
+    void SaveFile(base_type *data, size_t size, const char *prefix = "capture");
+
+    static void SaveFile(base_type *data, size_t size, const char *prefix, string savePath, CLog *log);
 
     // Устанавливает путь для сохранения пакетов
     void SetSavePath(string savePath);
-  private:
-    void setMinMax();
 };

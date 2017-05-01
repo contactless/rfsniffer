@@ -50,7 +50,7 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
         if (apos != string::npos)
             raw.resize(apos);
     }
-    dprintf("OregonV3: decodePacket: %\n", raw);
+    dprintf("$P decodePacket: %\n", raw);
 
     std::vector <char> isPulse(raw.size());
     for (int i = 0; i < (int)raw.size(); i++)
@@ -63,6 +63,7 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
 
 
     string packet = "0101";
+    packet.reserve(raw.size());
     char demand_next_c = 0;
 
     for (char c : raw) {
@@ -75,18 +76,18 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
         }
         switch (c) {
             case 'b':
-                packet += '1';
+                packet.push_back('1');
                 demand_next_c = 'B';
                 break;
             case 'B':
-                packet += '0';
+                packet.push_back('0');
                 demand_next_c = 'b';
                 break;
             case 'c':
-                packet += '0';
+                packet.push_back('0');
                 break;
             case 'C':
-                packet += '1';
+                packet.push_back('1');
                 break;
             default:
                 return "";
@@ -95,14 +96,14 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
 
 
     //packet.resize(packet.length() - 8);
-    dprintf("    OregonV3 decodedBits(%): %\n", packet.size(), packet);
+    dprintf("$P    decodedBits(%): %\n", packet.size(), packet);
 
-    unsigned int crc = 0, originalCRC = -1;
+    uint32_t crc = 0, originalCRC = -1;
     string hexPacket = "";
 
     if (packet.length() < 48) {
-        dprintf("OregonV3: (only warning: it may be other protocol) "\
-                "Too short packet %s", packet);
+        dprintf("$P (only warning: it may be other protocol) "\
+                "Too short packet %s\n", packet);
         return "";
     }
 
@@ -110,11 +111,11 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
     while (len % 4)
         len--;
 
-    dprintf("CRCs: ");
+    dprintf("$P CRCs: ");
     for (int i = 0; i < len; i += 4) {
         string portion = reverse(packet.substr(i, 4));
         char buffer[20];
-        unsigned int val = bits2long(portion);
+        uint32_t val = bits2long(portion);
 
         if (i > 0 && i < len - 16)
             crc += val;
@@ -129,10 +130,10 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
     }
     dprintf("\n");
 
-    dprintf("    OregonV3 decodedData: %\n", hexPacket);
+    dprintf("$P    decodedData: %\n", hexPacket);
 
     if (crc != originalCRC) {
-        dprintf("OregonV3: (only warning: it may be other protocol)"\
+        dprintf("$P (only warning: it may be other protocol)"\
                 " Bad CRC (calculated % != % told) for %", crc,
                 originalCRC, packet);
         return "";
@@ -140,7 +141,7 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
 
 
     if (hexPacket[0] != 'A') {
-        dprintf("OregonV3: First nibble is not 'A'. Data: %", hexPacket);
+        dprintf("$P First nibble is not 'A'. Data: %", hexPacket);
         return "";
     }
 

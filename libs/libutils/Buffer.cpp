@@ -151,7 +151,7 @@ void CBuffer::Serialize(CSerializable &data, bool bSerialize, bool bAlloc)
     data.Serialize(this, bSerialize);
 
     if (bAlloc) {
-        if (m_BufferPtr - m_Buffer != m_Size)
+        if (m_BufferPtr - m_Buffer != (int)m_Size)
             throw CHaException(CHaException::ErrSerialize,
                                "CBuffer::Serialize size mismatch. Size=%d, Serialized %s", m_Size, m_BufferPtr - m_Buffer);
     }

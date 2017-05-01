@@ -30,6 +30,10 @@
 *.out
 *.app
 autom4te.cache/*
+rfsniffer/wb-homa-rfsniffer
+tests/wb-homa-rfsniffer-test
+tests/showTest
+tests/test-core-cpp-wrapper
 
 #automake/autoconf
 Makefile
@@ -39,5 +43,39 @@ config.h
 config.status
 libtool
 stamp-h1
+configure
+ar-lib
+config.guess
+config.sub
+configure
+depcomp
+haconfig.inc
+install-sh
+ltmain.sh
+missing
+debian/autoreconf.*
+debian/files
+*.core
+compile
+*.trs
+test-driver
 
 
+# generated files
+*.generated
+
+# astyle: original sources
+*.orig
+
+# debug files
+tests/massif.out.*
+tests/vgcore.*
+
+# debian
+debian/wb-homa-rfsniffer
+debian/tmp
+debian/*.debhelper
+debian/*.substvars
+
+# debug files and directories
+tests/new_tests/

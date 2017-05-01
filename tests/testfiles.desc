@@ -1,10 +1,19 @@
+# you can use comments
+# delimeter between filename and answer is first space in the line
+
 capture-2708-132748.rcf X10:D2ON
 capture-2708-132756.rcf X10:D2ON
 capture-2708-132933.rcf X10:D2ON
+
 capture-0307-215444.rcf nooLite:flip=1 cmd=4 addr=9a13 fmt=00 crc=76
 capture-0307-215449.rcf nooLite:flip=0 cmd=4 addr=9a13 fmt=00 crc=6a
+
+
+
+# noolite PT111
 capture-2706-190620.rcf nooLite:flip=0 cmd=21 type=2 t=29.6 h=39 s3=ff low_bat=0 addr=1492 fmt=07 crc=ec
 capture-2706-143835.rcf nooLite:flip=1 cmd=21 type=2 t=30.3 h=43 s3=ff low_bat=0 addr=1492 fmt=07 crc=d3
+
 capture-2706-093124.rcf nooLite:flip=1 cmd=5 addr=9a12 fmt=00 crc=e5
 capture-2706-093129.rcf nooLite:flip=0 cmd=10 addr=9a12 fmt=00 crc=88
 capture-2706-093217.rcf nooLite:flip=0 cmd=15 addr=9a11 fmt=00 crc=b4
@@ -15,6 +24,27 @@ capture-2506-120004.rcf nooLite:flip=0 cmd=5 addr=9a13 fmt=00 crc=52
 capture-2506-115944.rcf nooLite:flip=1 cmd=5 addr=9a13 fmt=00 crc=4e
 capture-2701-015348.rcf nooLite:flip=1 cmd=25 time=5 addr=4b5f fmt=05 crc=49
 capture-2701-015346.rcf nooLite:flip=0 cmd=25 time=5 addr=4b5f fmt=05 crc=a3
+
+# these are signals from radio-button
+capture-2901-155816.rcf nooLite:flip=0 cmd=4 addr=ab91 fmt=00 crc=ae
+capture-2901-155817.rcf nooLite:flip=1 cmd=4 addr=ab91 fmt=00 crc=b2
+
+# Действия были такие: 
+# пульт PU212-1, адрес 0x1a9f (две кнопки), адрес 0x1a9e (одна кнопка, вызов сценария)
+#
+# долгое нажатие на кнопки увеличения/уменьшения яркости - нужно рулить диммером. Как я понимаю вначале идет команда 1 или 3 (вверх или вниз), при отпускании команда 10.
+# короткое и долгое нажатие на кнопку сценария. По идее ноолайтовые устройства должны учитывать сценарии, но нам проще - для этой команды - LoadPreset = 7 по идее нужен просто switch. Ну или на крайний случай pushbutton (но тогда придется самому делать из нее switch в жаваскрипте)
+# пульт PU312-1, адреса 0x0840, 0x0841, 0x0842 - по одной кнопке вызова сценария (команда 7).
+# видимо долгое нажатие на кнопки вызова сценария никак не отследить, жаль, ну пусть хоть обычными выключателями поработают.
+# еще есть PU111-1, но там вроде ничего интересного, один канал всего.
+
+capture-3001-192144.rcf nooLite:flip=1 cmd=10 addr=1a9f fmt=00 crc=c9
+capture-3001-192151.rcf nooLite:flip=0 cmd=1 addr=1a9f fmt=00 crc=44
+# noolite callscene command
+capture-3001-192154.rcf nooLite:flip=1 cmd=7 addr=1a9e fmt=00 crc=63
+capture-3001-192155.rcf nooLite:flip=0 cmd=7 addr=1a9e fmt=00 crc=7f
+
+# Oregon sensor 1D20
 capture-0906-214352.rcf Oregon:type=1D20 id=51 ch=1 low_bat=[01] t=22.6 h=41
 capture-0906-214234.rcf Oregon:type=1D20 id=51 ch=1 low_bat=[01] t=22.6 h=41
 capture-0906-212618.rcf Oregon:type=1D20 id=51 ch=1 low_bat=[01] t=22.7 h=41
@@ -25,11 +55,19 @@ capture-0706-211823.rcf Oregon:type=1D20 id=51 ch=1 low_bat=[01] t=24.7 h=46
 capture-0906-210412.rcf Oregon:type=1D20 id=51 ch=1 low_bat=[01] t=23.0 h=40
 ism-test-3b374d96c9.rcf Oregon:type=1D20 id=12 ch=4 low_bat=1 t=26.3 h=35
 ism-test-ca09da62af.rcf Oregon:type=1D20 id=85 ch=2 low_bat=1 t=25.6 h=43
+
+# Oregon sensor F824
 ism-test-d66b21c765.rcf Oregon:type=F824 id=42 ch=1 low_bat=0 t=26.9 h=39
 ism-test-41d890077f.rcf Oregon:type=F824 id=42 ch=1 low_bat=0 t=26.7 h=39
 ism-test-df05ec91e6.rcf Oregon:type=F824 id=42 ch=1 low_bat=0 t=26.6 h=39
 ism-test-7031d3158b.rcf Oregon:type=F824 id=42 ch=1 low_bat=0 t=26.4 h=39
 ism-test-7b8d00e86c.rcf Oregon:type=F824 id=42 ch=1 low_bat=0 t=26.3 h=40
+
+# Oregon thermometer thn132n (EC40)
+# capture-0302-120656.rcf Oregon:type=???
+# Oregon thgn132n (1D20) with negative temperature
+# capture-0302-120711.rcf Oregon:type=???
+
 capture-1304-214720.rcf Livolo:00110011110100010001000
 capture-1304-214730.rcf Livolo:00110011110100010010000
 capture-1304-214741.rcf Livolo:00110011110100010010000
@@ -40,11 +78,19 @@ capture-1304-222343.rcf Livolo:00000110101001001010000
 capture-0604-212458.rcf Livolo:00110011110100010001000
 capture-0604-212505.rcf Livolo:00110011110100010001000
 capture-0604-212552.rcf Livolo:00110011110100010001000
+
 capture-1604-081847.rcf Raex:raw=F07BF0407FFFFF ch=F0 btn=1
 capture-1604-080728.rcf Raex:raw=F07BF0407FFFFF ch=F0 btn=1
 capture-1404-083759.rcf Raex:raw=F07BF0407FFFFF ch=F0 btn=1
 capture-1404-083803.rcf Raex:raw=F07BF0407FFFFF ch=F0 btn=1
 capture-1404-083811.rcf Raex:raw=087BF0807FFFFF ch=08 btn=2
+
 capture-1408-204138.rcf RST:id=1b00 h=46 t=14.1
 capture-1004-105819.rcf RST:id=1b10 h=82 t=29.1
 
+# HS Chip 24 bits 
+# motion sensor
+dump-all-3103-215824-001.rcf HS24Bits:msg_id=149194 ch=10
+dump-all-3103-213852-001.rcf HS24Bits:msg_id=149194 ch=6
+
+# final string
