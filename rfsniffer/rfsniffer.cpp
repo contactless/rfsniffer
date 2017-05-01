@@ -31,7 +31,10 @@ RFSniffer::RFSnifferArgs::RFSnifferArgs():
     bDumpAllLircStream(false),
 
     savePath("."),
-    inverted(false)
+    inverted(false),
+    
+    enabledProtocols({"All"}),
+    enabledFeatures({})
 {
 
 }
@@ -247,7 +250,18 @@ void RFSniffer::tryReadConfigFile()
             args.writePackets = debug.getInt("write_packets", false, args.writePackets);
             CLog::Init(&debug);
         }
+        
+        /*args.enabledProtocols.clear();
+        CConfigItemList protocolList;
+        config.getList("enabled_protocols", protocolList);
+        for (auto protocol : protocolList) {
+            args.enabledProtocols.push_back(protocol->getStr(""));
+            fprintf(stderr, "Enabled protocol: %s\n", args.enabledProtocols.back().c_str());
+        }*/
+        
+    
         this->configJson = std::move(configPtr);
+        
     } catch (CHaException ex) {
         fprintf(stderr, "Failed load config. Error: %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
         exit(-1);
@@ -478,7 +492,8 @@ void RFSniffer::receiveForever() throw(CHaException)
 
     CRFParser m_parser(m_Log, (args.bDebug || args.writePackets > 0) ? args.savePath : "");
 
-    m_parser.AddProtocol("All");
+    for (auto protocol : args.enabledProtocols)
+        m_parser.AddProtocol(protocol);
 
     time_t lastReport = 0, packetStartTime = time(NULL), startTime = time(NULL);
     int lastRSSI = -1000, minGoodRSSI = 0;
@@ -520,7 +535,7 @@ void RFSniffer::receiveForever() throw(CHaException)
             // process incoming messages
             conn.loop(500);
             // try get more data and sleep if fail
-            const int waitDataReadUsec = 500000;
+            const int waitDataReadUsec = 1000000;
             if (waitForData(lircFD, waitDataReadUsec)) {
                 /*
                  * This strange thing is needed to lessen received trash

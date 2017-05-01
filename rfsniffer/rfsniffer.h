@@ -58,6 +58,9 @@ class RFSniffer
 
         string savePath;
         bool inverted;
+        
+        std::vector<std::string> enabledProtocols;
+        std::vector<std::string> enabledFeatures;
 
         RFSnifferArgs();
     } args;
@@ -78,6 +81,7 @@ class RFSniffer
     const static size_t dataBuffSize = maxMessageLength * 2;
 
     lirc_t dataBuff[dataBuffSize];
+    
 
     // utils
     bool waitForData(int fd, unsigned long maxusec);

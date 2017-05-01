@@ -38,7 +38,7 @@ echo "Lirc simulate test start in `pwd`"
 echo "    Transmit data via lirc"
 echo "    Try to find all required occurences in output...."
 
-./simulate_lirc.sh ../rfsniffer/wb-homa-rfsniffer-dbg ./testfiles ./testfiles.desc 1>"$STDIN_SIMULATE_LOG" 2>"${SIMULATE_RECEIVE_LOG}"
+./simulate_lirc.sh ../rfsniffer/wb-homa-rfsniffer ./testfiles ./testfiles.desc 1>"$STDIN_SIMULATE_LOG" 2>"${SIMULATE_RECEIVE_LOG}"
 
 
 # read file line by line

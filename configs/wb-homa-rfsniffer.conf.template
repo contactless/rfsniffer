@@ -11,6 +11,9 @@
 	"mqtt": {
 		"host": "localhost"
 	},
+	
+	"enabled_protocols": ["X10", "RST", "Raex", "Livolo", "Oregon", "nooLite", "Rubitek", "MotionSensor", "VHome"],
+	"enabled_features": ["noolite_tx"],
 
 	"debug":{
 		"save_path": ".",

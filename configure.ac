@@ -1,10 +1,11 @@
-AC_INIT([rfsniffer], [0.1], [avp@avp.name])
+AC_INIT([rfsniffer], [0.2], [yuri.pechatnov@wirenboard.ru])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_LANG([C++])
-# AC_LANG_WERROR
 AM_PROG_AR
-#AC_PROG_CXX
+
+AC_PROG_CXX([g++])
+
 #AM_PROG_LIBTOOL
 LT_INIT
 AC_CONFIG_MACRO_DIR([m4])

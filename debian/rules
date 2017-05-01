@@ -4,6 +4,7 @@
 	dh $@ --with autoreconf --parallel
 
 override_dh_autoreconf:
+	./generate_am_files.py
 	autoreconf -fvi -W all
 	# dh_autoreconf --as-needed -W all
 
@@ -11,7 +12,7 @@ DEB_HOST_MULTIARCH  ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 override_dh_auto_configure:
 	./configs/generate_configs.py --directory configs/ --generate
-	dh_auto_configure -- --disable-silent-rules
+	dh_auto_configure -- --disable-silent-rules CXXFLAGS="" CPPFLAGS=""
 	#dh_auto_configure -- --enable-static --enable-plugins --enable-doxygen
 
 override_dh_auto_build:
@@ -34,8 +35,14 @@ override_dh_auto_test:
 override_dh_link:
 	dh_link
 
+override_dh_auto_clean:
+	# am files are needed by dh_...
+	./generate_am_files.py
+	dh_auto_clean
+	
 override_dh_clean:
 	rm -vf *.log
+	rm -vf *.am
 	rm -vf compile
 	rm -vf haconfig.inc
 	rm -vf test-driver
