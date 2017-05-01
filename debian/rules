@@ -38,11 +38,11 @@ override_dh_link:
 override_dh_auto_clean:
 	# am files are needed by dh_...
 	./generate_am_files.py
+	autoreconf -fvi
 	dh_auto_clean
 	
 override_dh_clean:
 	rm -vf *.log
-	rm -vf *.am
 	rm -vf compile
 	rm -vf haconfig.inc
 	rm -vf test-driver
