@@ -119,10 +119,11 @@ string CRFProtocol::Parse(InputContainerIterator first, InputContainerIterator l
 
     if (bits.length()) {
         //      3 - декодируем набор бит в осмысленные данные (команду, температуру etc)
-        string res = getName() + ":" + DecodeData(bits);
-        //      uint8_t tmpBuffer[100];
-        //      size_t tmpBufferSize = sizeof(tmpBuffer);
-        //      EncodeData(res, 2000, tmpBuffer, tmpBufferSize);
+        string data = DecodeData(bits);
+        if (data.empty())
+            return "";
+            
+        string res = getName() + ":" + data;
         return res;
     }
 

@@ -527,6 +527,8 @@ void RFSniffer::receiveForever() throw(CHaException)
                     conn.NewMessage(parsedResult);
                 } catch (CHaException ex) {
                     m_Log->Printf(0, "conn.NewMessage failed: Exception", ex.GetExplanation().c_str());
+                    if (args.bCoreTestMod)
+                        throw;
                 }
             }
 
@@ -604,6 +606,8 @@ void RFSniffer::receiveForever() throw(CHaException)
 
         } catch (CHaException ex) {
             m_Log->Printf(0, "Exception %s", ex.GetExplanation().c_str());
+            if (args.bCoreTestMod)
+                throw;
         }
     }
 }
@@ -622,7 +626,7 @@ void RFSniffer::closeConnections()
 void RFSniffer::run(int argc, char **argv)
 {
     DPrintf::globallyEnable(false);
-    DPrintf::setDefaultOutputStream(fopen("rfs.log", "wt"));
+    //DPrintf::setDefaultOutputStream(fopen("rfs.log", "wt"));
     DPrintf::setPrefixLength(40);
 
 
@@ -647,6 +651,8 @@ void RFSniffer::run(int argc, char **argv)
         receiveForever();
     } catch (CHaException ex) {
         m_Log->Printf(0, "Exception %s", ex.GetExplanation().c_str());
+        if (args.bCoreTestMod)
+            throw;
     }
 
     closeConnections();
