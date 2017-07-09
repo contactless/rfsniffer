@@ -31,7 +31,7 @@ CRFProtocolVhome::~CRFProtocolVhome()
 }
 
 
-string CRFProtocolVhome::DecodePacket(const string&pkt)
+string CRFProtocolVhome::DecodePacket(const string &pkt)
 {
 	string packet = pkt, res;
 
@@ -69,7 +69,7 @@ string CRFProtocolVhome::DecodePacket(const string&pkt)
 
 string CRFProtocolVhome::DecodeData(const string& bits)
 {
-	if (bits.length()!=25 || bits2long(bits, 0, 4) != 7 || bits[24]!='0')
+	if (bits.length() != 25 || bits2long(bits, 0, 4) != 7 || bits[24] != '0')
 		return "";
 
 	int addr = bits2long(bits, 4, 16);

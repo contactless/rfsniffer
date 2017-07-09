@@ -53,8 +53,8 @@ class RFSniffer
 
         string scannerParams;
 
-        int writePackets;
         bool bDumpAllLircStream;
+        bool bSimultaneouslyDumpStreamAndWork;
 
         string savePath;
         bool inverted;

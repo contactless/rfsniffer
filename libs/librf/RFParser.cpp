@@ -220,22 +220,30 @@ void CRFParser::SaveFile(base_type *data, size_t size, const char *prefix)
     SaveFile(data, size, prefix, m_SavePath, m_Log);
 }
 
+string CRFParser::GenerateFileName(string prefix, string savePath) {
+ 
+#ifndef WIN32
+    static int internalNumber = 0;
+    time_t Time = time(NULL);
+    char DateStr[100], FileName[1024];
+    strftime(DateStr, sizeof(DateStr), "%d%m-%H%M%S", localtime(&Time));
+    snprintf(FileName, sizeof(FileName),  "%s/%s-%s-%03d.rcf", savePath.c_str(), 
+             prefix.c_str(), DateStr, (++internalNumber) % 1000);
+    return FileName;
+#endif
+}
+
 void CRFParser::SaveFile(base_type *data, size_t size, const char *prefix, string savePath,
                          CLog *log)
 {
 #ifndef WIN32
     if (savePath.length()) {
-        static int internalNumber = 0;
-        time_t Time = time(NULL);
-        char DateStr[100], FileName[1024];
-        strftime(DateStr, sizeof(DateStr), "%d%m-%H%M%S", localtime(&Time));
-        snprintf(FileName, sizeof(FileName),  "%s/%s-%s-%03d.rcf", savePath.c_str(), prefix, DateStr,
-                 (++internalNumber) % 1000);
-        log->Printf(3, "Write to file %s %ld signals\n", FileName, size);
-        int of = open(FileName, O_WRONLY | O_CREAT, S_IRUSR | S_IRGRP);
+        string FileName = GenerateFileName(prefix, savePath);
+        log->Printf(3, "Write to file %s %ld signals\n", FileName.c_str(), size);
+        int of = open(FileName.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IRGRP);
 
         if (of == -1) {
-            log->Printf(3, "error opening %s\n", FileName);
+            log->Printf(3, "error opening %s\n", FileName.c_str());
             return;
         };
 

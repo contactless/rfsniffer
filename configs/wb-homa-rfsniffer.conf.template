@@ -17,6 +17,7 @@
 
 	"debug":{
 		"save_path": ".",
+		"dump_stream": false, 
 
 		"log": [
 			{

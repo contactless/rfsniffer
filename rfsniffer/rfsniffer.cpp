@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 #include <../libs/libutils/DebugPrintf.h>
 
 #include "rfsniffer.h"
@@ -27,8 +28,8 @@ RFSniffer::RFSnifferArgs::RFSnifferArgs():
 
     scannerParams(""),
 
-    writePackets(0),
     bDumpAllLircStream(false),
+    bSimultaneouslyDumpStreamAndWork(false),
 
     savePath("."),
     inverted(false),
@@ -128,7 +129,7 @@ void RFSniffer::readEnvironmentVariables()
 void RFSniffer::readCommandLineArguments(int argc, char **argv)
 {
     // I don't know why, but signed is essential (though it should by by default??)
-    for (signed char c = ' '; c != -1; c = getopt(argc, argv, "Ds:m:l:TS:f:r:tw:Wc:i")) {
+    for (signed char c = ' '; c != -1; c = getopt(argc, argv, "Ds:m:l:TS:f:r:twWc:i")) {
         switch (c) {
             case ' ':
                 // just nothing, for first iteration to avoid repetitive getopt
@@ -188,11 +189,12 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
             case 'W':
                 args.bDumpAllLircStream = true;
                 break;
-
+            
             case 'w':
-                args.writePackets = atoi(optarg);
+                args.bDumpAllLircStream = true;
+                args.bSimultaneouslyDumpStreamAndWork = true;
                 break;
-
+            
             case 'c':
                 args.configName = optarg;
                 break;
@@ -205,8 +207,8 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
                        "    to disable SPI and RFM put \'do_not_use\' ", args.spiDevice.c_str());
                 printf("-l <lirc device> - set custom lirc device. Default %s\n", args.lircDevice.c_str());
                 printf("-m <mqtt host> - set custom mqtt host. Default %s\n", args.mqttHost.c_str());
-                printf("-w <seconds> - [DISABLED] write to file all packets for <secods> second and exit\n");
                 printf("-W - write all data from lirc device to file until signal from keyboard\n");
+                printf("-w - like -W but simultaneously do normal work of driver\n");
                 printf("-S -<low level>..-<high level>/<seconds for step> - scan for noise. \n");
                 printf("-r <RSSI> - reset RSSI Threshold after each packet. 0 - Disabled. Default %d\n",
                        (int)args.rssi);
@@ -247,7 +249,12 @@ void RFSniffer::tryReadConfigFile()
         CConfigItem debug = config.getNode("debug");
         if (debug.isNode()) {
             args.savePath = debug.getStr("save_path", false, args.savePath);
-            args.writePackets = debug.getInt("write_packets", false, args.writePackets);
+            
+            args.bSimultaneouslyDumpStreamAndWork = 
+                    debug.getBool("dump_stream");
+            if (args.bSimultaneouslyDumpStreamAndWork)
+                args.bDumpAllLircStream = true;
+                
             CLog::Init(&debug);
         }
         
@@ -403,7 +410,7 @@ void RFSniffer::tryJustScan() throw(CHaException)
                 m_Log->Printf(0, "read() failed [during opening lirc device part]\n");
                 break;
             }
-            for (size_t i = 0; i < result; i++) {
+            for (int i = 0; i < result; i++) {
                 if (CRFProtocol::isPulse(dataBuff[i]))
                     pulses++;
             }
@@ -426,7 +433,7 @@ void RFSniffer::tryFixThresh() throw(CHaException)
 
 void RFSniffer::tryDumpAllLircStream()
 {
-    if (!args.bDumpAllLircStream)
+    if (!args.bDumpAllLircStream || args.bSimultaneouslyDumpStreamAndWork)
         return;
 
     DPRINTF_DECLARE(dprintf, false);
@@ -453,6 +460,7 @@ void RFSniffer::tryDumpAllLircStream()
                 if (readTailBytes != -1)
                     resultBytes += readTailBytes;
             }
+            
             int result = resultBytes / sizeof(lirc_t);
             lircData.insert(lircData.end(), dataBuff, dataBuff + result);
         }
@@ -490,19 +498,23 @@ void RFSniffer::receiveForever() throw(CHaException)
               devicesConfigPtr.get());
     CMqttConnection conn(args.mqttHost, m_Log, rfm.get(), devicesConfigPtr.get());
 
-    CRFParser m_parser(m_Log, (args.bDebug || args.writePackets > 0) ? args.savePath : "");
+    CRFParser m_parser(m_Log, args.bDebug ? args.savePath : "");
 
     for (auto protocol : args.enabledProtocols)
         m_parser.AddProtocol(protocol);
 
-    time_t lastReport = 0, packetStartTime = time(NULL), startTime = time(NULL);
+    std::unique_ptr<FILE, int(*)(FILE *)> dumpFile(nullptr, fclose);
+    
+    if (args.bDumpAllLircStream) {
+        assert(args.bSimultaneouslyDumpStreamAndWork);
+        auto fileName = CRFParser::GenerateFileName("dump-all", args.savePath);
+        // make unique_ptr for automatic close of file
+        auto file = std::unique_ptr<FILE, int(*)(FILE *)>(fopen(fileName.c_str(), "w"), fclose);
+        dumpFile = std::move(file);
+    }
+
     int lastRSSI = -1000, minGoodRSSI = 0;
-
-    //string lastParsed = "";
-    time_t lastRecognizedPacketTime = time(NULL);
-    time_t lastRegularWorkTime = time(NULL);
-
-    bool readSmthNew = false;
+    time_t lastReport = 0, lastRegularWorkTime = time(NULL);
 
     dprintf("$P Start cycle\n");
 
@@ -510,11 +522,6 @@ void RFSniffer::receiveForever() throw(CHaException)
         DPRINTF_DECLARE(dprintf, false);
         // try is placed here to handle exceptions and just restart, not to crush
         try {
-            // notice that writePackets is 0 if corresponding command line argument is not set
-            if (args.writePackets > 0 && difftime(time(NULL), startTime) > args.writePackets)
-                break;
-
-
             dprintf("$P process all parsed messages\n");
             for (const string &parsedResult : m_parser.ExtractParsed()) {
                 m_Log->Printf(3, "RF Received: %s. RSSI=%d (%d)",
@@ -576,6 +583,11 @@ void RFSniffer::receiveForever() throw(CHaException)
                     }
 
                     int result = resultBytes / sizeof(lirc_t);
+                    
+                    if (dumpFile) {
+                        fwrite(dataBuff, sizeof(lirc_t), result, dumpFile.get());
+                        fflush(dumpFile.get());
+                    }
 
                     /// pass data to parser
                     dprintf("$P before AddInputData() call\n");
@@ -583,7 +595,7 @@ void RFSniffer::receiveForever() throw(CHaException)
                     dprintf("$P after AddInputData() call\n");
 
                     if (lastReport != time(NULL) && result >= 32) {
-                        m_Log->Printf(args.writePackets ? 3 : 4, "RF got data %ld bytes. RSSI=%d", (int)result, lastRSSI);
+                        m_Log->Printf(4, "RF got data %ld bytes. RSSI=%d", (int)result, lastRSSI);
                         lastReport = time(NULL);
                     }
 
@@ -591,6 +603,11 @@ void RFSniffer::receiveForever() throw(CHaException)
                         lastRSSI = rfm->readRSSI();
                 }
             }
+            
+            if (args.bDumpAllLircStream && waitForData(0, 100)) {
+                break;
+            }
+            
             dprintf("$P after read more\n");
 
 
@@ -629,11 +646,15 @@ void RFSniffer::run(int argc, char **argv)
     //DPrintf::setDefaultOutputStream(fopen("rfs.log", "wt"));
     DPrintf::setPrefixLength(40);
 
-
+    DPRINTF_DECLARE(dprintf, false);
+    dprintf("$P Driver has been started.\n");
 
     readEnvironmentVariables();
+    dprintf("$P Environment variables have been read.\n");
     readCommandLineArguments(argc, argv);
+    dprintf("$P Command line arguments have been read.\n");
     tryReadConfigFile();
+    dprintf("$P Config file has been read.\n");
 
     // important to initialize m_Log after reading config file
     m_Log = CLog::Default();
@@ -642,9 +663,13 @@ void RFSniffer::run(int argc, char **argv)
     if (args.configName.length() == 0)
         m_Log->SetLogLevel(3);
     try {
+        dprintf("$P before $P SPI has been inited.\n");
         initSPI();
+        dprintf("$P SPI has been inited.\n");
         initRFM();
+        dprintf("$P RFM has been inited.\n");
         openLirc();
+        dprintf("$P LIRC has been opened.\n");
         tryJustScan(); // something test feature written by https://github.com/avp-avp, it may be broken
         tryFixThresh();
         tryDumpAllLircStream();

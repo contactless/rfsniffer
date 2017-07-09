@@ -11,6 +11,8 @@ VALGRIND_MASSIF_REPORT="./valgrind_massif_report.log"
 if ! [[ $# -gt 1 ]]; then
     echo "Need more arguments"
     echo "Need path to executable and path to tests"
+    echo "Usage 1: tests/simulate_lirc.sh rfsniffer/wb-homa-rfsniffer tests/testfiles"
+    echo "Usage 2: tests/simulate_lirc.sh rfsniffer/wb-homa-rfsniffer tests/testfiles tests/testfiles.desc"
     exit -1
 fi
 
