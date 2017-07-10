@@ -205,7 +205,8 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
                 printf("-g <DIO0 gpio> - set custom DIO0 GPIO number. Default %d\n", args.gpioInt);
                 printf("-s <spi device> - set custom SPI device. Default %s\n" \
                        "    to disable SPI and RFM put \'do_not_use\' ", args.spiDevice.c_str());
-                printf("-l <lirc device> - set custom lirc device. Default %s\n", args.lircDevice.c_str());
+                printf("-l <lirc device> - set custom lirc device. Default %s\n"
+					   "    Set it with '/dev/null' for do not exit when can't read.", args.lircDevice.c_str());
                 printf("-m <mqtt host> - set custom mqtt host. Default %s\n", args.mqttHost.c_str());
                 printf("-W - write all data from lirc device to file until signal from keyboard\n");
                 printf("-w - like -W but simultaneously do normal work of driver\n");
@@ -216,7 +217,7 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
                        args.fixedThresh);
 
                 printf("-T - disable pedantic check of lirc character device (may use pipe instead)\n" \
-                       " disable using SPI and RFM, do specific test output\n");
+                       "    disable using SPI and RFM, do specific test output\n");
                 printf("-c configfile - specify config file\n");
                 //          printf("-f <sampling freq> - set custom sampling freq. Default %d\n", samplingFreq);
                 exit(0);
@@ -560,6 +561,7 @@ void RFSniffer::receiveForever() throw(CHaException)
 
     dprintf("$P Start cycle\n");
 
+
     while (true) {
         DPRINTF_DECLARE(dprintf, false);
         // try is placed here to handle exceptions and just restart, not to crush
@@ -608,8 +610,10 @@ void RFSniffer::receiveForever() throw(CHaException)
                     }
                     if (args.bCoreTestMod) {
                         dprintf("$P No more input data. Exiting!\n");
-                        // normal exiting
-                        break;
+						// if lirc is a fictive device then break
+						// if lirc is dumb device (/dev/null) consider situation as just lack of data
+                        if (args.lircDevice != "/dev/null") 
+							break;
                     }
                 } else {
                     dprintf("$P % bytes were read from lirc device\n", resultBytes);

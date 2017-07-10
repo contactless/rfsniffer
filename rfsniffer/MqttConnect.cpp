@@ -16,12 +16,12 @@ CMqttConnection::CMqttConnection(string Server, CLog *log, RFM69OOK *rfm,
     m_Log = log;
 
     connect(m_Server.c_str());
-    //loop_start();
+    loop_start();
 }
 
 CMqttConnection::~CMqttConnection()
 {
-    //loop_stop(true);
+    loop_stop(true);
 }
 
 
@@ -71,14 +71,14 @@ void CMqttConnection::on_connect(int rc)
     if (!rc) {
         m_isConnected = true;
     }
-    /*
+    
     for (const string &addr : {"0xd61", "0xd62", "0xd63"}) {
         CreateNooliteTxUniversal(addr);
         string topic = String::ComposeFormat("/devices/noolite_tx_%s/controls/#", addr.c_str());
         
         m_Log->Printf(1, "subscribe to %s", topic.c_str());
         subscribe(NULL, topic.c_str());
-    }*/
+    }
     
     SendUpdate();
 }
