@@ -216,7 +216,7 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
                        args.fixedThresh);
 
                 printf("-T - disable pedantic check of lirc character device (may use pipe instead)\n" \
-                       " disable using SPI and RFM, do specific test output");
+                       " disable using SPI and RFM, do specific test output\n");
                 printf("-c configfile - specify config file\n");
                 //          printf("-f <sampling freq> - set custom sampling freq. Default %d\n", samplingFreq);
                 exit(0);
@@ -250,10 +250,10 @@ void RFSniffer::tryReadConfigFile()
         if (debug.isNode()) {
             args.savePath = debug.getStr("save_path", false, args.savePath);
             
-            args.bSimultaneouslyDumpStreamAndWork = 
-                    debug.getBool("dump_stream");
-            if (args.bSimultaneouslyDumpStreamAndWork)
+            if (debug.getBool("dump_stream")) {
+                args.bSimultaneouslyDumpStreamAndWork = true;
                 args.bDumpAllLircStream = true;
+            }
                 
             CLog::Init(&debug);
         }
@@ -275,7 +275,47 @@ void RFSniffer::tryReadConfigFile()
     }
 }
 
-
+void RFSniffer::logAllArguments() {
+    
+    m_Log->Printf(3, "RFSniffer parameters");
+    
+    #define print_bool(a) m_Log->Printf(3, "  ||  " #a " = %s", args.a ? "true" : "false");
+    #define print_str(a) m_Log->Printf(3, "  ||  " #a " = '%s'", args.a.c_str());
+    #define print_int(a) m_Log->Printf(3, "  ||  " #a " = %d", args.a);
+    #define print_gap() m_Log->Printf(3, "  ||  ");
+    
+    print_str(configName);
+    print_bool(bDebug);
+    print_bool(bDumpAllRegs);
+    print_bool(bLircPedantic);
+    print_gap();
+    print_str(spiDevice);
+    print_int(spiSpeed);
+    print_int(gpioInt);
+    print_gap();
+    print_int(fixedThresh);
+    print_int(rssi);
+    print_bool(bRfmEnable);
+    print_gap();
+    print_bool(bCoreTestMod);
+    print_gap();
+    print_str(lircDevice);
+    print_gap();
+    print_str(mqttHost);
+    print_gap();
+    print_str(scannerParams);
+    print_gap();
+    print_bool(bDumpAllLircStream);
+    print_bool(bSimultaneouslyDumpStreamAndWork);
+    print_gap();
+    print_str(savePath);
+    print_bool(inverted);
+    
+    #undef print_bool
+    #undef print_str    
+    #undef print_int    
+    #undef print_gap    
+}
 
 void RFSniffer::initSPI()
 {
@@ -468,7 +508,7 @@ void RFSniffer::tryDumpAllLircStream()
             break;
     }
 
-    CRFParser::SaveFile(lircData.data(), lircData.size(), "dump-all", args.savePath, m_Log);
+    CRFParser::SaveFile(lircData.data(), lircData.size(), "dump-all", args.savePath, m_Log.get());
 
     closeConnections();
     exit(0);
@@ -496,21 +536,23 @@ void RFSniffer::receiveForever() throw(CHaException)
     dprintf.c("$P Initialize connection, deviceConfigPtr = %p\n",
 
               devicesConfigPtr.get());
-    CMqttConnection conn(args.mqttHost, m_Log, rfm.get(), devicesConfigPtr.get());
+    CMqttConnection conn(args.mqttHost, m_Log.get(), rfm.get(), devicesConfigPtr.get());
 
-    CRFParser m_parser(m_Log, args.bDebug ? args.savePath : "");
+    CRFParser m_parser(m_Log.get(), args.bDebug ? args.savePath : "");
 
     for (auto protocol : args.enabledProtocols)
         m_parser.AddProtocol(protocol);
 
+    string dumpFileName;
     std::unique_ptr<FILE, int(*)(FILE *)> dumpFile(nullptr, fclose);
     
     if (args.bDumpAllLircStream) {
         assert(args.bSimultaneouslyDumpStreamAndWork);
-        auto fileName = CRFParser::GenerateFileName("dump-all", args.savePath);
+        dumpFileName = CRFParser::GenerateFileName("dump-all", args.savePath);
         // make unique_ptr for automatic close of file
-        auto file = std::unique_ptr<FILE, int(*)(FILE *)>(fopen(fileName.c_str(), "w"), fclose);
-        dumpFile = std::move(file);
+        dumpFile = std::unique_ptr<FILE, int(*)(FILE *)>(fopen(dumpFileName.c_str(), "w"), fclose);
+        
+        m_Log->Printf(3, "Saving stream dump to '%s'. Press Ctrl-C to stop driver", dumpFileName.c_str());
     }
 
     int lastRSSI = -1000, minGoodRSSI = 0;
@@ -595,7 +637,7 @@ void RFSniffer::receiveForever() throw(CHaException)
                     dprintf("$P after AddInputData() call\n");
 
                     if (lastReport != time(NULL) && result >= 32) {
-                        m_Log->Printf(4, "RF got data %ld bytes. RSSI=%d", (int)result, lastRSSI);
+                        m_Log->Printf(4, "RF got data %ld signals. RSSI=%d", (int)result, lastRSSI);
                         lastReport = time(NULL);
                     }
 
@@ -603,10 +645,12 @@ void RFSniffer::receiveForever() throw(CHaException)
                         lastRSSI = rfm->readRSSI();
                 }
             }
+            //~ it doesn't work somehow
+            //~ if (args.bDumpAllLircStream && waitForData(0, 100)) {
+                //~ m_Log->Printf(3, "You can find stream dump in '%s'", dumpFileName.c_str());
+                //~ break;
+            //~ }
             
-            if (args.bDumpAllLircStream && waitForData(0, 100)) {
-                break;
-            }
             
             dprintf("$P after read more\n");
 
@@ -655,11 +699,12 @@ void RFSniffer::run(int argc, char **argv)
     dprintf("$P Command line arguments have been read.\n");
     tryReadConfigFile();
     dprintf("$P Config file has been read.\n");
-
+    
     // important to initialize m_Log after reading config file
-    m_Log = CLog::Default();
-    m_Log->Printf(0, "Using SPI device %s, lirc device %s, mqtt on %s", args.spiDevice.c_str(),
-                  args.lircDevice.c_str(), args.mqttHost.c_str());
+    m_Log.reset(CLog::Default());
+    
+    logAllArguments();
+    
     if (args.configName.length() == 0)
         m_Log->SetLogLevel(3);
     try {

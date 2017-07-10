@@ -65,7 +65,7 @@ class RFSniffer
         RFSnifferArgs();
     } args;
 
-    CLog *m_Log;
+    std::unique_ptr<CLog> m_Log;
 
     std::unique_ptr<CConfig> configJson;
     std::unique_ptr<SPI> mySPI;
@@ -92,6 +92,8 @@ class RFSniffer
     void readEnvironmentVariables();
     void readCommandLineArguments(int argc, char **argv);
     void tryReadConfigFile();
+    
+    void logAllArguments();
 
     // initialize connections
     void initSPI();
