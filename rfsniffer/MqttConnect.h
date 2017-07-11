@@ -4,6 +4,10 @@
 #include "../libs/librf/RFProtocolNooLite.h"
 #include "../libs/libutils/ConfigItem.h"
 
+namespace Json {
+	class Value;
+};
+
 class RFM69OOK;
 
 class CMqttConnection
@@ -15,8 +19,11 @@ class CMqttConnection
     bool m_isConnected;
     CWBDeviceMap m_Devices;
     RFM69OOK *m_RFM;
+    
     CRFProtocolNooLite m_nooLite;
-    CConfigItem *m_devicesConfig;
+    bool m_NooLiteTxEnabled;
+    
+    Json::Value m_devicesConfig;
 
     String lastMessage;
     size_t lastMessageCount, lastMessageNeedCount;
@@ -25,7 +32,7 @@ class CMqttConnection
 
 
   public:
-    CMqttConnection(string Server, CLog *log, RFM69OOK *rfm, CConfigItem *devicesConfig = nullptr);
+    CMqttConnection(string Server, CLog *log, RFM69OOK *rfm, Json::Value devicesConfig, const std::vector<std::string> &enabledFeatures);
     ~CMqttConnection();
     void NewMessage(strutils::String message);
 

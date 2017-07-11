@@ -1,19 +1,25 @@
+#include "MqttConnect.h"
+
+#include <vector>
+#include <algorithm>
+
 #include "../libs/libutils/logging.h"
 #include "../libs/libutils/strutils.h"
 #include "../libs/libutils/Exception.h"
-#include "MqttConnect.h"
 #include "../libs/librf/RFM69OOK.h"
 
 using namespace strutils;
 
 
 CMqttConnection::CMqttConnection(string Server, CLog *log, RFM69OOK *rfm,
-                                 CConfigItem *devicesConfig)
+                                 Json::Value devicesConfig, const std::vector<std::string> &enabledFeatures)
     : m_Server(Server), m_Log(log), m_isConnected(false),
       mosquittopp("RFsniffer"), m_RFM(rfm), m_devicesConfig(devicesConfig)
 {
     m_Server = Server;
     m_Log = log;
+
+	m_NooLiteTxEnabled = (std::find(enabledFeatures.begin(), enabledFeatures.end(), "noolite_tx") != enabledFeatures.end());
 
     connect(m_Server.c_str());
     loop_start();
@@ -71,16 +77,18 @@ void CMqttConnection::on_connect(int rc)
     if (!rc) {
         m_isConnected = true;
     }
-    
-    for (const string &addr : {"0xd61", "0xd62", "0xd63"}) {
-        CreateNooliteTxUniversal(addr);
-        string topic = String::ComposeFormat("/devices/noolite_tx_%s/controls/#", addr.c_str());
-        
-        m_Log->Printf(1, "subscribe to %s", topic.c_str());
-        subscribe(NULL, topic.c_str());
-    }
-    
-    SendUpdate();
+		
+    if (m_NooLiteTxEnabled) {
+		for (const string &addr : {"0xd61", "0xd62", "0xd63"}) {
+			CreateNooliteTxUniversal(addr);
+			string topic = String::ComposeFormat("/devices/noolite_tx_%s/controls/#", addr.c_str());
+			
+			m_Log->Printf(1, "subscribe to %s", topic.c_str());
+			subscribe(NULL, topic.c_str());
+		}
+		
+		SendUpdate();
+	}
 }
 
 void CMqttConnection::on_disconnect(int rc)

@@ -107,6 +107,26 @@
 			}
 		},
 		  
+		"enabled_protocols": {
+			"type": "array",	
+			"title": "Enabled protocols",
+			"items": {
+				"type": "string", 
+				"enum": ["X10", "RST", "Raex", "Livolo", "Oregon", "nooLite", "Rubitek", "MotionSensor", "VHome"]
+			},
+			"uniqueItems": true
+		},
+		
+		"enabled_features": {
+			"type": "array",	
+			"title": "Enabled features",
+			"items": {
+				"type": "string", 
+				"enum": ["noolite_tx"]
+			},
+			"uniqueItems": true
+		},
+		  
 		"devices": {
 			"type": "object",
 			"title": "Device politics",

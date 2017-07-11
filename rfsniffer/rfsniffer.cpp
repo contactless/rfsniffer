@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <cassert>
+#include <fstream>
+
 #include <../libs/libutils/DebugPrintf.h>
 
 #include "rfsniffer.h"
@@ -206,7 +208,7 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
                 printf("-s <spi device> - set custom SPI device. Default %s\n" \
                        "    to disable SPI and RFM put \'do_not_use\' ", args.spiDevice.c_str());
                 printf("-l <lirc device> - set custom lirc device. Default %s\n"
-					   "    Set it with '/dev/null' for do not exit when can't read.", args.lircDevice.c_str());
+                       "    Set it with '/dev/null' for do not exit when can't read.", args.lircDevice.c_str());
                 printf("-m <mqtt host> - set custom mqtt host. Default %s\n", args.mqttHost.c_str());
                 printf("-W - write all data from lirc device to file until signal from keyboard\n");
                 printf("-w - like -W but simultaneously do normal work of driver\n");
@@ -218,7 +220,7 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
 
                 printf("-T - disable pedantic check of lirc character device (may use pipe instead)\n" \
                        "    disable using SPI and RFM, do specific test output\n");
-                printf("-c configfile - specify config file\n");
+                printf("-c configfile - specify config file (parameters in config file are priority) \n");
                 //          printf("-f <sampling freq> - set custom sampling freq. Default %d\n", samplingFreq);
                 exit(0);
             default:
@@ -233,45 +235,82 @@ void RFSniffer::tryReadConfigFile()
     if (args.configName.empty())
         return;
     try {
-        std::unique_ptr<CConfig> configPtr(new CConfig());
-        CConfig &config = *configPtr;
-        config.Load(args.configName);
-
-        CConfigItem radio = config.getNode("radio");
-        if (radio.isNode()) {
-            args.lircDevice = radio.getStr("lirc_device", false, args.lircDevice);
-            args.spiDevice = radio.getStr("spi_device", false, args.spiDevice);
-            args.gpioInt = radio.getInt("rfm_irq", false, args.gpioInt);
-            args.rssi = radio.getInt("rssi", false, args.rssi);
+        Json::Value config;
+        // reading
+        {
+            std::fstream fs(args.configName.c_str(), std::fstream::in);
+            fs >> config;
+            fs.close();
         }
-
-        args.mqttHost = config.getStr("mqtt/host", false, args.mqttHost);
-
-        CConfigItem debug = config.getNode("debug");
-        if (debug.isNode()) {
-            args.savePath = debug.getStr("save_path", false, args.savePath);
+        // DEBUG
+        // std::cout << "CONFIG:\n" << config << std::endl;
+        
+        auto radio = config["radio"];
+        if (!!radio) {
+            auto lircDevice = radio["lirc_device"];
+            if (!!lircDevice)
+                args.lircDevice = lircDevice.asString();
+            auto spiDevice = radio["spi_device"];
+            if (!!spiDevice)
+                args.spiDevice = spiDevice.asString();
+            auto rfmIrq = radio["rfm_irq"];
+            if (!!rfmIrq)
+                args.gpioInt = rfmIrq.asInt();
+            auto rssi = radio["rssi"];
+            if (!!rssi)
+                args.rssi = rssi.asInt();
+        }
+        
+        auto mqttHost = config["mqtt"]["host"];
+        if (!!mqttHost)
+            args.mqttHost = mqttHost.asString();
             
-            if (debug.getBool("dump_stream")) {
-                args.bSimultaneouslyDumpStreamAndWork = true;
+        auto debug = config["debug"];
+        if (!!debug) {
+            auto savePath = debug["save_path"];
+            if (!!savePath)
+                args.savePath = savePath.asString();
+            auto dumpStream = debug["dump_stream"];
+            if (!!dumpStream && dumpStream.asBool()) {
                 args.bDumpAllLircStream = true;
+                args.bSimultaneouslyDumpStreamAndWork = true;
             }
-                
-            CLog::Init(&debug);
+            
+            // I don't entrust it
+            //CLog::Init(debug);
         }
         
-        /*args.enabledProtocols.clear();
-        CConfigItemList protocolList;
-        config.getList("enabled_protocols", protocolList);
-        for (auto protocol : protocolList) {
-            args.enabledProtocols.push_back(protocol->getStr(""));
-            fprintf(stderr, "Enabled protocol: %s\n", args.enabledProtocols.back().c_str());
-        }*/
+        auto enabledProtocols = config["enabled_protocols"];
+        if (!!enabledProtocols) {
+            if (!enabledProtocols.isArray())
+                throw std::runtime_error("enabled_protocols must be array");
+            args.enabledProtocols.clear();
+            for (int i = 0; i < (int)enabledProtocols.size(); ++i) {
+                args.enabledProtocols.push_back(enabledProtocols[i].asString());
+                //fprintf(stderr, "Enabled protocol: %s\n", args.enabledProtocols.back().c_str());
+            }       
+        }
         
-    
-        this->configJson = std::move(configPtr);
+        auto enabledFeatures = config["enabled_features"];
+        if (!!enabledFeatures) {
+            if (!enabledFeatures.isArray())
+                throw std::runtime_error("enabled_features must be array");
+            args.enabledFeatures.clear();
+            for (int i = 0; i < (int)enabledFeatures.size(); ++i) {
+                args.enabledFeatures.push_back(enabledFeatures[i].asString());
+                //fprintf(stderr, "Enabled protocol: %s\n", args.enabledFeatures.back().c_str());
+            }       
+        }
         
+        this->configJson = config;
     } catch (CHaException ex) {
         fprintf(stderr, "Failed load config. Error: %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
+        exit(-1);
+    } catch (Json::RuntimeError ex) {
+        fprintf(stderr, "Failed load config. Error: %s", ex.what());
+        exit(-1);
+    } catch (std::exception ex) {
+        fprintf(stderr, "Failed load config. Error: %s", ex.what());
         exit(-1);
     }
 }
@@ -526,18 +565,9 @@ void RFSniffer::receiveForever() throw(CHaException)
     if (rfm)
         rfm->receiveBegin();
 
-    // will be automatically destroyed in the end of functions
-    std::unique_ptr<CConfigItem> devicesConfigPtr(nullptr);
-    if (configJson) {
-        CConfigItem devicesConfig = configJson->getNode("devices");
-        if (devicesConfig.isNode())
-            devicesConfigPtr.reset(new CConfigItem(devicesConfig));
-    }
+    auto devicesConfig = configJson["devices"];
 
-    dprintf.c("$P Initialize connection, deviceConfigPtr = %p\n",
-
-              devicesConfigPtr.get());
-    CMqttConnection conn(args.mqttHost, m_Log.get(), rfm.get(), devicesConfigPtr.get());
+    CMqttConnection conn(args.mqttHost, m_Log.get(), rfm.get(), devicesConfig, args.enabledFeatures);
 
     CRFParser m_parser(m_Log.get(), args.bDebug ? args.savePath : "");
 
@@ -610,10 +640,10 @@ void RFSniffer::receiveForever() throw(CHaException)
                     }
                     if (args.bCoreTestMod) {
                         dprintf("$P No more input data. Exiting!\n");
-						// if lirc is a fictive device then break
-						// if lirc is dumb device (/dev/null) consider situation as just lack of data
+                        // if lirc is a fictive device then break
+                        // if lirc is dumb device (/dev/null) consider situation as just lack of data
                         if (args.lircDevice != "/dev/null") 
-							break;
+                            break;
                     }
                 } else {
                     dprintf("$P % bytes were read from lirc device\n", resultBytes);
@@ -683,7 +713,7 @@ void RFSniffer::closeConnections()
     dprintf("$P called\n");
     if (rfm)
         rfm->receiveEnd();
-    if (lircFD > 0)
+    if (lircFD >= 0)
         close(lircFD);
 
 }
@@ -735,7 +765,6 @@ void RFSniffer::run(int argc, char **argv)
 
 RFSniffer::RFSniffer():
     m_Log(nullptr),
-    configJson(nullptr),
     mySPI(nullptr),
     rfm(nullptr),
     lircFD(-1)

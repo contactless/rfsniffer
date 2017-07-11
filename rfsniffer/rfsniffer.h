@@ -67,7 +67,7 @@ class RFSniffer
 
     std::unique_ptr<CLog> m_Log;
 
-    std::unique_ptr<CConfig> configJson;
+    Json::Value configJson;
     std::unique_ptr<SPI> mySPI;
     std::unique_ptr<RFM69OOK> rfm;
 

@@ -134,7 +134,7 @@ class LIBWB_API CWBDevice
     ~CWBDevice();
 
 
-    void findAndSetConfigs(CConfigItem *devices);
+    void findAndSetConfigs(Json::Value &devices);
 
     const string &getName()
     {

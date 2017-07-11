@@ -164,35 +164,38 @@ void CWBDevice::init(CConfigItem config)
 
 
 
-void CWBDevice::findAndSetConfigs(CConfigItem *devices)
+void CWBDevice::findAndSetConfigs(Json::Value &devices)
 {
     DPRINTF_DECLARE(dprintf, false);
     dprintf("$P findAndSetConfigs for %\n", deviceName);
     if (!devices)
         return;
-    dprintf.c("$P devices is %p\n", devices);
     // check common settings
-    if (devices->getStr("unknown_devices_politics") == "ignore")
+    if (devices["unknown_devices_politics"].asString() == "ignore")
         deviceIsActive = false;
 
     // check known devices settings
-    if (!devices->getBool("use_devices_list"))
+    if (!devices["use_devices_list"].asBool())
         return;
 
-    CConfigItemList devicesConfigsList;
-    devices->getList("known_devices", devicesConfigsList);
-    for (auto deviceConfig : devicesConfigsList) {
-        dprintf("$P There is a variant : %\n",
-                deviceConfig->getStr("name"));
-        if (deviceConfig->getStr("name") == deviceName) {
-            deviceIsActive = !(deviceConfig->getStr("politics") == "ignore");
-            heartbeat = deviceConfig->getInt("heartbeat");
-            dprintf.c("$P found device in the list! "\
-                      "politics=%s   heartbeat=%d\n",
-                      (deviceIsActive ? "show" : "ignore"), heartbeat);
-        }
-    }
-
+    auto knownDevices = devices["known_devices"];
+    
+	if (!!knownDevices) {
+		if (!knownDevices.isArray())
+			throw std::runtime_error("known_devices must be array");
+		for (int i = 0; i < (int)knownDevices.size(); ++i) {
+			auto dev = knownDevices[i];
+			dprintf("$P There is a variant : %\n",
+                    dev["name"].asString());
+            if (dev["name"].asString() == deviceName) {
+				deviceIsActive = !(dev["politics"].asString() == "ignore");
+				heartbeat = dev["heartbeat"].asInt();
+				dprintf.c("$P found device in the list! "\
+						  "politics=%s   heartbeat=%d\n",
+						  (deviceIsActive ? "show" : "ignore"), heartbeat);
+			}  
+		}		
+	}
 }
 
 

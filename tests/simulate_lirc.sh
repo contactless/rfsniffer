@@ -41,7 +41,7 @@ rm  -v -f $LIRC
 echo "create fifo ($LIRC) instead of character device"
 
 #mkfifo $LIRC
-rm $LIRC
+rm -f $LIRC
 
 echo "take $EXE as executable rfsniffer"
 
