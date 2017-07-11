@@ -1,9 +1,12 @@
+#include "WBDevice.h"
+
 #include <cstdio>
 #include <ctime>
+#include <stdexcept>
+
 #include "../libutils/strutils.h"
 #include "../libutils/Exception.h"
 #include "../libutils/DebugPrintf.h"
-#include "WBDevice.h"
 
 using namespace strutils;
 

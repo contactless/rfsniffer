@@ -4,9 +4,7 @@
 #include <unordered_map>
 #include <string>
 
-#ifdef USE_CONFIG
-    #include "../libutils/ConfigItem.h"
-#endif
+#include "../libutils/ConfigItem.h"
 
 class LIBWB_API CWBControl
 {

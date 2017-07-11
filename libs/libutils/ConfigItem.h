@@ -5,15 +5,7 @@
 #include <string>
 
 
-#ifdef USE_CONFIG
-
-#ifdef HAVE_JSON_JSON_H
-    #include "json/json.h"
-#elif defined(HAVE_JSONCPP_JSON_JSON_H)
-    #include "jsoncpp/json/json.h"
-#else
-    #   error json.h not found
-#endif
+#include <jsoncpp/json/json.h>
 
 
 #include "strutils.h"
@@ -79,5 +71,3 @@ class LIBUTILS_API CConfigItem
     };
 
 };
-
-#endif

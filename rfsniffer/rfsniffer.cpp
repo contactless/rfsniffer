@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cassert>
 #include <fstream>
+#include <stdexcept>
 
 #include <../libs/libutils/DebugPrintf.h>
 
@@ -303,13 +304,16 @@ void RFSniffer::tryReadConfigFile()
         }
         
         this->configJson = config;
-    } catch (CHaException ex) {
+    } 
+    catch (CHaException ex) {
         fprintf(stderr, "Failed load config. Error: %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
         exit(-1);
-    } catch (Json::RuntimeError ex) {
-        fprintf(stderr, "Failed load config. Error: %s", ex.what());
-        exit(-1);
-    } catch (std::exception ex) {
+    } 
+    //catch (Json::Exception ex) {
+    //    fprintf(stderr, "Failed load config. Error: %s", ex.what());
+    //    exit(-1);
+    //} 
+    catch (std::exception ex) {
         fprintf(stderr, "Failed load config. Error: %s", ex.what());
         exit(-1);
     }
