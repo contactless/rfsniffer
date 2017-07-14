@@ -2,25 +2,25 @@
 
 // 
 static range_type g_timing_pause[7] =
-{
-	{ 12000, 18000 }, // Разделитель
-	{ 250, 550 }, // Короткий
-	{ 1200, 1500 }, // Длинный
+{ 
+	{ 1, 800 }, // lengths of signals are scattered very well 
+	{ 801, 1400 },
+	{ 20000, 2000 },
 	{ 0,0 }
 };
 
 static range_type g_timing_pulse[8] =
 {
-	{ 3500, 3500 },
-	{ 250, 550 }, // Короткий
-	{ 1200, 1500 }, // Длинный
+	{ 1, 700 },
+	{ 1000, 1400 }, // Короткий
+	{ 0, 0 }, // Длинный
 	{ 0,0 }
 };
 
 
 
 CRFProtocolVhome::CRFProtocolVhome()
-	:CRFProtocol(g_timing_pause, g_timing_pulse, 25, 1, "a")
+	:CRFProtocol(g_timing_pause, g_timing_pulse, 24, 1, "a")
 {
 	m_Debug = true;
 }
@@ -33,49 +33,68 @@ CRFProtocolVhome::~CRFProtocolVhome()
 
 string CRFProtocolVhome::DecodePacket(const string &pkt)
 {
-	string packet = pkt, res;
-
-	if (packet.length() == 48)
-	{
-		if (packet[0] == 'c')
-			packet = "B" + packet;
-		if (packet[0] == 'b')
-			packet = "C" + packet;
-	}
-
-	if (packet.length() == 49)
-	{
-		if (packet[48] == 'B')
-			packet += "c";
-		if (packet[48] == 'C')
-			packet += "b";
-	}
-	else
+	if (pkt.length() < 50)
 		return "";
-
-	for (unsigned int i = 0; i < packet.length() - 1; i += 2)
-	{
-		string part = packet.substr(i, 2);
-		if (part == "Bc")
-			res += "0";
-		else if (part == "Cb")
-			res += "1";
-		else
-			return "";
+	
+	string packet;
+	
+	for (int i = 0; i + 1 < (int)pkt.length(); i++) {
+		if (pkt[i] == 'A' && pkt[i + 1] == 'b') {
+			packet.push_back('0');
+			i++;
+			continue;
+		}
+		if (pkt[i] == 'B' && pkt[i + 1] == 'a') {
+			packet.push_back('1');
+			i++;
+			continue;
+		}
+		if (pkt[i] == 'A' && pkt[i + 1] == 'c' && packet.length() == 24) {
+			return packet;
+		}
+		return "";
 	}
-
-	return res;
+	return "";
 }
 
 string CRFProtocolVhome::DecodeData(const string& bits)
 {
-	if (bits.length() != 25 || bits2long(bits, 0, 4) != 7 || bits[24] != '0')
+	if (bits.length() != 24)
 		return "";
-
-	int addr = bits2long(bits, 4, 16);
+	
 	int cmd = bits2long(bits, 20, 4);
-
-	char buffer[100];
-	snprintf(buffer, sizeof(buffer), "addr=%04x cmd=%d", addr, cmd);
-	return buffer;
+		
+	if (cmd > 4)
+		return "";
+	
+	static const int map_1[] = {-1, -1, 1, -1, -1};
+	static const int map_2[] = {-1,  2, -1, -1, 1};
+	static const int map_3[] = {-1,  1,  2, -1, 3};
+	
+	bool is3btn = true;
+	for (int i = 0; i < 9; i++)
+		is3btn &= bits[i] == 1;
+		
+	if (is3btn) {
+		int addr = bits2long(bits, 9, 7);
+		int btn = map_3[cmd];
+		if (btn == -1)
+			return "";
+		return String::ComposeFormat("addr=%d type=3 btn=%d", addr, btn);
+	}
+	else {
+		int addr = bits2long(bits, 0, 16);
+		int btn = map_1[cmd];
+		if (btn != -1) {
+			btn = map_2[cmd];
+			if (btn == -1)
+				return "";
+			return String::ComposeFormat("addr=%d type=2 btn=%d", addr, btn);
+		}
+		else {
+			return String::ComposeFormat("addr=%d type=1 btn=1", addr);
+		}
+		
+	}
+		
 }
