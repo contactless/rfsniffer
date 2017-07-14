@@ -154,7 +154,7 @@ bool OneTest(const string_pair &test, CLog *log, CRFParser &parser)
 
 void RfParserTest(string path)
 {
-    DPRINTF_DECLARE(dprintf, false);
+    DPRINTF_DECLARE(dprintf, true);
     dprintf("$P Start\n");
 
     bool allPassed = true;
@@ -168,7 +168,7 @@ void RfParserTest(string path)
     //parser.AddProtocol(new CRFProtocolX10());
     //parser.AddProtocol(new CRFProtocolRaex());
     //parser.AddProtocol(new CRFProtocolNooLite());
-    //parser.AddProtocol("Oregon");
+    //parser.AddProtocol("VHome");
     parser.AddProtocol("All");
 
     if (path.length()) {
