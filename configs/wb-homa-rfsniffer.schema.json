@@ -112,7 +112,7 @@
 			"title": "Enabled protocols",
 			"items": {
 				"type": "string", 
-				"enum": ["X10", "RST", "Raex", "Livolo", "Oregon", "nooLite", "Rubitek", "MotionSensor", "VHome"]
+				"enum": ["X10", "RST", "Raex", "Livolo", "Oregon", "nooLite", "Rubitek", "MotionSensor", "VHome", "EV1527"]
 			},
 			"uniqueItems": true
 		},

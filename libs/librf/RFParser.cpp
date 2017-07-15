@@ -15,6 +15,7 @@
 #include "RFProtocolMotionSensor.h"
 #include "RFProtocolHS24Bit.h"
 #include "RFProtocolVhome.h"
+#include "RFProtocolEV1527.h"
 
 #include "../libutils/DebugPrintf.h"
 #include "../libutils/Exception.h"
@@ -53,6 +54,8 @@ void CRFParser::AddProtocol(string protocol)
         AddProtocol(new CRFProtocolMotionSensor());
     else if (protocol == "VHome")
         AddProtocol(new CRFProtocolVhome());
+    else if (protocol == "EV1527")
+        AddProtocol(new CRFProtocolEV1527());
     else if (protocol == "All") {
         AddProtocol(new CRFProtocolNooLite());
         AddProtocol(new CRFProtocolX10());
@@ -64,6 +67,7 @@ void CRFParser::AddProtocol(string protocol)
         AddProtocol(new CRFProtocolRubitek());
         AddProtocol(new CRFProtocolHS24Bit());
         AddProtocol(new CRFProtocolVhome());
+        AddProtocol(new CRFProtocolEV1527());
         //AddProtocol(new CRFProtocolMotionSensor());
     } else
         throw CHaException(CHaException::ErrBadParam, "AddProtocol - no such protocol: " + protocol);

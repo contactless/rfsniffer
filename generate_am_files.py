@@ -54,7 +54,7 @@ generate(file_name="libs/librf/Makefile.am", target="librf_la",
          sources=["RFParser.cpp", "RFProtocol.cpp", "spidev_lib++.cpp", "RFParser.h", 
                   "RFProtocol.h", "spidev_lib++.h ", "RFM69OOK.cpp", "RFM69OOK.h"] \
                  + ["RFProtocol" + name + ".cpp" for name in ["Livolo", "RST", "Raex", "X10", "Oregon", "OregonV3", 
-                                                              "NooLite", "MotionSensor", "HS24Bit", "Vhome", "Rubitek"]],
+                                                              "NooLite", "MotionSensor", "HS24Bit", "Vhome", "EV1527", "Rubitek"]],
          compiler_flags=compiler_flags,
          ldflags=["-all-static"],
          first_strings="lib_LTLIBRARIES = librf.la")

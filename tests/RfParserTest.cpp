@@ -83,7 +83,7 @@ void getAllTestFiles( string path, String::Vector &result )
 
 bool OneTest(const string_pair &test, CRFParser &parser)
 {
-    DPRINTF_DECLARE(dprintf, false);
+    DPRINTF_DECLARE(dprintf, true);
     dprintf("$P Start test=%\n", test);
 
     String file_name = test.first, exp_result = test.second;

@@ -12,7 +12,7 @@
 		"host": "localhost"
 	},
 	
-	"enabled_protocols": ["X10", "RST", "Raex", "Livolo", "Oregon", "nooLite", "Rubitek", "MotionSensor", "VHome"],
+	"enabled_protocols": ["X10", "RST", "Raex", "Livolo", "Oregon", "nooLite", "Rubitek", "MotionSensor", "VHome", "EV1527"],
 	"enabled_features": ["noolite_tx"],
 
 	"debug":{
