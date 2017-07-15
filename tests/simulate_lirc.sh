@@ -111,7 +111,7 @@ fi
 # note
 if ! [[ `arch` == arm* ]]; then
     echo "Run with Valgrind (check memory)"
-    eval "valgrind --error-exitcode=180 -q $CMD"
+    eval "valgrind --log-file=valgrind-msg.log --leak-check=full --show-below-main=yes --error-exitcode=180 -v -q $CMD"
     echo "Run with Valgrind (analyse memory consumption)"
     eval "valgrind --tool=massif --stacks=yes --massif-out-file=$VALGRIND_MASSIF_REPORT --error-exitcode=180 $CMD"
 else

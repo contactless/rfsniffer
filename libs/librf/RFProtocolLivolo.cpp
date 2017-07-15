@@ -1,6 +1,8 @@
-#include "stdafx.h"
 #include "RFProtocolLivolo.h"
 #include "../libutils/strutils.h"
+
+typedef std::string string;
+using namespace strutils;
 
 //
 static range_type g_timing_pause[7] = {
@@ -37,9 +39,9 @@ CRFProtocolLivolo::~CRFProtocolLivolo()
 {
 }
 
-string CRFProtocolLivolo::DecodePacket(const string &packet)
+string CRFProtocolLivolo::DecodePacket(const std::string &packet)
 {
-    string bits;
+    std::string bits;
     bool waitSecondShort = false;
 
     for (const char s : packet) {

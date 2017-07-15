@@ -143,6 +143,7 @@ CWBDevice::CWBDevice(string_cref Name, string_cref Description)
 CWBDevice::~CWBDevice()
 { }
 
+/*
 #ifdef USE_CONFIG
 void CWBDevice::init(CConfigItem config)
 {
@@ -164,7 +165,7 @@ void CWBDevice::init(CConfigItem config)
     }
 }
 #endif
-
+*/
 
 
 void CWBDevice::findAndSetConfigs(Json::Value &devices)
@@ -214,18 +215,18 @@ void CWBDevice::addControl(const CWBControl &control)
     deviceControls[control.name] = control;
 }
 
-void CWBDevice::addControl(const string &name, ControlType type, bool readonly)
+void CWBDevice::addControl(const std::string &name, ControlType type, bool readonly)
 {
     addControl(CWBControl(name, type, readonly));
 }
 
-void CWBDevice::addControl(const string &name, CWBControl::ControlType type, 
-        const string &initialValue, const string &order, bool readonly) 
+void CWBDevice::addControl(const std::string &name, CWBControl::ControlType type, 
+        const std::string &initialValue, const std::string &order, bool readonly) 
 {
     addControl(CWBControl(name, type, initialValue, order, readonly));       
 }
 
-bool CWBDevice::controlExists(const string &name)
+bool CWBDevice::controlExists(const std::string &name)
 {
 	return deviceControls.count(name);
 }
@@ -271,8 +272,8 @@ void CWBDevice::setMax(string_cref name, string_cref max)
 }
 
 
-void CWBDevice::setForAndThen(const string &name, const string &value, int timeFor,
-                              const string &valueThen)
+void CWBDevice::setForAndThen(const std::string &name, const std::string &value, int timeFor,
+                              const std::string &valueThen)
 {
     DPRINTF_DECLARE(dprintf, false);
     dprintf("$P (%, %, %, %) called\n", name, value, timeFor, valueThen);
@@ -300,7 +301,7 @@ void CWBDevice::updateScheduled(StringMap &v)
     if (!deviceIsActive) // do nothing if device is disabled
         return;
 
-    const string base = "/devices/" + deviceName;
+    const std::string base = "/devices/" + deviceName;
 
     for(auto &i : deviceControls) {
         dprintf("$P       % % %\n", i.second.name, i.second.value, i.second.isValueChangeSheduled);
@@ -342,13 +343,13 @@ void CWBDevice::createDeviceValues(StringMap &v)
     if (!deviceIsActive) // do nothing if device is disabled
         return;
 
-    const string base = "/devices/" + deviceName;
+    const std::string base = "/devices/" + deviceName;
 
     v[base + "/meta/name"] = deviceDescription;
 
     for(const auto &i : deviceControls) {
         const CWBControl &control = i.second;
-        const string controlBase = base + "/controls/" + control.name;
+        const std::string controlBase = base + "/controls/" + control.name;
         v[controlBase] = control.value;
         v[controlBase + "/meta/type"] = i.second.metaType();
         if (control.order.empty())
@@ -376,8 +377,8 @@ void CWBDevice::updateAliveness(StringMap &v)
     // and isAlive() mirrors the realtime state
     bool deviceIsReallyAlive = isAlive();
     if (deviceIsAlive != deviceIsReallyAlive) {
-        const string base = "/devices/" + deviceName;
-        const string error = (deviceIsReallyAlive ? "" : "DEVICE_LEVEL_ERROR: "\
+        const std::string base = "/devices/" + deviceName;
+        const std::string error = (deviceIsReallyAlive ? "" : "DEVICE_LEVEL_ERROR: "\
                               "No heartbeat was received (device is probably discharged or just off)");
         v[base + "/meta/error"] = error;
         for(auto &i : deviceControls)
@@ -392,7 +393,7 @@ void CWBDevice::updateValues(StringMap &v)
     if (!deviceIsActive) // do nothing if device is disabled
         return;
 
-    const string base = "/devices/" + deviceName;
+    const std::string base = "/devices/" + deviceName;
 
     for(auto &i : deviceControls) {
         if (i.second.changed) {
@@ -404,7 +405,7 @@ void CWBDevice::updateValues(StringMap &v)
 
 std::string CWBDevice::getTopic(string_cref control)
 {
-    string base = "/devices/" + deviceName;
+    std::string base = "/devices/" + deviceName;
     return base + "/controls/" + control;
 }
 

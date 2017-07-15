@@ -7,12 +7,12 @@ class RFLIB_API CRFProtocolRaex :
     CRFProtocolRaex();
     virtual ~CRFProtocolRaex();
 
-    virtual string getName()
+    virtual std::string getName()
     {
         return "Raex";
     };
-    virtual string DecodePacket(const string &);
-    virtual string DecodeData(const string &); // Преобразование бит в данные
+    virtual std::string DecodePacket(const std::string &);
+    virtual std::string DecodeData(const std::string &); // Преобразование бит в данные
 
 };
 

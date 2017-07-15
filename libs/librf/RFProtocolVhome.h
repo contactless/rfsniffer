@@ -7,9 +7,9 @@ public:
 	CRFProtocolVhome();
 	~CRFProtocolVhome();
 
-	virtual string getName() { return "VHome"; };
-	virtual string DecodePacket(const string&);
-	virtual string DecodeData(const string& bits);
+	virtual std::string getName() { return "VHome"; };
+	virtual std::string DecodePacket(const std::string&);
+	virtual std::string DecodeData(const std::string& bits);
 
 };
 

@@ -4,10 +4,12 @@
 #include <stdexcept>
 
 #include <../libs/libutils/DebugPrintf.h>
+#include <../libs/libutils/strutils.h>
 
 #include "rfsniffer.h"
 
-
+typedef std::string string;
+using namespace strutils;
 
 RFSniffer::RFSnifferArgs::RFSnifferArgs():
     configName(""),
@@ -61,7 +63,7 @@ bool RFSniffer::waitForData(int fd, unsigned long maxusec)
                     return false;
             } while (ret == -1 && errno == EINTR);
             if (ret == -1) {
-                CLog::Default()->Printf(0, "RF select() failed\n");
+                LOG(WARN) << "RF select() failed\n";
                 continue;
             }
         } while (ret == -1);
@@ -103,11 +105,11 @@ void RFSniffer::showCandidates(const string &path, const string &filePrefix)
         while ((ent = readdir(dir)) != NULL) {
             string name = ent->d_name;
             if (name.length() >= len && name.substr(0, len) == filePrefix)
-                m_Log->Printf(0, "\tCandidate is: /dev/%s", ent->d_name);
+                LOG(INFO) << "\tCandidate is: /dev/" << ent->d_name;
         }
         closedir(dir);
     } else {
-        m_Log->Printf(0, "\tAnd couldn't see in /dev for %s", path.c_str());
+        LOG(INFO) << "\tAnd couldn't see in /dev for " << path;
     }
 }
 
@@ -243,8 +245,6 @@ void RFSniffer::tryReadConfigFile()
             fs >> config;
             fs.close();
         }
-        // DEBUG
-        // std::cout << "CONFIG:\n" << config << std::endl;
         
         auto radio = config["radio"];
         if (!!radio) {
@@ -276,9 +276,19 @@ void RFSniffer::tryReadConfigFile()
                 args.bDumpAllLircStream = true;
                 args.bSimultaneouslyDumpStreamAndWork = true;
             }
-            
-            // I don't entrust it
-            //CLog::Init(debug);
+            auto log = debug["log"];
+            if (!!log) {				
+				if (!log.isArray())
+					throw std::runtime_error("log must be array");
+				for (int i = 0; i < (int)log.size(); ++i) {
+					auto logItem = log[i];
+					auto fileName = logItem["file_name"];
+					auto name = logItem["name"];
+					if (!name || !fileName)
+						throw std::runtime_error("incomplete log item");
+					log4cpp_AddOutput(name.asString(), fileName.asString());
+				} 
+			}
         }
         
         auto enabledProtocols = config["enabled_protocols"];
@@ -321,12 +331,12 @@ void RFSniffer::tryReadConfigFile()
 
 void RFSniffer::logAllArguments() {
     
-    m_Log->Printf(3, "RFSniffer parameters");
+    LOG(INFO) << "RFSniffer parameters";
     
-    #define print_bool(a) m_Log->Printf(3, "  ||  " #a " = %s", args.a ? "true" : "false");
-    #define print_str(a) m_Log->Printf(3, "  ||  " #a " = '%s'", args.a.c_str());
-    #define print_int(a) m_Log->Printf(3, "  ||  " #a " = %d", args.a);
-    #define print_gap() m_Log->Printf(3, "  ||  ");
+    #define print_bool(a) LOG(INFO) << ("  ||  " #a " = ") << (args.a ? "true" : "false");
+    #define print_str(a) LOG(INFO) << ("  ||  " #a " = '") << args.a << "'";
+    #define print_int(a) LOG(INFO) << ("  ||  " #a " = ") << args.a;
+    #define print_gap() LOG(INFO) << "  ||  ";
     
     print_str(configName);
     print_bool(bDebug);
@@ -373,9 +383,9 @@ void RFSniffer::initSPI()
     // do not use "=" because destructor breaks all
     mySPI.reset(new SPI(args.spiDevice.c_str(), &spi_config));
     if (!mySPI->begin()) {
-        m_Log->Printf(0, "SPI init failed (probably no such device: %s)", args.spiDevice.c_str());
+        LOG(ERROR) << "SPI init failed (probably no such device: " << args.spiDevice << ")";
         showCandidates("/dev/", "spidev");
-        m_Log->Printf(0, "Please contact developers");
+        LOG(INFO) << "Please contact developers";
         exit(-1);
     }
 }
@@ -397,16 +407,16 @@ void RFSniffer::initRFM()
             BufferPtr += snprintf(BufferPtr, BufferSize - (BufferPtr - Buffer), "Reg_%02X = %02x ", i, cur);
 
             if (i % 4 == 3) {
-                m_Log->Printf(3, "%s", Buffer);
+                LOG(INFO) << Buffer;
                 BufferPtr = Buffer;
             }
         }
 
         if (BufferPtr != Buffer) {
-            m_Log->Printf(3, "%s", Buffer);
+            LOG(INFO) << Buffer;
         }
 
-        m_Log->Printf(0, "Reg_%02x = %02x Reg_%02x = %02x", 0x6F, rfm->readReg(0x6F), 0x71,
+        LOG(INFO) << String::ComposeFormat("Reg_%02x = %02x Reg_%02x = %02x", 0x6F, rfm->readReg(0x6F), 0x71,
                       rfm->readReg(0x71));
         exit(0);
     }
@@ -416,7 +426,7 @@ void RFSniffer::openLirc() throw(CHaException)
 {
     lircFD = open(args.lircDevice.c_str(), O_RDONLY);
     if (lircFD == -1) {
-        m_Log->Printf(0, "Error opening device %s\n", args.lircDevice.c_str());
+        LOG(ERROR) << "Error opening device " << args.lircDevice;
         showCandidates("/dev/", "lirc");
         exit(EXIT_FAILURE);
     }
@@ -424,19 +434,19 @@ void RFSniffer::openLirc() throw(CHaException)
     if (args.bLircPedantic) {
         struct stat s;
         if (fstat(lircFD, &s) == -1) {
-            m_Log->Printf(0, "fstat: Can't read file status! : %s\n", strerror(errno));
+            LOG(ERROR) << "fstat: Can't read file status! : " << strerror(errno);
             throw CHaException(CHaException::ErrBadParam, "fstat: Can't read file status! : %s\n",
                                strerror(errno));
         }
         if (!S_ISCHR(s.st_mode)) {
-            m_Log->Printf(0, "Lirc device is not character device! st_mode = %d\n", (int)s.st_mode);
+            LOG(ERROR) << "Lirc device is not character device! st_mode = " << (int)s.st_mode;
             throw CHaException(CHaException::ErrBadParam, "%s is not a character device\n",
                                args.lircDevice.c_str());
         }
 
         uint32_t mode = 2;
         if (ioctl(lircFD, lircGetRecMode, &mode) == -1) {
-            m_Log->Printf(0, "This program is only intended for receivers supporting the pulse/space layer.\n");
+            LOG(ERROR) << "This program is only intended for receivers supporting the pulse/space layer.\n";
             throw CHaException(CHaException::ErrBadParam,
                                "This program is only intended for receivers supporting the pulse/space layer.");
         }
@@ -450,7 +460,7 @@ void RFSniffer::tryJustScan() throw(CHaException)
     if (scannerParams.length() == 0)
         return;
 
-    m_Log->Printf(0, "Scanner params are: \"%s\"\n", scannerParams.c_str());
+    LOG(INFO) << "Scanner params are: \"" << scannerParams.c_str() << '"';
     int minLevel = 30;
     int maxLevel = 60;
     int scanTime = 15;
@@ -468,8 +478,8 @@ void RFSniffer::tryJustScan() throw(CHaException)
             maxLevel = atoi(scannerParams);
         }
     } else {
-        m_Log->Printf(0, "Error in parsing scanner params." \
-                      "Use -S <low level>..<high level>/<seconds for step>\n");
+        LOG(ERROR) << "Error in parsing scanner params." \
+				"Use -S <low level>..<high level>/<seconds for step>\n";
         exit(-1);
     }
 
@@ -491,7 +501,7 @@ void RFSniffer::tryJustScan() throw(CHaException)
             if (result == -1 && errno == EAGAIN)
                 result = 0;
             if (result == 0 && args.bLircPedantic) {
-                m_Log->Printf(0, "read() failed [during opening lirc device part]\n");
+                LOG(ERROR) << "read() failed [during opening lirc device part]\n";
                 break;
             }
             for (int i = 0; i < result; i++) {
@@ -500,7 +510,7 @@ void RFSniffer::tryJustScan() throw(CHaException)
             }
         }
 
-        m_Log->Printf(3, "Recv fixed level=%d pulses=%d", curLevel, pulses);
+        LOG(INFO) << "Recv fixed level=" << curLevel << " pulses=" << pulses;
         curLevel++;
     }
     close(lircFD);
@@ -522,9 +532,9 @@ void RFSniffer::tryDumpAllLircStream()
 
     DPRINTF_DECLARE(dprintf, false);
 
-    m_Log->Printf(3, "Saving all data from lirs device started.\n"\
+    LOG(INFO) << "Saving all data from lirs device started.\n"\
                   "Print any button to finish\n" \
-                  "Lirc fd is %d\n", lircFD);
+                  "Lirc fd is " << lircFD;
 
     if (rfm)
         rfm->receiveBegin();
@@ -533,11 +543,11 @@ void RFSniffer::tryDumpAllLircStream()
     while (true) {
         if (waitForData(lircFD, 100000)) {
             int resultBytes = read(lircFD, (void *)dataBuff, sizeof(dataBuff));
-            m_Log->Printf(3, "Read %d bytes\n", resultBytes);
+            LOG(INFO) << "Read" << resultBytes << " bytes\n";
 
             // I hope this never happen
             while (resultBytes % sizeof(lirc_t) != 0) {
-                m_Log->Printf(3, "Bad amount (amount % 4 != 0) of bytes read from lirc");
+                LOG(WARN) << "Bad amount (amount % 4 != 0) of bytes read from lirc";
                 usleep(1000);
                 int remainBytes = sizeof(lirc_t) - resultBytes % sizeof(lirc_t);
                 int readTailBytes = read(lircFD, (void *)((char *)dataBuff + resultBytes), remainBytes);
@@ -552,7 +562,7 @@ void RFSniffer::tryDumpAllLircStream()
             break;
     }
 
-    CRFParser::SaveFile(lircData.data(), lircData.size(), "dump-all", args.savePath, m_Log.get());
+    CRFParser::SaveFile(lircData.data(), lircData.size(), "dump-all", args.savePath);
 
     closeConnections();
     exit(0);
@@ -562,21 +572,21 @@ void RFSniffer::receiveForever() throw(CHaException)
 {
     DPRINTF_DECLARE(dprintf, false);
 
-    dprintf("$P DPrintf initiaized\n");
+    dprintf("$P Start!\n");    
 
-    m_Log->Printf(3, "RF Receiver begins");
+    LOG(INFO) << "RF Receiver begins";
 
     if (rfm)
         rfm->receiveBegin();
 
     auto devicesConfig = configJson["devices"];
 
-    CMqttConnection conn(args.mqttHost, m_Log.get(), rfm.get(), devicesConfig, args.enabledFeatures);
+    CMqttConnection conn(args.mqttHost, rfm.get(), devicesConfig, args.enabledFeatures);
 
-    CRFParser m_parser(m_Log.get(), args.bDebug ? args.savePath : "");
+    CRFParser parser;
 
     for (auto protocol : args.enabledProtocols)
-        m_parser.AddProtocol(protocol);
+        parser.AddProtocol(protocol);
 
     string dumpFileName;
     std::unique_ptr<FILE, int(*)(FILE *)> dumpFile(nullptr, fclose);
@@ -587,7 +597,7 @@ void RFSniffer::receiveForever() throw(CHaException)
         // make unique_ptr for automatic close of file
         dumpFile = std::unique_ptr<FILE, int(*)(FILE *)>(fopen(dumpFileName.c_str(), "w"), fclose);
         
-        m_Log->Printf(3, "Saving stream dump to '%s'. Press Ctrl-C to stop driver", dumpFileName.c_str());
+        LOG(INFO) << "Saving stream dump to '" << dumpFileName << "'. Press Ctrl-C to stop driver";
     }
 
     int lastRSSI = -1000, minGoodRSSI = 0;
@@ -601,17 +611,17 @@ void RFSniffer::receiveForever() throw(CHaException)
         // try is placed here to handle exceptions and just restart, not to crush
         try {
             dprintf("$P process all parsed messages\n");
-            for (const string &parsedResult : m_parser.ExtractParsed()) {
-                m_Log->Printf(3, "RF Received: %s. RSSI=%d (%d)",
-                              parsedResult.c_str(), lastRSSI, minGoodRSSI);
+            for (const string &parsedResult : parser.ExtractParsed()) {
+                LOG(INFO) << "RF Received: " << parsedResult
+                          << ". RSSI=" << lastRSSI << " (" << minGoodRSSI << ")";
                 if (minGoodRSSI > lastRSSI)
-                        minGoodRSSI = lastRSSI;
+                    minGoodRSSI = lastRSSI;
                 if (args.bCoreTestMod)
                     fprintf(stderr, "TEST_RF_RECEIVED %s\n", parsedResult.c_str());
                 try {
                     conn.NewMessage(parsedResult);
                 } catch (CHaException ex) {
-                    m_Log->Printf(0, "conn.NewMessage failed: Exception", ex.GetExplanation().c_str());
+                    LOG(ERROR) << "conn.NewMessage failed: Exception " << ex.GetExplanation();
                     if (args.bCoreTestMod)
                         throw;
                 }
@@ -640,7 +650,7 @@ void RFSniffer::receiveForever() throw(CHaException)
 
                 if (resultBytes == 0) {
                     if (args.bLircPedantic) {
-                        m_Log->Printf(0, "read() failed [during endless cycle]\n");
+                        LOG(INFO) << "read() failed [during endless cycle]\n";
                     }
                     if (args.bCoreTestMod) {
                         dprintf("$P No more input data. Exiting!\n");
@@ -654,7 +664,7 @@ void RFSniffer::receiveForever() throw(CHaException)
                     
                     // I hope this never happen
                     while (resultBytes % sizeof(lirc_t) != 0) {
-                        m_Log->Printf(3, "Bad amount (amount % 4 != 0) of bytes read from lirc");
+                        LOG(INFO) << "Bad amount (amount % 4 != 0) of bytes read from lirc";
                         usleep(waitDataReadUsec);
                         int remainBytes = sizeof(lirc_t) - resultBytes % sizeof(lirc_t);
                         int readTailBytes = read(lircFD, (void *)((char *)dataBuff + resultBytes), remainBytes);
@@ -671,11 +681,11 @@ void RFSniffer::receiveForever() throw(CHaException)
 
                     /// pass data to parser
                     dprintf("$P before AddInputData() call\n");
-                    m_parser.AddInputData(dataBuff, result);
+                    parser.AddInputData(dataBuff, result);
                     dprintf("$P after AddInputData() call\n");
 
                     if (lastReport != time(NULL) && result >= 32) {
-                        m_Log->Printf(4, "RF got data %ld signals. RSSI=%d", (int)result, lastRSSI);
+                        LOG(INFO) << "RF got data " << result << " signals. RSSI=" << lastRSSI;
                         lastReport = time(NULL);
                     }
 
@@ -685,7 +695,7 @@ void RFSniffer::receiveForever() throw(CHaException)
             }
             //~ it doesn't work somehow
             //~ if (args.bDumpAllLircStream && waitForData(0, 100)) {
-                //~ m_Log->Printf(3, "You can find stream dump in '%s'", dumpFileName.c_str());
+                //~ LOG(INFO) << 3, "You can find stream dump in '%s'", dumpFileName.c_str());
                 //~ break;
             //~ }
             
@@ -704,7 +714,7 @@ void RFSniffer::receiveForever() throw(CHaException)
             }
 
         } catch (CHaException ex) {
-            m_Log->Printf(0, "Exception %s", ex.GetExplanation().c_str());
+            LOG(ERROR) << "Exception " << ex.GetExplanation();
             if (args.bCoreTestMod)
                 throw;
         }
@@ -738,15 +748,12 @@ void RFSniffer::run(int argc, char **argv)
     tryReadConfigFile();
     dprintf("$P Config file has been read.\n");
     
-    // important to initialize m_Log after reading config file
-    m_Log.reset(CLog::Default());
+    log4cpp_AddOstreamIfThereIsNoOutputs();
     
     logAllArguments();
     
-    if (args.configName.length() == 0)
-        m_Log->SetLogLevel(3);
     try {
-        dprintf("$P before $P SPI has been inited.\n");
+        dprintf("$P before SPI has been inited.\n");
         initSPI();
         dprintf("$P SPI has been inited.\n");
         initRFM();
@@ -758,17 +765,16 @@ void RFSniffer::run(int argc, char **argv)
         tryDumpAllLircStream();
         receiveForever();
     } catch (CHaException ex) {
-        m_Log->Printf(0, "Exception %s", ex.GetExplanation().c_str());
+        LOG(ERROR) << "Exception " << ex.GetExplanation();
         if (args.bCoreTestMod)
             throw;
     }
 
     closeConnections();
-    m_Log->Printf(0, "RFSNIFFER FINISHED\n");
+    LOG(INFO) << "RFSNIFFER FINISHED\n";
 }
 
 RFSniffer::RFSniffer():
-    m_Log(nullptr),
     mySPI(nullptr),
     rfm(nullptr),
     lircFD(-1)

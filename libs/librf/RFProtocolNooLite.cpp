@@ -1,6 +1,11 @@
-#include "stdafx.h"
 #include "RFProtocolNooLite.h"
+
 #include "../libutils/DebugPrintf.h"
+#include "../libutils/Exception.h"
+#include "../libutils/logging.h"
+
+typedef std::string string;
+using namespace strutils;
 
 static const range_type g_timing_pause[7] = {
     { 380, 750 },
@@ -65,7 +70,7 @@ CRFProtocolNooLite::~CRFProtocolNooLite()
 {
 }
 
-CRFProtocolNooLite::nooLiteCommandType CRFProtocolNooLite::getCommand(const string &name)
+CRFProtocolNooLite::nooLiteCommandType CRFProtocolNooLite::getCommand(const std::string &name)
 {
     nooLiteCommandType res = nlcmd_off;
     for (const char **p = g_nooLite_Commands; *p; p++) {
@@ -106,12 +111,12 @@ uint8_t CRFProtocolNooLite::crc8(uint8_t *addr, uint8_t len)
     return crc;
 }
 
-unsigned char CRFProtocolNooLite::getByte(const string &bits, size_t first, size_t len)
+unsigned char CRFProtocolNooLite::getByte(const std::string &bits, size_t first, size_t len)
 {
     return (unsigned char)bits2long(reverse(bits.substr(first, len)));
 }
 
-bool CRFProtocolNooLite::bits2packet(const string &bits, uint8_t *packet, size_t *packetLen,
+bool CRFProtocolNooLite::bits2packet(const std::string &bits, uint8_t *packet, size_t *packetLen,
                                      uint8_t *CRC)
 {
     size_t bytes = (bits.substr(1).length() + 7) / 8;
@@ -120,7 +125,7 @@ bool CRFProtocolNooLite::bits2packet(const string &bits, uint8_t *packet, size_t
     if (*packetLen < bytes)
         return false;
 
-    string reverseBits = reverse(bits.substr(1));
+    std::string reverseBits = reverse(bits.substr(1));
     while (reverseBits.length() % 8)
         reverseBits += '0';
 
@@ -139,7 +144,7 @@ bool CRFProtocolNooLite::bits2packet(const string &bits, uint8_t *packet, size_t
 }
 
 
-string CRFProtocolNooLite::DecodePacket(const string &raw_)
+string CRFProtocolNooLite::DecodePacket(const std::string &raw_)
 {
     DPRINTF_DECLARE(dprintf, false);
     
@@ -156,9 +161,9 @@ string CRFProtocolNooLite::DecodePacket(const string &raw_)
     if (v.size() == 1)
         v = raw.Split('c');   // TODO CheckIT
 
-    string res;
+    String res;
 
-    for(const String &i : v) {
+    for(const std::string &i : v) {
         res = ManchesterDecode('a' + i, false, 'a', 'b', 'A', 'B');
         dprintf("$P manch decoded: %\n", res);
         if (res.length() >= 37) {
@@ -219,9 +224,9 @@ string CRFProtocolNooLite::DecodeData(const string
     int calculated_crc = crc8(packet, packetLen - 1);
     int received_crc = packet[packetLen - 1];
     if (calculated_crc != received_crc) {
-        m_Log->Printf(3,
-                      "CRFProtocolNooLite::DecodeData - Incorrect packet - wrong CRC (received %02x != %02x calculated)",
-                      received_crc, calculated_crc);
+        LOG(INFO) << String::ComposeFormat(
+				"CRFProtocolNooLite::DecodeData - Incorrect packet - wrong CRC (received %02x != %02x calculated)",
+                received_crc, calculated_crc);
         return "";
     }
     int crc = received_crc;
@@ -229,10 +234,9 @@ string CRFProtocolNooLite::DecodeData(const string
     int fmt = packet[packetLen - 2];
     //                  0  1   2  3  4  5  6   7
     int fmt2length[] = {5, 8, -1, 9, 6, 7, 8, 10};
-    if (fmt < 0 || fmt >= sizeof(fmt2length) / sizeof(int) || fmt2length[fmt] != packetLen) {
-        m_Log->Printf(3,
-                      "CRFProtocolNooLite::DecodeData - Incorrect packet - strange fmt=%d, received_len=%d",
-                      fmt, packetLen);
+    if (fmt < 0 || fmt >= sizeof(fmt2length) / sizeof(int) || fmt2length[fmt] != (int)packetLen) {
+        LOG(INFO) << "CRFProtocolNooLite::DecodeData - Incorrect packet - strange "\
+                     "fmt=" << fmt << ", received_len=" << packetLen;
         return "";
     }
 
@@ -354,24 +358,24 @@ string CRFProtocolNooLite::DecodeData(const string
             }
         }
         default:
-            m_Log->Printf(3, "unknown_format=true len=%d addr=%04x fmt=%02x crc=%02x", packetLen,
-                          (int)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (int)fmt,
-                          (int)packet[packetLen - 1]);
-            m_Log->PrintBuffer(3, packet, packetLen);
+            LOG(INFO) << String::ComposeFormat(
+					"unknown_format=true len=%d addr=%04x fmt=%02x crc=%02x", packetLen,
+                    (int)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (int)fmt,
+                    (int)packet[packetLen - 1]);
     }
 
     return "";
 }
 
-bool CRFProtocolNooLite::needDump(const string &rawData)
+bool CRFProtocolNooLite::needDump(const std::string &rawData)
 {
     return rawData.find(m_PacketDelimeter) != rawData.npos;
 }
 
 
-string CRFProtocolNooLite::bits2timings(const string &bits)
+string CRFProtocolNooLite::bits2timings(const std::string &bits)
 {
-    string start;
+    std::string start;
     for (int i = 0; i < 39; i++) {
         start += '1';
     }
@@ -383,7 +387,7 @@ string CRFProtocolNooLite::bits2timings(const string &bits)
 
 string l2bits(uint16_t val, int bits)
 {
-    string res;
+    std::string res;
     for (int i = 0; i < bits; i++) {
         res = res + ((val & 1) ? '1' : '0');
         val >>= 1;
@@ -392,7 +396,7 @@ string l2bits(uint16_t val, int bits)
     return res;
 }
 
-string CRFProtocolNooLite::data2bits(const string &data)
+string CRFProtocolNooLite::data2bits(const std::string &data)
 {
     String proto, dataDetail;
     String(data).SplitByExactlyOneDelimiter(':', proto, dataDetail);
@@ -401,16 +405,16 @@ string CRFProtocolNooLite::data2bits(const string &data)
 
     String::Map values = dataDetail.SplitToPairs();
 
-    string sAddr = values["addr"];
-    string sCmd = values["cmd"];
-    string sFmt = values["fmt"];
-    string sFlip = values["flip"];
-    string sLevel = values["level"];
-    string sr = values["r"];
+    std::string sAddr = values["addr"];
+    std::string sCmd = values["cmd"];
+    std::string sFmt = values["fmt"];
+    std::string sFlip = values["flip"];
+    std::string sLevel = values["level"];
+    std::string sr = values["r"];
     uint8_t r = sr.length() ? atoi(sr) : 255;
-    string sg = values["g"];
+    std::string sg = values["g"];
     uint8_t g = sg.length() ? atoi(sg) : 255;
-    string sb = values["b"];
+    std::string sb = values["b"];
     uint8_t b = sb.length() ? atoi(sb) : 255;
 
     uint16_t addr = (uint16_t)strtol(sAddr.c_str(), NULL, 16);
@@ -420,8 +424,7 @@ string CRFProtocolNooLite::data2bits(const string &data)
     m_lastFlip[addr] = flip;
     uint8_t level = atoi(sLevel);
 
-    int extraBytes = 0;
-    string res = "1" + l2bits(flip, 1) + l2bits(cmd, 4);
+    std::string res = "1" + l2bits(flip, 1) + l2bits(cmd, 4);
 
     switch (cmd) {
         case nlcmd_off:             //0 – выключить нагрузку
@@ -474,7 +477,7 @@ string CRFProtocolNooLite::data2bits(const string &data)
     uint8_t crc;
     bits2packet(res, packet, &packetLen, &crc);
     res = res.substr(0, res.length() - 8) + l2bits(crc, 8);
-    m_Log->Printf(6, "res=%s", res.c_str());
+    LOG(INFO) << "res=" << res;
 
     return res; //???? remove first bit ?? TODO
 }

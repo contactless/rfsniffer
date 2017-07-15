@@ -3,6 +3,9 @@
 #include "../libutils/strutils.h"
 #include "../libutils/DebugPrintf.h"
 
+typedef std::string string;
+using namespace strutils;
+
 // 
 static range_type g_timing_pause[7] =
 { 
@@ -34,9 +37,9 @@ CRFProtocolVhome::~CRFProtocolVhome()
 }
 
 
-string CRFProtocolVhome::DecodePacket(const string &pkt)
+string CRFProtocolVhome::DecodePacket(const std::string &pkt)
 {
-	DPRINTF_DECLARE(dprintf, true);
+	DPRINTF_DECLARE(dprintf, false);
 	
 	if (pkt.length() < 48)
 		return "";
@@ -72,7 +75,7 @@ string CRFProtocolVhome::DecodePacket(const string &pkt)
 
 string CRFProtocolVhome::DecodeData(const string& bits)
 {
-	DPRINTF_DECLARE(dprintf, true);
+	DPRINTF_DECLARE(dprintf, false);
 	
 	if (bits.length() != 24)
 		return "";

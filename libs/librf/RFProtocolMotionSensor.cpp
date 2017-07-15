@@ -1,5 +1,9 @@
 #include "RFProtocolMotionSensor.h"
 
+
+typedef std::string string;
+using namespace strutils;
+
 static const range_type g_timing_pause[7] = {
     { 380, 750 },
     { 851, 1400 },

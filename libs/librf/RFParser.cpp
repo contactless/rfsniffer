@@ -1,8 +1,9 @@
-#include <algorithm>
-#include "stdafx.h"
-#include <fcntl.h>
-
 #include "RFParser.h"
+
+#include <algorithm>
+#include <fcntl.h>
+#include <unistd.h>
+
 #include "RFProtocolLivolo.h"
 #include "RFProtocolX10.h"
 #include "RFProtocolRST.h"
@@ -16,11 +17,12 @@
 #include "RFProtocolVhome.h"
 
 #include "../libutils/DebugPrintf.h"
+#include "../libutils/Exception.h"
+#include "../libutils/logging.h"
 
 using std::string;
 
-CRFParser::CRFParser(CLog *log, string SavePath)
-    : m_Log(log), m_SavePath(SavePath)
+CRFParser::CRFParser()
 {
     m_InputTime = 0;
 }
@@ -69,7 +71,6 @@ void CRFParser::AddProtocol(string protocol)
 
 void CRFParser::AddProtocol(CRFProtocol *p)
 {
-    p->setLog(m_Log);
     m_Protocols.push_back(std::unique_ptr<CRFProtocol>(p));
     m_ProtocolsBegins.push_back(0);
 }
@@ -93,12 +94,12 @@ string CRFParser::Parse(base_type *data, size_t len)
     TryToParseExistingData();
     dprintf("$P Extracting parsed\n");
     auto ret = ExtractParsed();
-    
+
     ClearRetainedInputData();
-    
+
     dprintf("$P Extracted %\n", ret);
     if (ret.size() != 0) {
-        string top = ret.front();
+        std::string top = ret.front();
         dprintf("$P Just before return\n");
         return top;
     }
@@ -107,43 +108,43 @@ string CRFParser::Parse(base_type *data, size_t len)
 
 void CRFParser::TryToParseExistingData() {
     DPRINTF_DECLARE(dprintf, false);
-    
+
     if (m_InputData.size() < MIN_PACKET_LEN)
         return;
-    
+
     bool lastWasPulse = CRFProtocol::isPulse(m_InputData.back());
     m_InputData.push_back((lastWasPulse ? 0 : PULSE_BIT) | PULSE_MASK);
     m_InputData.push_back((!lastWasPulse ? 0 : PULSE_BIT) | PULSE_MASK);
-    
+
     bool beginWasShifted = false;
-    
+
     for (int i = 0; i < (int)m_Protocols.size(); i++) {
         auto &protocol = m_Protocols[i];
         int &protocolBegin = m_ProtocolsBegins[i];
-                
+
         int packetLen = m_InputData.size() - protocolBegin;
-    
+
         if (packetLen < MIN_PACKET_LEN) {
             continue;
         }
-        
-        string parsed = protocol->Parse(m_InputData.begin() + protocolBegin, 
+
+        std::string parsed = protocol->Parse(m_InputData.begin() + protocolBegin,
                                         m_InputData.end(), m_InputTime);
         dprintf("$P Parsed = \'%\'\n", parsed);
-        
+
         if (!parsed.empty()) {
             m_ParsedResults.push_back(parsed);
             protocolBegin = m_InputData.size();
         }
     }
-    
-    
+
+
     m_InputData.pop_back();
     m_InputData.pop_back();
-    
+
     if (beginWasShifted) {
         int newBegin = *std::min_element(m_ProtocolsBegins.begin(), m_ProtocolsBegins.end());
-        std::for_each(m_ProtocolsBegins.begin(), m_ProtocolsBegins.end(), 
+        std::for_each(m_ProtocolsBegins.begin(), m_ProtocolsBegins.end(),
                 [newBegin](int &beg) { beg -= newBegin; });
         m_InputData.erase(m_InputData.begin(), m_InputData.begin() + newBegin);
     }
@@ -155,34 +156,36 @@ void CRFParser::AddInputData(base_type signal)
     DPRINTF_DECLARE(dprintf, false);
     m_InputData.push_back(signal);
     m_InputTime += CRFProtocol::getLengh(signal);
-    
+
+    //dprintf("$P Start\n");
+
     bool beginWasShifted = false;
-    
+
     for (int i = 0; i < (int)m_Protocols.size(); i++) {
         auto &protocol = m_Protocols[i];
         int &protocolBegin = m_ProtocolsBegins[i];
-        
+
         int packetLen = m_InputData.size() - protocolBegin;
         //dprintf("$P protocol=%, sig=%, good=%\n", protocol->getName(), CRFProtocol::SignedRepresentation(signal), (protocol->IsGoodSignal(signal) ? "YES" : "NO"));
         if (!protocol->IsGoodSignal(signal)) {
-            
+
             beginWasShifted = true;
             if (packetLen < MIN_PACKET_LEN) {
                 protocolBegin = m_InputData.size();
                 continue;
             }
-            
-            dprintf("$P Add input data, try decode packet (protocol = %, len = %)\n", 
+
+            dprintf("$P Add input data, try decode packet (protocol = %, len = %)\n",
                     protocol->getName(), packetLen);
-            
-            string parsed = protocol->Parse(m_InputData.begin() + protocolBegin, 
+
+            std::string parsed = protocol->Parse(m_InputData.begin() + protocolBegin,
                                             m_InputData.end(), m_InputTime);
             dprintf("$P Parsed = \'%\'\n", parsed);
-            
+
             if (!parsed.empty()) {
                 m_ParsedResults.push_back(parsed);
             }
-            
+
             protocolBegin = m_InputData.size();
         }
         else {
@@ -192,13 +195,16 @@ void CRFParser::AddInputData(base_type signal)
             }
         }
     }
-    
+
     if (beginWasShifted) {
         int newBegin = *std::min_element(m_ProtocolsBegins.begin(), m_ProtocolsBegins.end());
-        std::for_each(m_ProtocolsBegins.begin(), m_ProtocolsBegins.end(), 
+        std::for_each(m_ProtocolsBegins.begin(), m_ProtocolsBegins.end(),
                 [newBegin](int &beg) { beg -= newBegin; });
         m_InputData.erase(m_InputData.begin(), m_InputData.begin() + newBegin);
     }
+
+    //dprintf("$P Finished\n");
+
 }
 
 // add some data to parse
@@ -215,35 +221,29 @@ std::vector<string> CRFParser::ExtractParsed()
     return parsed;
 }
 
-void CRFParser::SaveFile(base_type *data, size_t size, const char *prefix)
-{
-    SaveFile(data, size, prefix, m_SavePath, m_Log);
-}
+string CRFParser::GenerateFileName(string prefix, std::string savePath) {
 
-string CRFParser::GenerateFileName(string prefix, string savePath) {
- 
 #ifndef WIN32
     static int internalNumber = 0;
     time_t Time = time(NULL);
     char DateStr[100], FileName[1024];
     strftime(DateStr, sizeof(DateStr), "%d%m-%H%M%S", localtime(&Time));
-    snprintf(FileName, sizeof(FileName),  "%s/%s-%s-%03d.rcf", savePath.c_str(), 
+    snprintf(FileName, sizeof(FileName),  "%s/%s-%s-%03d.rcf", savePath.c_str(),
              prefix.c_str(), DateStr, (++internalNumber) % 1000);
     return FileName;
 #endif
 }
 
-void CRFParser::SaveFile(base_type *data, size_t size, const char *prefix, string savePath,
-                         CLog *log)
+void CRFParser::SaveFile(base_type *data, size_t size, const char *prefix, std::string savePath)
 {
 #ifndef WIN32
     if (savePath.length()) {
-        string FileName = GenerateFileName(prefix, savePath);
-        log->Printf(3, "Write to file %s %ld signals\n", FileName.c_str(), size);
+        std::string FileName = GenerateFileName(prefix, savePath);
+        LOG(INFO) << "Write to file " << FileName << " " << size << " signals";
         int of = open(FileName.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IRGRP);
 
         if (of == -1) {
-            log->Printf(3, "error opening %s\n", FileName.c_str());
+            LOG(INFO) << "error opening " << FileName;
             return;
         };
 
@@ -251,10 +251,5 @@ void CRFParser::SaveFile(base_type *data, size_t size, const char *prefix, strin
         close(of);
     }
 #endif
-}
-
-void CRFParser::SetSavePath(string SavePath)
-{
-    m_SavePath = SavePath;
 }
 

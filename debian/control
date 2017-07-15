@@ -7,7 +7,7 @@ Build-Depends: debhelper (>= 9), dh-autoreconf, dh-exec, python, pkg-config, g++
 
 Package: wb-homa-rfsniffer
 Architecture: any
-Depends: ${shlibs:Depend}, ${misc:Depends}, libjsoncpp0, libmosquittopp1, libmosquitto1, ucf
+Depends: ${shlibs:Depend}, ${misc:Depends}, libjsoncpp0, libmosquittopp1, libmosquitto1, ucf, liblog4cpp5-dev
 Conflicts: wb-homa-ism-radio
 Breaks: 
 Description: Wiren Board RFM69 driver 

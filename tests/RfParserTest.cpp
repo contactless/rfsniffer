@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <string>
 
 #include <sys/types.h>
 #include <dirent.h>
@@ -19,10 +20,12 @@
 #include "../libs/librf/RFProtocolNooLite.h"
 #include "../libs/librf/RFProtocolOregon.h"
 
-
 #define MAX_SIZE 100000
 
-string DecodeFile(CRFParser *parser, CLog *log, const char *fileName)
+typedef std::string string;
+using namespace strutils;
+
+string DecodeFile(CRFParser *parser, const char *fileName)
 {
     DPRINTF_DECLARE(dprintf, false);
     dprintf("$P Start\n");
@@ -54,7 +57,7 @@ typedef pstr_pair *ppstr_pair;
 typedef std::pair<string, string> string_pair;
 
 
-void getAllTestFiles( string path, string_vector &result )
+void getAllTestFiles( string path, String::Vector &result )
 {
     DIR *dirFile = opendir( path.c_str() );
     if ( dirFile ) {
@@ -78,7 +81,7 @@ void getAllTestFiles( string path, string_vector &result )
 }
 
 
-bool OneTest(const string_pair &test, CLog *log, CRFParser &parser)
+bool OneTest(const string_pair &test, CRFParser &parser)
 {
     DPRINTF_DECLARE(dprintf, false);
     dprintf("$P Start test=%\n", test);
@@ -110,7 +113,7 @@ bool OneTest(const string_pair &test, CLog *log, CRFParser &parser)
     }
 
     dprintf("$P Before decoding\n");
-    String res = DecodeFile(&parser, log, (string("tests/testfiles/") + file_name).c_str());
+    String res = DecodeFile(&parser, (string("tests/testfiles/") + file_name).c_str());
 
 
     dprintf("$P After decoding before parsing decoded\n");
@@ -154,12 +157,11 @@ bool OneTest(const string_pair &test, CLog *log, CRFParser &parser)
 
 void RfParserTest(string path)
 {
-    DPRINTF_DECLARE(dprintf, true);
+    DPRINTF_DECLARE(dprintf, false);
     dprintf("$P Start\n");
 
     bool allPassed = true;
-    CLog *log = CLog::GetLog("Main");
-    CRFParser parser(log);
+    CRFParser parser;
 
     //parser.EnableAnalyzer();
 
@@ -172,14 +174,14 @@ void RfParserTest(string path)
     parser.AddProtocol("All");
 
     if (path.length()) {
-        string_vector files;
+        String::Vector files;
         getAllTestFiles("./" + path, files);
         std::sort(files.begin(), files.end());
         printf("Directory %s, %d files\n", path.c_str(), (int)files.size());
         for (const string &f : files)
             printf("\t\t%s\n", f.c_str());
         for (const string &f : files) {
-            string res = DecodeFile(&parser, log, ("./" + path + "/" + f).c_str());
+            string res = DecodeFile(&parser, ("./" + path + "/" + f).c_str());
             printf("File: %s, decoded: %s\n", f.c_str(), res.c_str());
         }
         return;
@@ -197,7 +199,7 @@ void RfParserTest(string path)
                 String file, answer;
                 testWitoutComment.SplitByFirstOccurenceDelimiter(' ', file, answer);
                 //std::cout << "Test: " << file << " & " << answer << std::endl;;
-                allPassed &= OneTest(std::pair<string, string>(file, answer), log, parser);
+                allPassed &= OneTest(std::pair<string, string>(file, answer), parser);
             }
             test_file.close();
         } else {

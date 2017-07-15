@@ -1,5 +1,7 @@
 #pragma once
 #include "RFProtocol.h"
+#include <map>
+
 class RFLIB_API CRFProtocolNooLite :
     public CRFProtocol
 {
@@ -34,23 +36,23 @@ class RFLIB_API CRFProtocolNooLite :
     CRFProtocolNooLite();
     ~CRFProtocolNooLite();
 
-    virtual string getName()
+    virtual std::string getName()
     {
         return "nooLite";
     };
-    virtual string DecodePacket(const string &);
-    virtual string DecodeData(const string &); // Преобразование бит в данные
-    virtual bool needDump(const string &rawData);
+    virtual std::string DecodePacket(const std::string &);
+    virtual std::string DecodeData(const std::string &); // Преобразование бит в данные
+    virtual bool needDump(const std::string &rawData);
 
     // Кодирование
-    virtual string bits2timings(const string &bits);
-    virtual string data2bits(const string &data);
-    static nooLiteCommandType getCommand(const string &name);
+    virtual std::string bits2timings(const std::string &bits);
+    virtual std::string data2bits(const std::string &data);
+    static nooLiteCommandType getCommand(const std::string &name);
     static const char *getDescription(int cmd);
 
   private:
-    unsigned char getByte(const string &bits, size_t first, size_t len = 8);
-    bool bits2packet(const string &bits, uint8_t *packet, size_t *packetLen, uint8_t *CRC = NULL);
+    unsigned char getByte(const std::string &bits, size_t first, size_t len = 8);
+    bool bits2packet(const std::string &bits, uint8_t *packet, size_t *packetLen, uint8_t *CRC = NULL);
     uint8_t crc8(uint8_t *addr, uint8_t len);
 };
 

@@ -7,15 +7,15 @@ class CRFProtocolOregon :
   public:
     CRFProtocolOregon();
     CRFProtocolOregon(range_array_type zeroLengths, range_array_type pulseLengths, int bits,
-                      int minRepeat, string PacketDelimeter);
+                      int minRepeat, std::string PacketDelimeter);
     ~CRFProtocolOregon();
 
-    virtual string getName()
+    virtual std::string getName()
     {
         return "Oregon";
     };
-    virtual string DecodePacket(const string &);
-    virtual string DecodeData(const string &); // Преобразование бит в данные
-    virtual bool needDump(const string &rawData);
+    virtual std::string DecodePacket(const std::string &);
+    virtual std::string DecodeData(const std::string &); // Преобразование бит в данные
+    virtual bool needDump(const std::string &rawData);
 };
 

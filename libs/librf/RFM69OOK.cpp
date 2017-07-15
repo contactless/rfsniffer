@@ -29,7 +29,8 @@
 // and copyright notices in any redistribution of this code
 // **********************************************************************************
 
-#include "stdafx.h"
+
+#include <cstring>
 #include <unistd.h>
 #include <time.h>
 #include <sys/time.h>
@@ -37,31 +38,37 @@
     #include <mach/clock.h>
     #include <mach/mach.h>
 #endif
-#include "../libutils/thread.h"
 #include "spidev_lib++.h"
 #include "RFM69OOK.h"
 #include "RFM69OOKregisters.h"
+#include "../libutils/Exception.h"
+#include "../libutils/logging.h"
+
 
 volatile byte RFM69OOK::_mode;  // current transceiver state
 volatile int RFM69OOK::RSSI;      // most accurate RSSI during reception (closest to the reception)
 RFM69OOK *RFM69OOK::selfPointer;
 volatile uint8_t RFM69OOK::PAYLOADLEN;
 
+inline void Sleep(long ms)
+{
+    usleep((ms) * 1000);
+};
+
 RFM69OOK::RFM69OOK()
 {
-    init(NULL, -1, NULL);
+    init(NULL, -1);
 }
 
-RFM69OOK::RFM69OOK(SPI *spi, int gpioInt, CLog *log)
+RFM69OOK::RFM69OOK(SPI *spi, int gpioInt)
 {
-    init(spi, gpioInt, log);
+    init(spi, gpioInt);
 }
 
-void RFM69OOK::init(SPI *spi, int gpioInt, CLog *log)
+void RFM69OOK::init(SPI *spi, int gpioInt)
 {
     m_spi = spi;
     m_gpioInt = gpioInt;
-    m_Log = log;
 }
 
 bool RFM69OOK::initialize()
@@ -153,8 +160,8 @@ void RFM69OOK::sendFrame(const void *buffer, uint8_t bufferSize)
     data[1] = bufferSize;
     memcpy(data + 2, buffer, bufferSize);
 
-    if (m_Log)
-        m_Log->PrintBuffer(1, data, bufferSize + 2);
+    //~ if (m_Log)
+        //~ m_Log->PrintBuffer(1, data, bufferSize + 2);
 
     m_spi->xfer2(data, bufferSize + 2, tmp, 0);
 

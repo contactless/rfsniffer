@@ -1,9 +1,15 @@
-#include <algorithm>
-
-#include "stdafx.h"
 #include "RFProtocol.h"
 
+#include <algorithm>
+#include <cstring>
+
 #include "../libutils/DebugPrintf.h"
+#include "../libutils/Exception.h"
+#include "../libutils/logging.h"
+#include "../libutils/strutils.h"
+
+typedef std::string string;
+using namespace strutils;
 
 string c2s(char c)
 {
@@ -14,13 +20,12 @@ string c2s(char c)
 }
 
 CRFProtocol::CRFProtocol(range_array_type zeroLengths, range_array_type pulseLengths, int bits,
-                         int minRepeat, string PacketDelimeter)
+                         int minRepeat, std::string PacketDelimeter)
     : m_ZeroLengths(zeroLengths), m_PulseLengths(pulseLengths), m_MinRepeat(minRepeat), m_Bits(bits),
       m_PacketDelimeter(PacketDelimeter), m_InvertPacket(true), m_CurrentRepeat(0)
 {
     m_Debug = false;
     m_InvertPacket = false;
-    m_Log = CLog::Default();
 }
 
 
@@ -48,7 +53,7 @@ string CRFProtocol::Parse(InputContainerIterator first, InputContainerIterator l
     dprintf("$P Got % data, try to parse TIME=%\n", input.size(), inputTime);
     m_InnerRepeat = 0;
     
-    string parsed = Parse(first, last);
+    std::string parsed = Parse(first, last);
     
     if (parsed.empty())
         return "";
@@ -95,7 +100,7 @@ string CRFProtocol::Parse(InputContainerIterator first, InputContainerIterator l
             результат работы этапа - строка вида "AaAbBaCc?d"
     */
 
-    string decodedRaw = DecodeRaw(first, last);
+    std::string decodedRaw = DecodeRaw(first, last);
 
     dprintf("$P - DecodeRaw returns: \'%\'\n", decodedRaw);
 
@@ -111,19 +116,19 @@ string CRFProtocol::Parse(InputContainerIterator first, InputContainerIterator l
     //if ((int)rawPackets.size() < m_MinRepeat)
     //    return "";
 
-    for (const string &packet : rawPackets)
+    for (const std::string &packet : rawPackets)
         dprintf("$P \t\t rawPacket: \'%\'\n", packet);
 
-    string bits = DecodeBits(rawPackets);
+    std::string bits = DecodeBits(rawPackets);
     dprintf("$P DecodeBits returns: \'%\'\n", bits);
 
     if (bits.length()) {
         //      3 - декодируем набор бит в осмысленные данные (команду, температуру etc)
-        string data = DecodeData(bits);
+        std::string data = DecodeData(bits);
         if (data.empty())
             return "";
             
-        string res = getName() + ":" + data;
+        std::string res = getName() + ":" + data;
         return res;
     }
 
@@ -136,7 +141,7 @@ string CRFProtocol::Parse(InputContainerIterator first, InputContainerIterator l
 string CRFProtocol::DecodeRaw(InputContainerIterator first, InputContainerIterator last)
 {
     DPRINTF_DECLARE(dprintf, false);
-    string decodedRaw;
+    std::string decodedRaw;
 
     dprintf("$P signals to decode (first 50): ");
     for (auto i = first; i < first + 50 && dprintf.isActive(); i++)
@@ -186,7 +191,7 @@ string CRFProtocol::DecodeRaw(InputContainerIterator first, InputContainerIterat
     return decodedRaw;
 }
 
-bool CRFProtocol::SplitPackets(const string &rawData, string_vector &rawPackets)
+bool CRFProtocol::SplitPackets(const std::string &rawData, string_vector &rawPackets)
 {
     String(rawData).Split(m_PacketDelimeter, rawPackets);
     return rawPackets.size() > 0;
@@ -194,11 +199,11 @@ bool CRFProtocol::SplitPackets(const string &rawData, string_vector &rawPackets)
 
 string CRFProtocol::DecodeBits(string_vector &rawPackets)
 {
-    string res;
+    std::string res;
     int count = 0;
 
-    for (const string &s : rawPackets) {
-        string packet;
+    for (const std::string &s : rawPackets) {
+        std::string packet;
         size_t pos = s.find(m_Debug ? '[' : '?');
         if (pos != string::npos)
             packet = s.substr(0, pos);
@@ -208,7 +213,7 @@ string CRFProtocol::DecodeBits(string_vector &rawPackets)
         if (!packet.length())
             continue;
 
-        string decoded = DecodePacket(packet);
+        std::string decoded = DecodePacket(packet);
 
         if (decoded == "")
             continue;
@@ -240,30 +245,29 @@ string CRFProtocol::DecodeBits(string_vector &rawPackets)
             return res;
         else {
             m_DumpPacket = true;
-            m_Log->Printf(3, "Decoded '%s' but repeat %d of %d", res.c_str(), count, m_MinRepeat);
-            //return res + String::ComposeFormat(" __repeat=%d", m_MinRepeat);
+            LOG(INFO) << "Decoded '" << res << "' but repeat " << count << " of " << m_MinRepeat;
         }
     }
 
     return "";
 }
 
-string CRFProtocol::DecodePacket(const string &raw)
+string CRFProtocol::DecodePacket(const std::string &raw)
 {
     return raw;
 }
 
-string CRFProtocol::DecodeData(const string &raw)
+string CRFProtocol::DecodeData(const std::string &raw)
 {
     return raw;
 }
 
-unsigned long CRFProtocol::bits2long(const string &s, size_t start, size_t len)
+unsigned long CRFProtocol::bits2long(const std::string &s, size_t start, size_t len)
 {
     return bits2long(s.substr(start, len));
 }
 
-unsigned long CRFProtocol::bits2long(const string &raw)
+unsigned long CRFProtocol::bits2long(const std::string &raw)
 {
     unsigned long res = 0;
 
@@ -277,9 +281,9 @@ unsigned long CRFProtocol::bits2long(const string &raw)
     return res;
 }
 
-string CRFProtocol::reverse(const string &s)
+string CRFProtocol::reverse(const std::string &s)
 {
-    string res = s;
+    std::string res = s;
     auto begin = res.begin(), end = res.end();
     while (begin + 1 < end) {
         --end;
@@ -301,13 +305,13 @@ string CRFProtocol::reverse(const string &s)
     longPulse - длинный сигнал
 */
 
-string CRFProtocol::ManchesterDecode(const string &raw, bool expectPulse, char shortPause,
+string CRFProtocol::ManchesterDecode(const std::string &raw, bool expectPulse, char shortPause,
                                      char longPause, char shortPulse, char longPulse)
 {
     enum t_state { expectStartPulse, expectStartPause, expectMiddlePulse, expectMiddlePause };
 
     t_state state = expectPulse ? expectStartPulse : expectStartPause;
-    string res;
+    std::string res;
 
     for (char c : raw) {
         switch (state) {
@@ -356,9 +360,9 @@ string CRFProtocol::ManchesterDecode(const string &raw, bool expectPulse, char s
 }
 
 // заменяем <search><search> на <replace>
-string replaceDouble(const string &src, char search, char replace)
+string replaceDouble(const std::string &src, char search, char replace)
 {
-    string res = src;
+    std::string res = src;
     char tmp[3];
     tmp[0] = tmp[1] = search;
     tmp[2] = 0;
@@ -383,10 +387,10 @@ string replaceDouble(const string &src, char search, char replace)
     shortPulse - короткий сигнал
     longPulse - длинный сигнал
 */
-string CRFProtocol::ManchesterEncode(const string &bits, bool invert, char shortPause,
+string CRFProtocol::ManchesterEncode(const std::string &bits, bool invert, char shortPause,
                                      char longPause, char shortPulse, char longPulse)
 {
-    string res;
+    std::string res;
     for (char c : bits) {
         bool bit = (c == '1');
 
@@ -406,12 +410,12 @@ string CRFProtocol::ManchesterEncode(const string &bits, bool invert, char short
     return res;
 }
 
-bool CRFProtocol::needDump(const string &rawData)
+bool CRFProtocol::needDump(const std::string &rawData)
 {
     return false;
 }
 
-void CRFProtocol::EncodeData(const string &data, uint16_t bitrate, uint8_t *buffer,
+void CRFProtocol::EncodeData(const std::string &data, uint16_t bitrate, uint8_t *buffer,
                              size_t &bufferSize)
 {
     EncodePacket(data2bits(data), bitrate, buffer, bufferSize);
@@ -419,10 +423,10 @@ void CRFProtocol::EncodeData(const string &data, uint16_t bitrate, uint8_t *buff
 
 // Кодируем пакет
 // TODO: Синхронизировать bitrate с драйвером радио
-void CRFProtocol::EncodePacket(const string &bits, uint16_t bitrate, uint8_t *buffer,
+void CRFProtocol::EncodePacket(const std::string &bits, uint16_t bitrate, uint8_t *buffer,
                                size_t &bufferSize)
 {
-    string timings = bits2timings(bits);
+    std::string timings = bits2timings(bits);
     uint16_t bitLen = 1000000L / bitrate;
     memset(buffer, 0, bufferSize);
 
@@ -445,12 +449,12 @@ void CRFProtocol::EncodePacket(const string &bits, uint16_t bitrate, uint8_t *bu
 }
 
 
-string CRFProtocol::bits2timings(const string &bits)
+string CRFProtocol::bits2timings(const std::string &bits)
 {
     throw CHaException(CHaException::ErrNotImplemented, "CRFProtocol::bits2timings");
 }
 
-string CRFProtocol::data2bits(const string &data)
+string CRFProtocol::data2bits(const std::string &data)
 {
     throw CHaException(CHaException::ErrNotImplemented, "CRFProtocol::data2bits");
 }

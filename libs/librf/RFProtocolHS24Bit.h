@@ -8,12 +8,12 @@ class RFLIB_API CRFProtocolHS24Bit :
     CRFProtocolHS24Bit();
     virtual ~CRFProtocolHS24Bit();
 
-    virtual string getName()
+    virtual std::string getName()
     {
         return "HS24Bits";
     };
-    virtual string DecodePacket(const string &);
-    virtual string DecodeData(const string &);
+    virtual std::string DecodePacket(const std::string &);
+    virtual std::string DecodeData(const std::string &);
 
 };
 

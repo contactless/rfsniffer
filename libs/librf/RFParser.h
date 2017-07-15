@@ -2,7 +2,6 @@
 #include <deque>
 #include <memory>
 
-#include "stdafx.h"
 #include "rflib.h"
 #include "RFProtocol.h"
 
@@ -14,11 +13,8 @@ class RFLIB_API CRFParser
     typedef std::deque<base_type> InputContainer;
     typedef std::string string;
     
-    CLog *m_Log;
     std::vector<std::unique_ptr<CRFProtocol>> m_Protocols;
     std::vector<int> m_ProtocolsBegins;
-
-    string m_SavePath;
 
     std::vector<string> m_ParsedResults;
     InputContainer m_InputData;
@@ -29,8 +25,7 @@ class RFLIB_API CRFParser
     static const int MIN_PACKET_LEN = 50; // Минимально возможная длина пакета
     static const int MAX_PACKET_LEN = 40000;
 
-    //  Конструктор. Принимает в качестве параметра логгер и путь для сохранения файлов. Если путь пустой, файлы не сохраняются
-    CRFParser(CLog *log, string savePath = "");
+    CRFParser();
     virtual ~CRFParser();
 
     //  AddProtocol  добавляет декодер к общему пулу декодеров
@@ -40,7 +35,7 @@ class RFLIB_API CRFParser
     
     // Пытается декодировать всю последовательность [data, data + len) каким-то одним декодером
     // используется для тестирования
-    string Parse(base_type *data, size_t len);
+    std::string Parse(base_type *data, size_t len);
     
     // Удалает все остаточную информацию о пришедших данных
     // В том числе входной буфер, указатели на позиции в нем для разных протоколов
@@ -63,12 +58,6 @@ class RFLIB_API CRFParser
     // get all results parsed from all data given by AddInputData
     std::vector<string> ExtractParsed();
 
-    //  Сохраняет пакет в файл
-    void SaveFile(base_type *data, size_t size, const char *prefix = "capture");
-
-    static string GenerateFileName(string prefix, string savePath);
-    static void SaveFile(base_type *data, size_t size, const char *prefix, string savePath, CLog *log);
-
-    // Устанавливает путь для сохранения пакетов
-    void SetSavePath(string savePath);
+    static std::string GenerateFileName(string prefix, std::string savePath);
+    static void SaveFile(base_type *data, size_t size, const char *prefix, std::string savePath);
 };

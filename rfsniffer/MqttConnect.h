@@ -1,8 +1,10 @@
 #include "mosquittopp.h"
+
 #include "../libs/libutils/strutils.h"
 #include "../libs/libwb/WBDevice.h"
 #include "../libs/librf/RFProtocolNooLite.h"
-#include "../libs/libutils/ConfigItem.h"
+#include "../libs/libutils/Config.h"
+#include "../libs/libutils/strutils.h"
 
 namespace Json {
 	class Value;
@@ -14,8 +16,7 @@ class CMqttConnection
     : public mosqpp::mosquittopp
 {
     typedef CWBDevice::CWBDeviceMap CWBDeviceMap;
-    string m_Server;
-    CLog *m_Log;
+    std::string m_Server;
     bool m_isConnected;
     CWBDeviceMap m_Devices;
     RFM69OOK *m_RFM;
@@ -25,14 +26,14 @@ class CMqttConnection
     
     Json::Value m_devicesConfig;
 
-    String lastMessage;
+    strutils::String lastMessage;
     size_t lastMessageCount, lastMessageNeedCount;
 
     time_t lastMessageReceiveTime;
 
 
   public:
-    CMqttConnection(string Server, CLog *log, RFM69OOK *rfm, Json::Value devicesConfig, const std::vector<std::string> &enabledFeatures);
+    CMqttConnection(std::string Server, RFM69OOK *rfm, Json::Value devicesConfig, const std::vector<std::string> &enabledFeatures);
     ~CMqttConnection();
     void NewMessage(strutils::String message);
 
@@ -51,9 +52,9 @@ class CMqttConnection
     virtual void on_log(int level, const char *str);
     virtual void on_error();
     
-    void CreateNooliteTxUniversal(const string &addr);
+    void CreateNooliteTxUniversal(const std::string &addr);
 
-    void publishString(const string &path, const string &value);
+    void publishString(const std::string &path, const std::string &value);
     void publishStringMap(const CWBDevice::StringMap &values);
 
     void SendUpdate();

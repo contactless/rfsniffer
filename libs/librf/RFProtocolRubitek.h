@@ -7,10 +7,10 @@ class RFLIB_API CRFProtocolRubitek :
     CRFProtocolRubitek();
     ~CRFProtocolRubitek();
 
-    virtual string getName()
+    virtual std::string getName()
     {
         return "Rubitek";
     };
-    virtual string DecodePacket(const string &);
+    virtual std::string DecodePacket(const std::string &);
 };
 

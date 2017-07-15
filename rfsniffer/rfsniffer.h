@@ -13,7 +13,6 @@
 #include "../libs/libutils/logging.h"
 #include "../libs/libutils/Exception.h"
 #include "../libs/libutils/Config.h"
-#include "../libs/libutils/ConfigItem.h"
 #include "../libs/librf/spidev_lib++.h"
 #include "../libs/librf/RFM69OOKregisters.h"
 #include "../libs/librf/RFM69OOK.h"
@@ -31,13 +30,13 @@ class RFSniffer
     typedef base_type lirc_t;
 
     struct RFSnifferArgs {
-        string configName;
+        std::string configName;
 
         bool bDebug;
         bool bDumpAllRegs;
         bool bLircPedantic;
 
-        string spiDevice;
+        std::string spiDevice;
         long spiSpeed;
         int gpioInt;
 
@@ -47,16 +46,16 @@ class RFSniffer
 
         bool bCoreTestMod;
 
-        string lircDevice;
+        std::string lircDevice;
 
-        string mqttHost;
+        std::string mqttHost;
 
-        string scannerParams;
+        std::string scannerParams;
 
         bool bDumpAllLircStream;
         bool bSimultaneouslyDumpStreamAndWork;
 
-        string savePath;
+        std::string savePath;
         bool inverted;
         
         std::vector<std::string> enabledProtocols;
@@ -64,8 +63,6 @@ class RFSniffer
 
         RFSnifferArgs();
     } args;
-
-    std::unique_ptr<CLog> m_Log;
 
     Json::Value configJson;
     std::unique_ptr<SPI> mySPI;
@@ -86,7 +83,7 @@ class RFSniffer
     // utils
     bool waitForData(int fd, unsigned long maxusec);
     std::string composeString(const char *format, ...);
-    void showCandidates(const string &path, const string &filePrefix);
+    void showCandidates(const std::string &path, const std::string &filePrefix);
 
     // read initial data
     void readEnvironmentVariables();
