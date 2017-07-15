@@ -20,7 +20,7 @@ debug_mode = False
 
 common_compiler_flags = ["-pthread", "-std=c++0x"]
 
-common_linker_flags = ["-lmosquitto", "-lmosquittopp", "-lpthread", "-llog4cpp"] + (["-ldw"] if debug_mode else [])
+common_linker_flags = ["-lmosquittopp", "-lpthread", "-llog4cpp"] + (["-ldw"] if debug_mode else [])
 
 only_release_compiler_flags = ["-O2"]
 # notice: -pg flag conflicts with valgrind!

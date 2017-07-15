@@ -444,6 +444,20 @@ void CMqttConnection::NewMessage(String message)
 
         dev->set(btn, dev->getString(btn) != "0" ? "0" : "1");
 		LOG(INFO) << "Msg from " << type << " " << message << ". Set " << btn << " to " << dev->getString(btn);
+	} else if (type == "EV1527") {
+		const String addr = values["addr"];
+		const int cmd = values["cmd"];
+
+		CWBDevice *dev = m_Devices[type + addr];
+		if (!dev)
+		{
+			dev = new CWBDevice(type + "_" + addr, type + " " + addr);
+            dev->addControl("cmd", CWBControl::Text, true);
+			CreateDevice(dev);
+		}
+
+        dev->set("cmd", cmd);
+		LOG(INFO) << "Msg from " << type << " " << message << ". Set " << btn << " to " << dev->getString(btn);
 	} else if (type == "Livolo" || type == "Raex" || type == "Rubitek" ) {
         LOG(INFO) << "Msg from remote control (Raex | Livolo | Rubitek) " << message;
 
