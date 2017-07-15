@@ -83,7 +83,7 @@ void getAllTestFiles( string path, String::Vector &result )
 
 bool OneTest(const string_pair &test, CRFParser &parser)
 {
-    DPRINTF_DECLARE(dprintf, true);
+    DPRINTF_DECLARE(dprintf, false);
     dprintf("$P Start test=%\n", test);
 
     String file_name = test.first, exp_result = test.second;
@@ -105,7 +105,7 @@ bool OneTest(const string_pair &test, CRFParser &parser)
     dprintf("$P Before parsing test\n");
     try {
         exp_result.SplitByExactlyOneDelimiter(":", exp_type, exp_value);
-        if (exp_value.find(' ') != exp_value.npos)
+        if (exp_value.find('=') != exp_value.npos)
             exp_values = exp_value.SplitToPairs();
     } catch (CHaException ex) {
         printf("Failed! Format of TEST is incorrect! Test: %s\n", exp_result.c_str());
@@ -113,17 +113,18 @@ bool OneTest(const string_pair &test, CRFParser &parser)
     }
 
     dprintf("$P Before decoding\n");
+    dprintf("$P exp_type = %, size(exp_values) = %\n", exp_type, exp_values.size());
     String res = DecodeFile(&parser, (string("tests/testfiles/") + file_name).c_str());
 
 
-    dprintf("$P After decoding before parsing decoded\n");
+    dprintf("$P After decoding before parsing decoded (got: %)\n", res);
 
     // Simple check for cases with not "a=1 b=2..." format
     if (res == exp_result)
         return true;
     try {
         res.SplitByExactlyOneDelimiter(":", res_type, res_value);
-        if (res_value.find(' ') != res_value.npos)
+        if (res_value.find('=') != res_value.npos)
             res_values = res_value.SplitToPairs();
     } catch (CHaException ex) {
         printf("Failed! Format is incorrect! File:%s, result:%s, Expected: %s\n", file_name.c_str(),
@@ -140,15 +141,19 @@ bool OneTest(const string_pair &test, CRFParser &parser)
         return false;
     }
     // Compare values, extra values in parsed result are ignored
-    for (auto value_pair : exp_values)
+    for (auto value_pair : exp_values) {
+		dprintf("$P Compare with % = %\n", value_pair.first, value_pair.second);
         if (value_pair.second != res_values[value_pair.first]) {
             // there may be a regular expression for check by unix grep
             if (value_pair.second.length() > 0 && value_pair.second[0] == '[')
                 continue;
-            printf("Failed! Field\"%s\" mismatch! \n\tFile:%s, result:%s, Expected: %s\n",
-                   value_pair.second.c_str(), file_name.c_str(), res.c_str(), exp_result.c_str());
+            printf("Failed! Field\"%s\" mismatch! \n\tFile:%s, "\
+                   " result:%s, Expected: %s\n",
+                   value_pair.first.c_str(), file_name.c_str(), 
+                   res_values[value_pair.first].c_str(), value_pair.second.c_str());
             return false;
         }
+	}
 
 
     dprintf("$P Finish\n");

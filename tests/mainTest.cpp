@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
 {
 
     // activate function-debug output
-    DPrintf::globallyEnable(true);
+    DPrintf::globallyEnable(false);
     DPrintf::setPrefixLength(50);
     if (0) {
         DPRINTF_DECLARE(dprint, false);
