@@ -9,10 +9,10 @@ class CRFProtocolOregonV3 :
     CRFProtocolOregonV3();
     ~CRFProtocolOregonV3();
 
-    virtual string getName()
+    virtual std::string getName()
     {
         return "Oregon";
     };
-    virtual string DecodePacket(const string &);
+    virtual std::string DecodePacket(const std::string &);
 };
 

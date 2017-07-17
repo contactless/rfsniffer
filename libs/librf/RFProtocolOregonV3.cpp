@@ -1,8 +1,9 @@
-#include "stdafx.h"
 #include "RFProtocolOregonV3.h"
 
-
 #include "../libutils/DebugPrintf.h"
+
+typedef std::string string;
+using namespace strutils;
 
 static range_type g_timing_pause[7] = {
     { 40000, 47000 },
@@ -32,11 +33,11 @@ CRFProtocolOregonV3::~CRFProtocolOregonV3()
 }
 
 
-string CRFProtocolOregonV3::DecodePacket(const string &raw_)
+string CRFProtocolOregonV3::DecodePacket(const std::string &raw_)
 {
     DPRINTF_DECLARE(dprintf, false);
 
-    string raw = raw_;
+    std::string raw = raw_;
 
     if (raw.length() < 10)
         return "";
@@ -62,7 +63,8 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
             return "";
 
 
-    string packet = "0101";
+    std::string packet = "0101";
+    packet.reserve(raw.size());
     char demand_next_c = 0;
 
     for (char c : raw) {
@@ -75,18 +77,18 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
         }
         switch (c) {
             case 'b':
-                packet += '1';
+                packet.push_back('1');
                 demand_next_c = 'B';
                 break;
             case 'B':
-                packet += '0';
+                packet.push_back('0');
                 demand_next_c = 'b';
                 break;
             case 'c':
-                packet += '0';
+                packet.push_back('0');
                 break;
             case 'C':
-                packet += '1';
+                packet.push_back('1');
                 break;
             default:
                 return "";
@@ -98,7 +100,7 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
     dprintf("$P    decodedBits(%): %\n", packet.size(), packet);
 
     uint32_t crc = 0, originalCRC = -1;
-    string hexPacket = "";
+    std::string hexPacket = "";
 
     if (packet.length() < 48) {
         dprintf("$P (only warning: it may be other protocol) "\
@@ -112,7 +114,7 @@ string CRFProtocolOregonV3::DecodePacket(const string &raw_)
 
     dprintf("$P CRCs: ");
     for (int i = 0; i < len; i += 4) {
-        string portion = reverse(packet.substr(i, 4));
+        std::string portion = reverse(packet.substr(i, 4));
         char buffer[20];
         uint32_t val = bits2long(portion);
 

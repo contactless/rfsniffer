@@ -1,5 +1,7 @@
-#include "stdafx.h"
 #include "RFProtocolRaex.h"
+
+using namespace strutils;
+typedef std::string string;
 
 static range_type g_timing_pause[7] = {
     { 2500, 2700 },
@@ -27,7 +29,7 @@ CRFProtocolRaex::~CRFProtocolRaex()
 }
 
 
-string CRFProtocolRaex::DecodePacket(const string &raw)
+string CRFProtocolRaex::DecodePacket(const std::string &raw)
 {
     if (raw.length() < 10 || raw[0] != 'a')
         return "";
@@ -72,7 +74,7 @@ F0 7B F0 40 7F FF FF
 6 = 24
 */
 
-string CRFProtocolRaex::DecodeData(const string &packet)
+string CRFProtocolRaex::DecodeData(const std::string &packet)
 {
     if (packet.length() != 57)
         return "";
@@ -80,7 +82,7 @@ string CRFProtocolRaex::DecodeData(const string &packet)
     if (packet.substr(57 - 8) != "11111111")
         return "";
 
-    string raw;
+    std::string raw;
 
     for (int i = 0; i < 7; i++) {
         unsigned char b = (unsigned char)bits2long(packet, 1 + i * 8, 8);
@@ -89,7 +91,7 @@ string CRFProtocolRaex::DecodeData(const string &packet)
         raw += buffer;
     }
 
-    string res = "raw=" + raw;
+    std::string res = "raw=" + raw;
     unsigned char ch = (unsigned char)bits2long(packet, 1, 8);
     unsigned char cmd = (unsigned char)bits2long(packet, 25, 2);
     char buffer[10];

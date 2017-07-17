@@ -62,6 +62,11 @@
 					"type": "string",
 					"default": "."
 				},
+				"dump_stream": {
+					"description": "Dump all radio stream",
+					"type": "boolean",
+					"default": false
+				},
 				"log": {
 					"type": "array",	
 					"title": "Logs",
@@ -101,7 +106,27 @@
 				}
 			}
 		},
-          
+		  
+		"enabled_protocols": {
+			"type": "array",	
+			"title": "Enabled protocols",
+			"items": {
+				"type": "string", 
+				"enum": ["X10", "RST", "Raex", "Livolo", "Oregon", "nooLite", "Rubitek", "MotionSensor", "VHome", "EV1527"]
+			},
+			"uniqueItems": true
+		},
+		
+		"enabled_features": {
+			"type": "array",	
+			"title": "Enabled features",
+			"items": {
+				"type": "string", 
+				"enum": ["noolite_tx"]
+			},
+			"uniqueItems": true
+		},
+		  
 		"devices": {
 			"type": "object",
 			"title": "Device politics",
@@ -129,20 +154,20 @@
 						"properties": {
 							"name": {
 								"description": "Name as in mqtt tree",
-                                "propertyOrder" : 1,
+								"propertyOrder" : 1,
 								"type": "string",
 								"default": ""
 							},
 							"politics": {
 								"description": "What is needed to do with devices that are not mentioned in the list? ",
-                                "propertyOrder" : 2,
+								"propertyOrder" : 2,
 								"type": "string", 
-                                "enum": [ "ignore", "show"],
+								"enum": [ "ignore", "show"],
 								"default": "show"
 							},
 							"heartbeat": {
 								"description": "Heartbeat (time in seconds which is needed to admit that device is dead, -1 for disable)",
-                                "propertyOrder" : 3,
+								"propertyOrder" : 3,
 								"type": "integer",
 								"default": -1,
 								"minimum": -1

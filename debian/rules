@@ -4,20 +4,43 @@
 	dh $@ --with autoreconf --parallel
 
 override_dh_autoreconf:
-	dh_autoreconf --as-needed
+	./generate_am_files.py
+	autoreconf -fvi -W all
+	# dh_autoreconf --as-needed -W all
 
 DEB_HOST_MULTIARCH  ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 override_dh_auto_configure:
 	./configs/generate_configs.py --directory configs/ --generate
-	dh_auto_configure -- --enable-static --enable-plugins --enable-doxygen
+	dh_auto_configure -- --disable-silent-rules CXXFLAGS="" CPPFLAGS=""
+	#dh_auto_configure -- --enable-static --enable-plugins --enable-doxygen
 
+override_dh_auto_build:
+	dh_auto_build -O--parallel 
+	#-- --disable-silent-rules
+
+# important to disable dh_auto_install because it install all binaries to /usr/bin including tests
 override_dh_auto_install:
 	#dh_auto_install
+
+override_dh_auto_test:
+	dh_auto_test -O--parallel
+	echo -en "\033[33;1;40m" \
+	    "==============================================\n" \
+        "> See gprof report in tests/gprof_report.log  \n" \
+	    "==============================================\n" \
+	    "\033[0m"
+
 
 override_dh_link:
 	dh_link
 
+override_dh_auto_clean:
+	# am files are needed by dh_...
+	./generate_am_files.py
+	autoreconf -fvi
+	dh_auto_clean
+	
 override_dh_clean:
 	rm -vf *.log
 	rm -vf compile

@@ -1,15 +1,15 @@
 #pragma once
-#include "RFProtocol.h"
+#include "RFProtocolEV1527.h"
+
 class RFLIB_API CRFProtocolVhome :
-	public CRFProtocol
+	public CRFProtocolEV1527
 {
 public:
 	CRFProtocolVhome();
 	~CRFProtocolVhome();
 
-	virtual string getName() { return "VHome"; };
-	virtual string DecodePacket(const string&);
-	virtual string DecodeData(const string& bits);
+	virtual std::string getName() { return "VHome"; };
+	virtual std::string DecodeData(const std::string& bits);
 
 };
 

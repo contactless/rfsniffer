@@ -14,7 +14,8 @@ do_fail()
 {
     echo "Watch all output:"
     cat $SIMULATE_RECEIVE_LOG
-    rm -vf $SIMULATE_RECEIVE_LOG
+    # During building package we don't see output, so don't remove file
+    # rm -vf $SIMULATE_RECEIVE_LOG
     exit -1
 }
 
@@ -60,4 +61,5 @@ fi
 echo "All tests passed =)"
     
 rm -vf $SIMULATE_RECEIVE_LOG
+
 

@@ -1,5 +1,7 @@
-#include "stdafx.h"
 #include "RFProtocolX10.h"
+
+typedef std::string string;
+using namespace strutils;
 
 static range_type g_Pulse[3] = {
     { 300, 500 },
@@ -25,9 +27,9 @@ CRFProtocolX10::~CRFProtocolX10()
 {
 }
 
-string CRFProtocolX10::DecodePacket(const string &packet)
+string CRFProtocolX10::DecodePacket(const std::string &packet)
 {
-    string bits;
+    std::string bits;
 
     for (const char i : packet) {
         if (i == 'b')
@@ -59,7 +61,7 @@ static const char COMMAND[16][8] = { "?0?", "?1?", "ON", "OFF", "DIM", "BRIGHT",
                                    };
 
 
-string CRFProtocolX10::DecodeData(const string &packet)
+string CRFProtocolX10::DecodeData(const std::string &packet)
 {
     if (packet.length() != 32)
         return "";

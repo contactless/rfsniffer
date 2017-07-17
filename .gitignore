@@ -60,11 +60,16 @@ compile
 *.trs
 test-driver
 
+
 # generated files
 *.generated
 
 # astyle: original sources
 *.orig
+
+# debug files
+tests/massif.out.*
+tests/vgcore.*
 
 # debian
 debian/wb-homa-rfsniffer

@@ -1,22 +1,32 @@
+#include "MqttConnect.h"
+
+#include <vector>
+#include <algorithm>
+
 #include "../libs/libutils/logging.h"
 #include "../libs/libutils/strutils.h"
 #include "../libs/libutils/Exception.h"
-#include "MqttConnect.h"
+#include "../libs/libutils/DebugPrintf.h"
 #include "../libs/librf/RFM69OOK.h"
 
 using namespace strutils;
+typedef std::string string;
 
 
-CMqttConnection::CMqttConnection(string Server, CLog *log, RFM69OOK *rfm,
-                                 CConfigItem *devicesConfig)
-    : m_Server(Server), m_Log(log), m_isConnected(false),
+CMqttConnection::CMqttConnection(string Server, RFM69OOK *rfm,
+                                 Json::Value devicesConfig, const std::vector<std::string> &enabledFeatures)
+    : m_Server(Server), m_isConnected(false),
       mosquittopp("RFsniffer"), m_RFM(rfm), m_devicesConfig(devicesConfig)
 {
+    DPRINTF_DECLARE(dprintf, false);
     m_Server = Server;
-    m_Log = log;
+
+	m_NooLiteTxEnabled = (std::find(enabledFeatures.begin(), enabledFeatures.end(), "noolite_tx") != enabledFeatures.end());
 
     connect(m_Server.c_str());
     loop_start();
+    
+    dprintf("$P CMqttConnection inited, noolite_tx %s\n", (m_NooLiteTxEnabled ? "enabled" : "disabled"));
 }
 
 CMqttConnection::~CMqttConnection()
@@ -25,34 +35,81 @@ CMqttConnection::~CMqttConnection()
 }
 
 
+
+void CMqttConnection::CreateNooliteTxUniversal(const std::string &addr) {
+    std::string name = String::ComposeFormat("noolite_tx_%s", addr.c_str());
+    
+    CWBDevice *dev = m_Devices[name];
+    
+    if (dev)
+        return;
+    
+    std::string desc = String::ComposeFormat("Noolite TX %s", addr.c_str());
+    dev = new CWBDevice(name, desc);
+    
+    dev->addControl("level", CWBControl::Range, "0", "1", false);
+    dev->setMax("level", "100");
+    dev->addControl("state", CWBControl::Switch, "0", "2", false);
+    dev->addControl("switch", CWBControl::PushButton, "0", "4", false);
+    dev->addControl("color", CWBControl::Rgb, "0;0;0", "5", false);
+    dev->addControl("slowup", CWBControl::PushButton, "0", "6", false);
+    dev->addControl("slowdown", CWBControl::PushButton, "0", "7", false);
+    dev->addControl("slowswitch", CWBControl::PushButton, "0", "8", false);
+    dev->addControl("slowstop", CWBControl::PushButton, "0", "9", false);
+    dev->addControl("shadow_level", CWBControl::Range, "0", "10", false);
+    dev->setMax("shadow_level", "100");
+    dev->addControl("bind", CWBControl::PushButton, "0", "20", false);
+    dev->addControl("unbind", CWBControl::PushButton, "0", "21", false);
+    
+    CreateDevice(dev);
+    
+    /*
+    'bind'  : { 'value' : 0,
+                'meta': {  'type' : 'pushbutton',
+                           'order' : '20',
+                           'export' : '0', // what is it??
+                        },
+              },
+    */
+}
+
+
 void CMqttConnection::on_connect(int rc)
-{
-    m_Log->Printf(1, "mqtt::on_connect(%d)", rc);
+{	
+	LOG(INFO) << "mqtt::on_connect(" << rc << ")";
 
     if (!rc) {
         m_isConnected = true;
     }
-
-    subscribe(NULL, "/devices/noolite_tx_0xd61/controls/#");
-    subscribe(NULL, "/devices/noolite_tx_0xd62/controls/#");
-    subscribe(NULL, "/devices/noolite_tx_0xd63/controls/#");
+		
+    if (m_NooLiteTxEnabled) {
+		for (const std::string &addr : {"0xd61", "0xd62", "0xd63"}) {
+			CreateNooliteTxUniversal(addr);
+			string topic = String::ComposeFormat("/devices/noolite_tx_%s/controls/#", addr.c_str());
+			
+			LOG(INFO) << "subscribe to " << topic;
+			subscribe(NULL, topic.c_str());
+		}
+		
+		SendUpdate();
+	}
 }
 
 void CMqttConnection::on_disconnect(int rc)
 {
     m_isConnected = false;
-    m_Log->Printf(1, "mqtt::on_disconnect(%d)", rc);
+    LOG(INFO) << "mqtt::on_disconnect(" << rc << ")";
 }
 
 void CMqttConnection::on_publish(int mid)
 {
-    m_Log->Printf(5, "mqtt::on_publish(%d)", mid);
+    LOG(INFO) << "mqtt::on_publish(" << mid << ")";
 }
 
 void CMqttConnection::on_message(const struct mosquitto_message *message)
 {
     try {
-        m_Log->Printf(6, "mqtt::on_message(%s=%s)", message->topic, message->payload);
+        LOG(INFO) << "mqtt::on_message(" << message->topic << " = " << message->payload << ")";
         String::Vector v = String(message->topic).Split('/');
 
         if (v.size() != 6)
@@ -61,17 +118,17 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
         if (v[5] != "on")
             return;
 
-        string addr = v[2];
+        std::string addr = v[2];
         size_t pos = addr.find("0x");
         if (pos == string::npos || pos > addr.length() - 2)
             return;
         addr = addr.substr(pos + 2);
 
-        string control = v[4];
+        std::string control = v[4];
 
-        m_Log->Printf(1, "%s control %s set to %s", addr.c_str(), control.c_str(), message->payload);
+        LOG(INFO) << addr.c_str() << "control " << control.c_str() << " set to " << message->payload;
         uint8_t cmd = 4;
-        string extra;
+        std::string extra;
 
         if (control == "state")
             cmd = atoi((char *)message->payload) ? 2 : 0;
@@ -95,41 +152,41 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
 
         static uint8_t buffer[100];
         size_t bufferSize = sizeof(buffer);
-        string command = "nooLite:cmd=" + itoa(cmd) + " addr=" + addr + extra;
-        m_Log->Printf(1, "%s", command.c_str());
+        std::string command = "nooLite:cmd=" + itoa(cmd) + " addr=" + addr + extra;
+        LOG(INFO) << command;
         m_nooLite.EncodeData(command, 2000, buffer, bufferSize);
         if (m_RFM) {
             m_RFM->send(buffer, bufferSize);
             m_RFM->receiveBegin();
         }
     } catch (CHaException ex) {
-        m_Log->Printf(0, "Exception %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
+        LOG(INFO) << "Exception " << ex.GetMsg() << "(" << ex.GetCode() << ")";
     }
 
 }
 
 void CMqttConnection::on_subscribe(int mid, int qos_count, const int *granted_qos)
 {
-    m_Log->Printf(5, "mqtt::on_subscribe(%d)", mid);
+    LOG(INFO) << "mqtt::on_subscribe(" << mid << ")";
 }
 
 void CMqttConnection::on_unsubscribe(int mid)
 {
-    m_Log->Printf(5, "mqtt::on_message(%d)", mid);
+    LOG(INFO) << "mqtt::on_message(" << mid << ")";
 }
 
 void CMqttConnection::on_log(int level, const char *str)
 {
-    m_Log->Printf(10, "mqtt::on_log(%d, %s)", level, str);
+    LOG(INFO) << "mqtt::on_log(" << level << ", " << str << ")";
 }
 
 void CMqttConnection::on_error()
 {
-    m_Log->Printf(1, "mqtt::on_error()");
+    LOG(INFO) << "mqtt::on_error()";
 }
 
 /*!
- *  NewMessage: function gets a string looking like:
+ *  NewMessage: function gets a std::string looking like:
  *      ProtocolName: flip=0 second_arg=123 addr=0x13 low_battery=0 crc=19 __repeat=2
  *      (here flip, ..., crc - usual data, and after them:
  *          __repeat=N - demand to wait
@@ -142,7 +199,7 @@ void CMqttConnection::NewMessage(String message)
 {
     String type, value;
     if (message.SplitByExactlyOneDelimiter(':', type, value) != 0) {
-        m_Log->Printf(3, "CMqttConnection::NewMessage - Incorrect message: %s", message.c_str());
+        LOG(INFO) << "CMqttConnection::NewMessage - Incorrect message: " << message;
         return;
     }
     String::Map values = value.SplitToPairs(' ', '=');
@@ -150,7 +207,7 @@ void CMqttConnection::NewMessage(String message)
     // process copies
     {
         if (message != lastMessage) {
-            static const String repeatString = "__repeat";
+            static const std::string repeatString = "__repeat";
 
             lastMessageReceiveTime = time(NULL);
 
@@ -177,19 +234,19 @@ void CMqttConnection::NewMessage(String message)
     }
 
     if (type == "RST") {
-        m_Log->Printf(3, "Msg from RST %s", value.c_str());
+        LOG(INFO) << "Msg from RST " << value;
 
-        string id = values["id"], t = values["t"], h = values["h"];
+        String id = values["id"], t = values["t"], h = values["h"];
 
         if (id.empty() || t.empty() || h.empty()) {
-            m_Log->Printf(3, "Msg from RST INCORRECT %s", value.c_str());
+            LOG(INFO) << "Msg from RST INCORRECT " << value;
             return;
         }
 
-        string name = string("RST_") + id;
+        String name = string("RST_") + id;
         CWBDevice *dev = m_Devices[name];
         if (!dev) {
-            string desc = string("RST sensor") + " [" + id + "]";
+            String desc = string("RST sensor") + " [" + id + "]";
             dev = new CWBDevice(name, desc);
             dev->addControl("Temperature", CWBControl::Temperature, true);
             dev->addControl("Humidity", CWBControl::RelativeHumidity, true);
@@ -199,14 +256,14 @@ void CMqttConnection::NewMessage(String message)
         dev->set("Temperature", t);
         dev->set("Humidity", h);
     } else if (type == "nooLite") {
-        m_Log->Printf(3, "Msg from nooLite %s", value.c_str());
+        LOG(INFO) << "Msg from nooLite " << value;
 
         // nooLite:sync=80 cmd=21 type=2 t=24.6 h=39 s3=ff bat=0 addr=1492 fmt=07 crc=a2
 
         String id = values["addr"], cmd = values["cmd"];
 
         if (id.empty() || cmd.empty()) {
-            m_Log->Printf(3, "Msg from nooLite INCORRECT %s", value.c_str());
+            LOG(INFO) << "Msg from nooLite INCORRECT " << value;
             return;
         }
 
@@ -219,13 +276,13 @@ void CMqttConnection::NewMessage(String message)
             case 4: // change value between 0 and 1
             case 24:
             case 25: { // set as 1 for a while
-                string name = string("noolite_rx_0x_switch") + id;
+                String name = string("noolite_rx_0x_switch") + id;
                 bool enableForAWhile = (cmdInt == 24 || cmdInt == 25);
-                static const string control_name = "state";
-                static const string interval_control_name = "timeout";
+                static const String control_name = "state";
+                static const String interval_control_name = "timeout";
                 CWBDevice *dev = m_Devices[name];
                 if (!dev) {
-                    string desc = string("Noolite switch ") + " [0x" + id + "]";
+                    String desc = string("Noolite switch ") + " [0x" + id + "]";
                     dev = new CWBDevice(name, desc);
                     dev->addControl(control_name, CWBControl::Switch, true);
                     if (enableForAWhile)
@@ -249,11 +306,11 @@ void CMqttConnection::NewMessage(String message)
             }
 
             case 6: { // set brightness
-                string name = string("noolite_rx_0x_color") + id;
-                static const string control_name = "Color";
+                String name = string("noolite_rx_0x_color") + id;
+                static const String control_name = "Color";
                 CWBDevice *dev = m_Devices[name];
                 if (!dev) {
-                    string desc = string("Noolite color ") + " [0x" + id + "]";
+                    String desc = string("Noolite color ") + " [0x" + id + "]";
                     dev = new CWBDevice(name, desc);
                     dev->addControl(control_name, CWBControl::Rgb, true);
                     CreateDevice(dev);
@@ -265,12 +322,12 @@ void CMqttConnection::NewMessage(String message)
 
             // Temperature sensor
             case 21: { // puts info about temperature and humidity
-                string name = string("noolite_rx_0x_th") + id;
-                string t = values["t"], h = values["h"];
-                static const string low_battery_control_name = "Low battery";
+                String name = string("noolite_rx_0x_th") + id;
+                String t = values["t"], h = values["h"];
+                static const String low_battery_control_name = "Low battery";
                 CWBDevice *dev = m_Devices[name];
                 if (!dev) {
-                    string desc = string("Noolite Sensor PT111") + " [0x" + id + "]";
+                    String desc = string("Noolite Sensor PT111") + " [0x" + id + "]";
                     dev = new CWBDevice(name, desc);
                     dev->addControl("Temperature", CWBControl::Temperature, true);
 
@@ -291,12 +348,12 @@ void CMqttConnection::NewMessage(String message)
             }
 
             default: {
-                string name = string("noolite_rx_0x_unknown") + id;
+                String name = string("noolite_rx_0x_unknown") + id;
                 CWBDevice *dev = m_Devices[name];
-                static const string cmd_control_name = "command",
+                static const String cmd_control_name = "command",
                                     cmd_desc_control_name = "command_description";
                 if (!dev) {
-                    string desc = string("Noolite device ") + " [0x" + id + "]";
+                    String desc = string("Noolite device ") + " [0x" + id + "]";
                     dev = new CWBDevice(name, desc);
                     dev->addControl(cmd_control_name, CWBControl::Generic, true);
                     dev->addControl(cmd_desc_control_name, CWBControl::Text, true);
@@ -309,12 +366,12 @@ void CMqttConnection::NewMessage(String message)
         }
 
     } else if (type == "Oregon") {
-        m_Log->Printf(3, "Msg from Oregon %s", value.c_str());
+        LOG(INFO) << "Msg from Oregon " << value;
 
-        const string sensorType = values["type"], id = values["id"], ch = values["ch"];
+        const String sensorType = values["type"], id = values["id"], ch = values["ch"];
 
         if (sensorType.empty() || id.empty() || ch.empty()) {
-            m_Log->Printf(3, "Msg from Oregon INCORRECT %s", value.c_str());
+            LOG(INFO) << "Msg from Oregon INCORRECT " << value;
             return;
         }
 
@@ -346,10 +403,10 @@ void CMqttConnection::NewMessage(String message)
                 control_and_value.push_back({control_pair.second, value_iterator->second});
         }
 
-        const string name = string("oregon_rx_") + sensorType + "_" + id + "_" + ch;
+        const String name = string("oregon_rx_") + sensorType + "_" + id + "_" + ch;
         CWBDevice *dev = m_Devices[name];
         if (!dev) {
-            const string desc = string("Oregon sensor [") + sensorType + "] (" + id + "-" + ch + ")";
+            const String desc = string("Oregon sensor [") + sensorType + "] (" + id + "-" + ch + ")";
             dev = new CWBDevice(name, desc);
 
             for (auto control_pair : control_and_value)
@@ -361,7 +418,7 @@ void CMqttConnection::NewMessage(String message)
             dev->set(control_pair.first, control_pair.second);
 
     } else if (type == "X10") {
-        m_Log->Printf(3, "Msg from X10 %s", message.c_str());
+        LOG(INFO) << "Msg from X10 " << message;
 
         CWBDevice *dev = m_Devices["X10"];
         if (!dev) {
@@ -371,27 +428,37 @@ void CMqttConnection::NewMessage(String message)
         }
 
         dev->set("Command", value);
-    } else if (type=="Livolo" || type=="VHome") {
-		const string addr = values["addr"], cmd = values["cmd"];
+    } else if (type == "VHome") {
+		const String addr = values["addr"];
+		const String btn = values["btn"];
 
-		CWBDevice *dev = m_Devices[type+addr];
+		CWBDevice *dev = m_Devices[type + addr];
 		if (!dev)
 		{
-			dev = new CWBDevice(type+addr, type + " " + addr);
+			dev = new CWBDevice(type + "_" + addr, type + " " + addr);
+			for (int i = 1; i <= 4; i++)
+				dev->addControl(String::ValueOf(i), CWBControl::Switch, true);
 			CreateDevice(dev);
 		}
 
-		if (!dev->controlExists(cmd))
+        dev->set(btn, dev->getString(btn) != "0" ? "0" : "1");
+		LOG(INFO) << "Msg from " << type << " " << message << ". Set " << btn << " to " << dev->getString(btn);
+	} else if (type == "EV1527") {
+		const String addr = values["addr"];
+		const int cmd = values["cmd"];
+
+		CWBDevice *dev = m_Devices[type + addr];
+		if (!dev)
 		{
-			dev->addControl(cmd, CWBControl::Switch, true);
+			dev = new CWBDevice(type + "_" + addr, type + " " + addr);
+            dev->addControl("cmd", CWBControl::Text, true);
 			CreateDevice(dev);
 		}
 
-		//dev->set(cmd, "1");
-        dev->set(cmd, dev->getString(cmd) != "0" ? "0" : "1");
-		m_Log->Printf(3, "Msg from %s %s. Set %s to %sq", type.c_str(), message.c_str(), cmd.c_str(), dev->getString(cmd).c_str());
-	} else if (type == "Raex" || type == "Rubitek" ) {
-        m_Log->Printf(3, "Msg from remote control (Raex | Livolo | Rubitek) %s", message.c_str());
+        dev->set("cmd", cmd);
+		LOG(INFO) << "Msg from " << type << " " << message << ". Set " << btn << " to " << dev->getString(btn);
+	} else if (type == "Livolo" || type == "Raex" || type == "Rubitek" ) {
+        LOG(INFO) << "Msg from remote control (Raex | Livolo | Rubitek) " << message;
 
         CWBDevice *dev = m_Devices["Remotes"];
         if (!dev) {
@@ -407,13 +474,13 @@ void CMqttConnection::NewMessage(String message)
     } else if (type == "HS24Bits") {
         int msg = values["msg_id"].IntValue(), ch = values["ch"].IntValue();
         
-        string name = String::ComposeFormat("hs24bits_%d_%d", msg, ch);
+        String name = String::ComposeFormat("hs24bits_%d_%d", msg, ch);
         
-        static const string control_name = "state";
+        static const String control_name = "state";
         
         CWBDevice *dev = m_Devices[name];
         if (!dev) {
-            string desc = String::ComposeFormat("HS24Bits %d (%d)", msg, ch);
+            String desc = String::ComposeFormat("HS24Bits %d (%d)", msg, ch);
             dev = new CWBDevice(name, desc);
             dev->addControl(control_name, CWBControl::Switch, true);
             CreateDevice(dev);
@@ -425,7 +492,7 @@ void CMqttConnection::NewMessage(String message)
     SendUpdate();
 }
 
-void CMqttConnection::publishString(const string &path, const string &value)
+void CMqttConnection::publishString(const std::string &path, const std::string &value)
 {
     publish(NULL, path.c_str(), value.size(), value.c_str(), 0, true);
 }
@@ -434,7 +501,7 @@ void CMqttConnection::publishStringMap(const CWBDevice::StringMap &values)
 {
     for (auto i : values) {
         publishString(i.first, i.second);
-        m_Log->Printf(5, "publish %s=%s", i.first.c_str(), i.second.c_str());
+        LOG(INFO) << "publish " << i.first << " = " << i.second;
     }
 }
 
