@@ -40,9 +40,9 @@ string CRFProtocolVhome::DecodeData(const string& bits)
 	static const int map[] = {-1, 1, 2, -1, 3, -1, -1, -1, 4};
 	
 		
-    int btn = map_1[cmd];
+    int btn = map[cmd];
     
 	if (btn == -1) {
         return "";
-    return String::ComposeFormat("addr=%d type=4 btn=%d", addr, btn);
+    return String::ComposeFormat("addr=%d btn=%d", addr, btn);
 }

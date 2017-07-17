@@ -4,7 +4,7 @@ wb-homa-rfsniffer (1.0.7) stable; urgency=medium
   * Removed some unused code and features
   * Option of enabling and disabling protocols and features
 
- -- Yuri Pechatnov <yuri.pechatnov@wirenboard.ru>  Mon, 17 Jul 2017 23:59:59 +00001
+ -- Yuri Pechatnov <yuri.pechatnov@wirenboard.ru>  Mon, 17 Jul 2017 23:59:59 +0000
 
 
 wb-homa-rfsniffer (1.0.6) stable; urgency=medium

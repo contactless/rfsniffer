@@ -430,14 +430,13 @@ void CMqttConnection::NewMessage(String message)
         dev->set("Command", value);
     } else if (type == "VHome") {
 		const String addr = values["addr"];
-		const int vhomeType = values["type"].IntValue();
 		const String btn = values["btn"];
 
 		CWBDevice *dev = m_Devices[type + addr];
 		if (!dev)
 		{
 			dev = new CWBDevice(type + "_" + addr, type + " " + addr);
-			for (int i = 1; i <= vhomeType; i++)
+			for (int i = 1; i <= 4; i++)
 				dev->addControl(String::ValueOf(i), CWBControl::Switch, true);
 			CreateDevice(dev);
 		}
