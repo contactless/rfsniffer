@@ -21,7 +21,7 @@ CMqttConnection::CMqttConnection(string Server, RFM69OOK *rfm,
     DPRINTF_DECLARE(dprintf, false);
     m_Server = Server;
 
-	m_NooLiteTxEnabled = (std::find(enabledFeatures.begin(), enabledFeatures.end(), "noolite_tx") != enabledFeatures.end());
+    m_NooLiteTxEnabled = (std::find(enabledFeatures.begin(), enabledFeatures.end(), "noolite_tx") != enabledFeatures.end());
 
     connect(m_Server.c_str());
     loop_start();
@@ -75,24 +75,24 @@ void CMqttConnection::CreateNooliteTxUniversal(const std::string &addr) {
 
 
 void CMqttConnection::on_connect(int rc)
-{	
-	LOG(INFO) << "mqtt::on_connect(" << rc << ")";
+{   
+    LOG(INFO) << "mqtt::on_connect(" << rc << ")";
 
     if (!rc) {
         m_isConnected = true;
     }
-		
+        
     if (m_NooLiteTxEnabled) {
-		for (const std::string &addr : {"0xd61", "0xd62", "0xd63"}) {
-			CreateNooliteTxUniversal(addr);
-			string topic = String::ComposeFormat("/devices/noolite_tx_%s/controls/#", addr.c_str());
-			
-			LOG(INFO) << "subscribe to " << topic;
-			subscribe(NULL, topic.c_str());
-		}
-		
-		SendUpdate();
-	}
+        for (const std::string &addr : {"0xd61", "0xd62", "0xd63"}) {
+            CreateNooliteTxUniversal(addr);
+            string topic = String::ComposeFormat("/devices/noolite_tx_%s/controls/#", addr.c_str());
+            
+            LOG(INFO) << "subscribe to " << topic;
+            subscribe(NULL, topic.c_str());
+        }
+        
+        SendUpdate();
+    }
 }
 
 void CMqttConnection::on_disconnect(int rc)
@@ -429,35 +429,39 @@ void CMqttConnection::NewMessage(String message)
 
         dev->set("Command", value);
     } else if (type == "VHome") {
-		const String addr = values["addr"];
-		const String btn = values["btn"];
+        const String addr = values["addr"];
+        const String btn = values["btn"];
 
-		CWBDevice *dev = m_Devices[type + addr];
-		if (!dev)
-		{
-			dev = new CWBDevice(type + "_" + addr, type + " " + addr);
-			for (int i = 1; i <= 4; i++)
-				dev->addControl(String::ValueOf(i), CWBControl::Switch, true);
-			CreateDevice(dev);
-		}
+        const String devName = "vhome_" + addr;
+
+        CWBDevice *dev = m_Devices[devName];
+        if (!dev)
+        {
+            dev = new CWBDevice(devName, type + " " + addr);
+            for (int i = 1; i <= 4; i++)
+                dev->addControl(String::ValueOf(i), CWBControl::Switch, true);
+            CreateDevice(dev);
+        }
 
         dev->set(btn, dev->getString(btn) != "0" ? "0" : "1");
-		LOG(INFO) << "Msg from " << type << " " << message << ". Set " << btn << " to " << dev->getString(btn);
-	} else if (type == "EV1527") {
-		const String addr = values["addr"];
-		const int cmd = values["cmd"];
+        LOG(INFO) << "Msg from " << type << " " << message << ". Set " << btn << " to " << dev->getString(btn);
+    } else if (type == "EV1527") {
+        const String addr = values["addr"];
+        const int cmd = values["cmd"].IntValue();
 
-		CWBDevice *dev = m_Devices[type + addr];
-		if (!dev)
-		{
-			dev = new CWBDevice(type + "_" + addr, type + " " + addr);
+        const String devName = "ev1527_" + addr;
+        
+        CWBDevice *dev = m_Devices[devName];
+        if (!dev)
+        {
+            dev = new CWBDevice(devName, type + " " + addr);
             dev->addControl("cmd", CWBControl::Text, true);
-			CreateDevice(dev);
-		}
+            CreateDevice(dev);
+        }
 
         dev->set("cmd", cmd);
-		LOG(INFO) << "Msg from " << type << " " << message << ". Set " << btn << " to " << dev->getString(btn);
-	} else if (type == "Livolo" || type == "Raex" || type == "Rubitek" ) {
+        LOG(INFO) << "Msg from " << type << " " << message << ". Cmd: " << cmd;
+    } else if (type == "Livolo" || type == "Raex" || type == "Rubitek" ) {
         LOG(INFO) << "Msg from remote control (Raex | Livolo | Rubitek) " << message;
 
         CWBDevice *dev = m_Devices["Remotes"];

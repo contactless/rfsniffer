@@ -748,7 +748,7 @@ void RFSniffer::run(int argc, char **argv)
     tryReadConfigFile();
     dprintf("$P Config file has been read.\n");
     
-    log4cpp_AddOstreamIfThereIsNoOutputs();
+    log4cpp_AddOstream();
     
     logAllArguments();
     

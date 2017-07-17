@@ -6,10 +6,10 @@
 
 #include <iostream>
 
-void log4cpp_AddOstreamIfThereIsNoOutputs() {
+void log4cpp_AddOstream(bool addIfThereIsNoOutputs) {
     log4cpp::Category& root = log4cpp::Category::getRoot();
 
-	if (root.getAllAppenders().size() > 0)
+	if (addIfThereIsNoOutputs && root.getAllAppenders().size() > 0)
 		return;
 
     log4cpp::Appender *appender = new log4cpp::OstreamAppender("default", &std::cout);
@@ -18,6 +18,10 @@ void log4cpp_AddOstreamIfThereIsNoOutputs() {
 
 	root.setPriority(log4cpp::Priority::INFO);
 	root.addAppender(appender);
+}
+
+void log4cpp_AddOstreamIfThereIsNoOutputs() {
+    log4cpp_AddOstream(true);
 }
 
 void log4cpp_AddOutput(std::string name, std::string fileName) {

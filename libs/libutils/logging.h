@@ -25,3 +25,4 @@ public:
 
 void log4cpp_AddOutput(std::string name, std::string fileName);
 void log4cpp_AddOstreamIfThereIsNoOutputs();
+void log4cpp_AddOstream(bool addIfThereIsNoOutputs = false);
