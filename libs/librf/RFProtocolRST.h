@@ -7,11 +7,11 @@ class RFLIB_API CRFProtocolRST :
     CRFProtocolRST();
     virtual ~CRFProtocolRST();
 
-    virtual std::string getName()
+    virtual string getName()
     {
         return "RST";
     };
-    virtual std::string DecodePacket(const std::string &);
-    virtual std::string DecodeData(const std::string &); // Преобразование бит в данные
+    virtual string DecodePacket(const string &);
+    virtual string DecodeData(const string &); // Преобразование бит в данные
 };
 

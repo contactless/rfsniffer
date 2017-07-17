@@ -1,7 +1,5 @@
+#include "stdafx.h"
 #include "RFProtocolRST.h"
-
-using namespace strutils;
-typedef std::string string;
 
 static range_type g_timing_pause[7] = {
     //  { 70,310 },
@@ -31,9 +29,9 @@ CRFProtocolRST::~CRFProtocolRST()
 {
 }
 
-string CRFProtocolRST::DecodePacket(const std::string &packet)
+string CRFProtocolRST::DecodePacket(const string &packet)
 {
-    std::string bits;
+    string bits;
 
     for (const char s : packet) {
         if (s == 'b' ) {
@@ -49,7 +47,7 @@ string CRFProtocolRST::DecodePacket(const std::string &packet)
     return bits;
 }
 
-string CRFProtocolRST::DecodeData(const std::string &raw)
+string CRFProtocolRST::DecodeData(const string &raw)
 {
     char buffer[100];
     short t0 = bits2long(raw.substr(24));

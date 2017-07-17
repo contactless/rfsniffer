@@ -7,12 +7,12 @@ class RFLIB_API CRFProtocolX10 :
     CRFProtocolX10();
     virtual ~CRFProtocolX10();
 
-    virtual std::string getName()
+    virtual string getName()
     {
         return "X10";
     };
-    virtual std::string DecodePacket(const std::string &);
-    virtual std::string DecodeData(const std::string &); // Преобразование бит в данные
+    virtual string DecodePacket(const string &);
+    virtual string DecodeData(const string &); // Преобразование бит в данные
 
     char parseHouseCode(uint8_t data);
 

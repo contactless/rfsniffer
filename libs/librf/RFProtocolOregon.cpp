@@ -1,10 +1,8 @@
+#include "stdafx.h"
 #include "RFProtocolOregon.h"
 
-#include "../libutils/DebugPrintf.h"
-#include "../libutils/logging.h"
 
-typedef std::string string;
-using namespace strutils;
+#include "../libutils/DebugPrintf.h"
 
 // Class that extract fields of specified device
 // from sequence that is decoded Oregon Protocol
@@ -39,7 +37,7 @@ class OregonRFDevice
         return false;
     }
 
-    static int ExtractInt(const std::string &str, int offset, int length)
+    static int ExtractInt(const string &str, int offset, int length)
     {
         return atoi(CRFProtocol::reverse(str.substr(offset, length)));
     }
@@ -96,14 +94,14 @@ class OregonRFDevice
     }
 
     // returns either decoded data or "" if failed
-    std::string DecodeData(string packet) const
+    string DecodeData(string packet) const
     {
 
         //fprintf(stderr, "Decode_data BEGIN\n");
         packet = packet.substr(1, packet.size() - 1); // Shift to conform this article
         // http://www.altelectronics.co.uk/wp-content/uploads/2011/05/OregonScientific-RF-Protocols.pdf
 
-        std::string sensor_id = packet.substr(0, 4); // Sensor ID
+        string sensor_id = packet.substr(0, 4); // Sensor ID
         //fprintf(stderr, "Sensor_id: %s\n", sensor_id.c_str());
         if (!IsThere(sensor_id, sensor_ids.begin(), sensor_ids.end()))
             return "";
@@ -181,7 +179,7 @@ class OregonRFDevice
             int offset = data_offset + forecast_offset;
             if (offset + 1 > (int)packet.size())
                 return "";
-            std::string forecast = "???";
+            string forecast = "???";
             switch (packet[offset]) {
                 case '2':
                     forecast = "cloudy";
@@ -202,7 +200,7 @@ class OregonRFDevice
             int offset = data_offset + comfort_offset;
             if (offset + 1 > (int)packet.size())
                 return "";
-            std::string comfort = "???";
+            string comfort = "???";
             switch (packet[offset]) {
                 case '0':
                     comfort = "normal";
@@ -276,7 +274,7 @@ CRFProtocolOregon::CRFProtocolOregon()
 }
 
 CRFProtocolOregon::CRFProtocolOregon(range_array_type zeroLengths, range_array_type pulseLengths,
-                                     int bits, int minRepeat, std::string PacketDelimeter)
+                                     int bits, int minRepeat, string PacketDelimeter)
     : CRFProtocol(zeroLengths, pulseLengths, bits, minRepeat, PacketDelimeter)
 {
 }
@@ -286,11 +284,11 @@ CRFProtocolOregon::~CRFProtocolOregon()
 }
 
 
-string CRFProtocolOregon::DecodePacket(const std::string &raw_)
+string CRFProtocolOregon::DecodePacket(const string &raw_)
 {
     DPRINTF_DECLARE(dprintf, false);
 
-    std::string raw = raw_;
+    string raw = raw_;
 
     // 48 chars in minimal binary packet -> 48 signals at minimum
     if (raw.length() < 96)
@@ -318,7 +316,7 @@ string CRFProtocolOregon::DecodePacket(const std::string &raw_)
             return "";
 
 
-    std::string packet = "0";
+    string packet = "0";
     bool second = false;
     char demand_next_c = 0;
 
@@ -369,7 +367,7 @@ string CRFProtocolOregon::DecodePacket(const std::string &raw_)
     }
 
     uint32_t crc = 0, originalCRC = -1;
-    std::string hexPacket = "";
+    string hexPacket = "";
 
     if (packet.length() < 48) {
         dprintf("$P (only warning: it may be other protocol) Too short packet %s\n",
@@ -382,7 +380,7 @@ string CRFProtocolOregon::DecodePacket(const std::string &raw_)
         len--;
 
     for (int i = 0; i < len; i += 4) {
-        std::string portion = reverse(packet.substr(i, 4));
+        string portion = reverse(packet.substr(i, 4));
         char buffer[20];
         uint32_t val = bits2long(portion);
 
@@ -413,21 +411,21 @@ string CRFProtocolOregon::DecodePacket(const std::string &raw_)
 }
 
 
-string CRFProtocolOregon::DecodeData(const std::string &packet) // Преобразование бит в данные
+string CRFProtocolOregon::DecodeData(const string &packet) // Преобразование бит в данные
 {
     // printf("Oregon decodeData: %s\n", packet.c_str());
-    std::string parsed;
+    string parsed;
     for (auto device = devices.begin(); device != devices.end() && parsed.length() == 0; device++)
         parsed = device->DecodeData(packet);
     if (parsed.size() == 0) {
-        LOG(INFO) << "OregonV2: Unknown sensor type " << packet.substr(1, 4)
-                  << ". Data: " << packet;
+        m_Log->Printf(4, "OregonV2: Unknown sensor type %s. Data: %s", packet.substr(1, 4).c_str(),
+                      packet.c_str());
         return "raw:" + packet;
     }
     return parsed;
 
     /*
-    std::string type = packet.substr(1, 4);
+    string type = packet.substr(1, 4);
     // TODO: check if 1d30 is correct?
     if (type == "1D20" || type == "1D30" || type == "F824" || type == "F8B4") {
 
@@ -455,7 +453,7 @@ string CRFProtocolOregon::DecodeData(const std::string &packet) // Преобразовани
         snprintf(buffer, sizeof(buffer), "type=%s id=%02X ch=%d t=%.1f", type.c_str(), id, channel, temp);
         return buffer;
     } else {
-        LOG(INFO) << 4, "Unknown sensor type %s. Data: %s", type.c_str(), packet.c_str());
+        m_Log->Printf(4, "Unknown sensor type %s. Data: %s", type.c_str(), packet.c_str());
         return "raw:" + packet;
     }
 
@@ -471,14 +469,14 @@ string CRFProtocolOregon::DecodeData(const std::string &packet) // Преобразовани
 
     char Buffer[200];
     snprintf(Buffer, sizeof(Buffer), "%08X%08X%04X", l1, l2, l3);
-    std::string res = Buffer;
+    string res = Buffer;
     snprintf(Buffer, sizeof(Buffer), "%08X%08X%04X", l4, l5, l6);
     return res+"_"+reverse(Buffer);*/
 
 }
 
 
-bool CRFProtocolOregon::needDump(const std::string &rawData)
+bool CRFProtocolOregon::needDump(const string &rawData)
 {
     return rawData.find(m_PacketDelimeter) != rawData.npos;
     //  return rawData.find("cCcCcCcC") != rawData.npos;

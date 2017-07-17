@@ -2,13 +2,9 @@
 
 #include <cassert>
 
-
+#include "stdafx.h"
 #include "../libutils/strutils.h"
 #include "../libutils/DebugPrintf.h"
-
-
-typedef std::string string;
-using namespace strutils;
 
 //
 static range_type g_timing_pause[7] = {
@@ -37,11 +33,11 @@ CRFProtocolHS24Bit::~CRFProtocolHS24Bit()
 {
 }
 
-string CRFProtocolHS24Bit::DecodePacket(const std::string &packet)
+string CRFProtocolHS24Bit::DecodePacket(const string &packet)
 {
-    DPRINTF_DECLARE(dprintf, false);
+    DPRINTF_DECLARE(dprintf, true);
     dprintf("$P Enter\n");
-    std::string bits;
+    string bits;
     if (packet.length() != 48)
         return "";
     for (int i = 0; i < (int)packet.size(); i += 2) {
@@ -60,10 +56,10 @@ string CRFProtocolHS24Bit::DecodePacket(const std::string &packet)
 }
 
 
-string CRFProtocolHS24Bit::DecodeData(const std::string &bits)
+string CRFProtocolHS24Bit::DecodeData(const string &bits)
 {
     
-    DPRINTF_DECLARE(dprintf, false);
+    DPRINTF_DECLARE(dprintf, true);
     dprintf("$P Enter\n");
     if (bits.size() != 24) {
         dprintf("$P bits.size() != 24 - broken invariant for this protocol");
@@ -77,7 +73,7 @@ string CRFProtocolHS24Bit::DecodeData(const std::string &bits)
     for (int i = 20; i < 24; i++)
         ch = ch * base + bits[i] - '0';
         
-    std::string data = String::ComposeFormat("msg_id=%d ch=%d", msg, ch);
+    string data = String::ComposeFormat("msg_id=%d ch=%d", msg, ch);
     dprintf("$P Data are %\n", data);
     return data;
 }

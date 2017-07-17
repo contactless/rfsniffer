@@ -1,4 +1,6 @@
+#include "stdafx.h"
 #include "Exception.h"
+#include "Buffer.h"
 #include "logging.h"
 
 typedef std::string string;
@@ -98,3 +100,22 @@ CHaException::~CHaException(void)
 {
 }
 
+
+size_t CHaException::getSize() const
+{
+    return CBuffer::getSizeString(m_Message) + sizeof(short);
+}
+
+void CHaException::Serialize(CBuffer *buffer, bool bSerialize)
+{
+    short Code = m_code;
+    buffer->Serialize(Code, bSerialize);
+    buffer->Serialize(m_Message, bSerialize);
+    m_code = (ErrorCodes)Code;
+}
+
+
+void CHaException::Dump(CLog *log)
+{
+    log->Printf(1, "CHaException::Dump(%d, '%s')", m_code, m_Message.c_str());
+}

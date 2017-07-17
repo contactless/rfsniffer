@@ -9,6 +9,7 @@
 
 using std::string;
 
+void LogTest();
 void RfParserTest(string path);
 void Rfm69Test();
 void SnifferTest();
@@ -21,7 +22,7 @@ int main(int argc, char *argv[])
     DPrintf::globallyEnable(false);
     DPrintf::setPrefixLength(50);
     if (0) {
-        DPRINTF_DECLARE(dprint, false);
+        DPRINTF_DECLARE(dprint, true);
         dprint("$P Hello world!\n");
         dprint << "hehe" << "12133" << 13242 << (int *)nullptr << std::endl;
         dprint << "mamasmdamsd" << std::endl;
@@ -38,17 +39,20 @@ int main(int argc, char *argv[])
     }
     fprintf(stderr, "Begin tests\n");
 
-    bool bTestParser = true, bTestRfm = false, bTestSniffer = false, bTestMqtt = false;
-    std::string path;
+    bool bTestLog = true, bTestParser = true, bTestRfm = false, bTestSniffer = false, bTestMqtt = false;
+    string path;
 
     if (argc > 1)
-        bTestParser = false;
+        bTestLog = bTestParser = false;
 
     int c;
     while ( (c = getopt(argc, argv, "alprsmf:")) != -1) {
         switch (c) {
             case 'a':
-                bTestParser = bTestRfm = bTestSniffer = bTestMqtt = true;
+                bTestLog = bTestParser = bTestRfm = bTestSniffer = bTestMqtt = true;
+                break;
+            case 'l':
+                bTestLog = true;
                 break;
             case 'p':
                 bTestParser = true;
@@ -76,6 +80,12 @@ int main(int argc, char *argv[])
         dprintf("$P Before RfParserTest\n");
         RfParserTest(path);
         dprintf("$P After RfParserTest\n");
+    }
+
+    if (bTestLog) {
+        dprintf("$P Before LogTest\n");
+        LogTest();
+        dprintf("$P After LogTest\n");
     }
 
     if (bTestParser) {

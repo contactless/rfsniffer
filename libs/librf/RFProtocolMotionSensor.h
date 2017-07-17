@@ -7,7 +7,7 @@ class CRFProtocolMotionSensor :
     CRFProtocolMotionSensor();
     ~CRFProtocolMotionSensor();
 
-    virtual std::string getName()
+    virtual string getName()
     {
         return "MotionSensor";
     };

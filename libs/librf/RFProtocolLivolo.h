@@ -7,11 +7,11 @@ class RFLIB_API CRFProtocolLivolo :
     CRFProtocolLivolo();
     virtual ~CRFProtocolLivolo();
 
-    virtual std::string getName()
+    virtual string getName()
     {
         return "Livolo";
     };
-    virtual std::string DecodePacket(const std::string &);
+    virtual string DecodePacket(const string &);
 
 };
 

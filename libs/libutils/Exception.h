@@ -1,11 +1,15 @@
 #ifndef __ML_EXCEPTION_H
 #define __ML_EXCEPTION_H
 
+#pragma warning (disable: 4251)
+
 #include <vector>
 #include <string>
 #include <iostream>
 
 
+#include "libutils.h"
+#include "Serializable.h"
 /*******************************************
 *
 * Module: CHaException
@@ -13,7 +17,8 @@
 * ����� CHaException
 *
 ********************************************/
-class CHaException
+class LIBUTILS_API CHaException
+    : public CSerializable
 {
     /*******************************************
     *
@@ -88,7 +93,7 @@ class CHaException
     *
     * Name: m_Message
     *
-    * std::string <b>m_Message</b> - ����� ����������
+    * string <b>m_Message</b> - ����� ����������
     *
     ********************************************/
     std::string m_Message;
@@ -186,6 +191,11 @@ class CHaException
         return std::string("CHaException") + " (ErrorCodes::" + m_TypeDescriptions[m_code] + "): " +
                m_Message;
     };
+
+
+    virtual size_t getSize() const;
+    virtual void Serialize(CBuffer *buffer, bool bSerialize);
+    virtual void Dump(CLog *log);
 };
 
 #define NOT_IMPLEMENTED throw CHaException(CHaException::ErrNotImplemented, "%s(%d)", __FILE__, __LINE__)

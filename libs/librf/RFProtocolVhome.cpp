@@ -1,14 +1,26 @@
 #include "RFProtocolVhome.h"
 
-#include "../libutils/strutils.h"
-#include "../libutils/DebugPrintf.h"
+// 
+static range_type g_timing_pause[7] =
+{
+	{ 12000, 18000 }, // Разделитель
+	{ 250, 550 }, // Короткий
+	{ 1200, 1500 }, // Длинный
+	{ 0,0 }
+};
 
-typedef std::string string;
-using namespace strutils;
+static range_type g_timing_pulse[8] =
+{
+	{ 3500, 3500 },
+	{ 250, 550 }, // Короткий
+	{ 1200, 1500 }, // Длинный
+	{ 0,0 }
+};
+
 
 
 CRFProtocolVhome::CRFProtocolVhome()
-	: CRFProtocolEV1527()
+	:CRFProtocol(g_timing_pause, g_timing_pulse, 25, 1, "a")
 {
 	m_Debug = true;
 }
@@ -19,30 +31,51 @@ CRFProtocolVhome::~CRFProtocolVhome()
 }
 
 
+string CRFProtocolVhome::DecodePacket(const string&pkt)
+{
+	string packet = pkt, res;
+
+	if (packet.length() == 48)
+	{
+		if (packet[0] == 'c')
+			packet = "B" + packet;
+		if (packet[0] == 'b')
+			packet = "C" + packet;
+	}
+
+	if (packet.length() == 49)
+	{
+		if (packet[48] == 'B')
+			packet += "c";
+		if (packet[48] == 'C')
+			packet += "b";
+	}
+	else
+		return "";
+
+	for (unsigned int i = 0; i < packet.length() - 1; i += 2)
+	{
+		string part = packet.substr(i, 2);
+		if (part == "Bc")
+			res += "0";
+		else if (part == "Cb")
+			res += "1";
+		else
+			return "";
+	}
+
+	return res;
+}
 
 string CRFProtocolVhome::DecodeData(const string& bits)
 {
-	DPRINTF_DECLARE(dprintf, false);
-	
-	if (bits.length() != 24)
+	if (bits.length()!=25 || bits2long(bits, 0, 4) != 7 || bits[24]!='0')
 		return "";
-	
-	dprintf("$P Started! got %\n", bits);
-	
+
+	int addr = bits2long(bits, 4, 16);
 	int cmd = bits2long(bits, 20, 4);
-    int addr = bits2long(bits, 0, 16);
-	
-	dprintf("$P cmd = %\n", cmd);
-		
-	if (cmd > 8)
-		return "";
-	
-	static const int map[] = {-1, 1, 2, -1, 3, -1, -1, -1, 4};
-	
-		
-    int btn = map[cmd];
-    
-	if (btn == -1) {
-        return "";
-    return String::ComposeFormat("addr=%d btn=%d", addr, btn);
+
+	char buffer[100];
+	snprintf(buffer, sizeof(buffer), "addr=%04x cmd=%d", addr, cmd);
+	return buffer;
 }

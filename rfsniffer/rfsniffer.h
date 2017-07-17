@@ -13,6 +13,7 @@
 #include "../libs/libutils/logging.h"
 #include "../libs/libutils/Exception.h"
 #include "../libs/libutils/Config.h"
+#include "../libs/libutils/ConfigItem.h"
 #include "../libs/librf/spidev_lib++.h"
 #include "../libs/librf/RFM69OOKregisters.h"
 #include "../libs/librf/RFM69OOK.h"
@@ -30,13 +31,13 @@ class RFSniffer
     typedef base_type lirc_t;
 
     struct RFSnifferArgs {
-        std::string configName;
+        string configName;
 
         bool bDebug;
         bool bDumpAllRegs;
         bool bLircPedantic;
 
-        std::string spiDevice;
+        string spiDevice;
         long spiSpeed;
         int gpioInt;
 
@@ -46,25 +47,24 @@ class RFSniffer
 
         bool bCoreTestMod;
 
-        std::string lircDevice;
+        string lircDevice;
 
-        std::string mqttHost;
+        string mqttHost;
 
-        std::string scannerParams;
+        string scannerParams;
 
+        int writePackets;
         bool bDumpAllLircStream;
-        bool bSimultaneouslyDumpStreamAndWork;
 
-        std::string savePath;
+        string savePath;
         bool inverted;
-        
-        std::vector<std::string> enabledProtocols;
-        std::vector<std::string> enabledFeatures;
 
         RFSnifferArgs();
     } args;
 
-    Json::Value configJson;
+    CLog *m_Log;
+
+    std::unique_ptr<CConfig> configJson;
     std::unique_ptr<SPI> mySPI;
     std::unique_ptr<RFM69OOK> rfm;
 
@@ -78,19 +78,16 @@ class RFSniffer
     const static size_t dataBuffSize = maxMessageLength * 2;
 
     lirc_t dataBuff[dataBuffSize];
-    
 
     // utils
     bool waitForData(int fd, unsigned long maxusec);
     std::string composeString(const char *format, ...);
-    void showCandidates(const std::string &path, const std::string &filePrefix);
+    void showCandidates(const string &path, const string &filePrefix);
 
     // read initial data
     void readEnvironmentVariables();
     void readCommandLineArguments(int argc, char **argv);
     void tryReadConfigFile();
-    
-    void logAllArguments();
 
     // initialize connections
     void initSPI();

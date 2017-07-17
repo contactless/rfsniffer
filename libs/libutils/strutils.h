@@ -6,6 +6,7 @@
 #include <map>
 #include <unordered_map>
 #include <string.h>
+#include "libutils.h"
 
 namespace strutils
 {
@@ -150,8 +151,8 @@ double atof(const std::string &s);
 
 
 
-typedef std::vector<String> string_vector;
-typedef std::map<String, String> string_map;
+typedef LIBUTILS_API std::vector<String> string_vector;
+typedef std::map<String, String> LIBUTILS_API string_map;
 typedef std::map<int, String> map_i2s;
 typedef std::map<String, int> map_s2i;
 
@@ -166,8 +167,8 @@ char inline *strnew(const char *src)
 #define FOLDER_DELIMETER '\\'
 #define FOLDER_DELIMETER_STR "\\"
 
-std::wstring s2ws(const std::string &s);
-std::string ws2s(const std::wstring &s);
+std::wstring LIBUTILS_API s2ws(const std::string &s);
+std::string LIBUTILS_API ws2s(const std::wstring &s);
 
 #ifdef _WIN32_WCE
     #define to_s(x) ws2s(x)
@@ -191,7 +192,7 @@ char inline *strcpy_s(char *dest, size_t len, const char *src)
 #define FOLDER_DELIMETER_STR "/"
 #endif
 
-std::string GetPath(std::string path);
+std::string LIBUTILS_API GetPath(std::string path);
 
 #ifdef WIN32
     #define DLL_EXPORT __declspec(dllexport)
@@ -201,7 +202,7 @@ std::string GetPath(std::string path);
     #define DLL_IMPORT
 #endif
 
-std::string str_upper(const std::string &str);
+std::string LIBUTILS_API str_upper(const std::string &str);
 
 enum BASE_PATH_TYPE {
     BASE_PATH_BIN = 34,
@@ -210,15 +211,15 @@ enum BASE_PATH_TYPE {
     BASE_PATH_LUA
 };
 
-std::string GetBasePath(BASE_PATH_TYPE type);
+std::string LIBUTILS_API GetBasePath(BASE_PATH_TYPE type);
 
 
 };
 
 /*
 
-typedef std::vector<std::string> string_vector;
-typedef std::map<std::string, std::string> string_map;
+typedef LIBUTILS_API std::vector<std::string> string_vector;
+typedef std::map<std::string, std::string> LIBUTILS_API string_map;
 typedef std::map<int, std::string> map_i2s;
 typedef std::map<std::string, int> map_s2i;
 
@@ -233,8 +234,8 @@ char inline *strnew(const char *src)
 #define FOLDER_DELIMETER '\\'
 #define FOLDER_DELIMETER_STR "\\"
 
-std::wstring s2ws(const std::string &s);
-std::string ws2s(const std::wstring &s);
+std::wstring LIBUTILS_API s2ws(const std::string &s);
+std::string LIBUTILS_API ws2s(const std::wstring &s);
 
 #ifdef _WIN32_WCE
     #define to_s(x) ws2s(x)
@@ -258,14 +259,14 @@ char inline *strcpy_s(char *dest, size_t len, const char *src)
 #define FOLDER_DELIMETER_STR "/"
 #endif
 
-std::string GetPath(std::string path);
-void SplitString(const std::string &s, char dlmt, string_vector &v);
-void SplitString(const std::string &s, std::string dlmt, string_vector &v);
-int SplitPair(const std::string &s, std::string dlmt, std::string &first,
+std::string LIBUTILS_API GetPath(std::string path);
+void LIBUTILS_API SplitString(const std::string &s, char dlmt, string_vector &v);
+void LIBUTILS_API SplitString(const std::string &s, std::string dlmt, string_vector &v);
+int LIBUTILS_API SplitPair(const std::string &s, std::string dlmt, std::string &first,
                             std::string &second);
-void SplitPair(const std::string &s, char dlmt, std::string &first,
+void LIBUTILS_API SplitPair(const std::string &s, char dlmt, std::string &first,
                             std::string &second);
-void SplitValues(const std::string &s, string_map &v,
+void LIBUTILS_API SplitValues(const std::string &s, string_map &v,
                               char groupDlmt = ' ',
                               char valueDlmt = '=');
 
@@ -277,7 +278,7 @@ void SplitValues(const std::string &s, string_map &v,
     #define DLL_IMPORT
 #endif
 
-std::string str_upper(const std::string &str);
+std::string LIBUTILS_API str_upper(const std::string &str);
 
 enum BASE_PATH_TYPE {
     BASE_PATH_BIN = 34,
@@ -286,9 +287,9 @@ enum BASE_PATH_TYPE {
     BASE_PATH_LUA
 };
 
-std::string GetBasePath(BASE_PATH_TYPE type);
-std::string ftoa(float f, int digits = 2);
-std::string itoa(int i);
+std::string LIBUTILS_API GetBasePath(BASE_PATH_TYPE type);
+std::string LIBUTILS_API ftoa(float f, int digits = 2);
+std::string LIBUTILS_API itoa(int i);
 
 inline int atoi(const std::string &s)
 {

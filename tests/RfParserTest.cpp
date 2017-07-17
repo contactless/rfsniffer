@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
-#include <string>
 
 #include <sys/types.h>
 #include <dirent.h>
@@ -20,14 +19,12 @@
 #include "../libs/librf/RFProtocolNooLite.h"
 #include "../libs/librf/RFProtocolOregon.h"
 
+
 #define MAX_SIZE 100000
 
-typedef std::string string;
-using namespace strutils;
-
-string DecodeFile(CRFParser *parser, const char *fileName)
+string DecodeFile(CRFParser *parser, CLog *log, const char *fileName)
 {
-    DPRINTF_DECLARE(dprintf, false);
+    DPRINTF_DECLARE(dprintf, true);
     dprintf("$P Start\n");
 
     base_type *data = new base_type[MAX_SIZE];
@@ -57,7 +54,7 @@ typedef pstr_pair *ppstr_pair;
 typedef std::pair<string, string> string_pair;
 
 
-void getAllTestFiles( string path, String::Vector &result )
+void getAllTestFiles( string path, string_vector &result )
 {
     DIR *dirFile = opendir( path.c_str() );
     if ( dirFile ) {
@@ -81,9 +78,9 @@ void getAllTestFiles( string path, String::Vector &result )
 }
 
 
-bool OneTest(const string_pair &test, CRFParser &parser)
+bool OneTest(const string_pair &test, CLog *log, CRFParser &parser)
 {
-    DPRINTF_DECLARE(dprintf, false);
+    DPRINTF_DECLARE(dprintf, true);
     dprintf("$P Start test=%\n", test);
 
     String file_name = test.first, exp_result = test.second;
@@ -105,7 +102,7 @@ bool OneTest(const string_pair &test, CRFParser &parser)
     dprintf("$P Before parsing test\n");
     try {
         exp_result.SplitByExactlyOneDelimiter(":", exp_type, exp_value);
-        if (exp_value.find('=') != exp_value.npos)
+        if (exp_value.find(' ') != exp_value.npos)
             exp_values = exp_value.SplitToPairs();
     } catch (CHaException ex) {
         printf("Failed! Format of TEST is incorrect! Test: %s\n", exp_result.c_str());
@@ -113,18 +110,17 @@ bool OneTest(const string_pair &test, CRFParser &parser)
     }
 
     dprintf("$P Before decoding\n");
-    dprintf("$P exp_type = %, size(exp_values) = %\n", exp_type, exp_values.size());
-    String res = DecodeFile(&parser, (string("tests/testfiles/") + file_name).c_str());
+    String res = DecodeFile(&parser, log, (string("tests/testfiles/") + file_name).c_str());
 
 
-    dprintf("$P After decoding before parsing decoded (got: %)\n", res);
+    dprintf("$P After decoding before parsing decoded\n");
 
     // Simple check for cases with not "a=1 b=2..." format
     if (res == exp_result)
         return true;
     try {
         res.SplitByExactlyOneDelimiter(":", res_type, res_value);
-        if (res_value.find('=') != res_value.npos)
+        if (res_value.find(' ') != res_value.npos)
             res_values = res_value.SplitToPairs();
     } catch (CHaException ex) {
         printf("Failed! Format is incorrect! File:%s, result:%s, Expected: %s\n", file_name.c_str(),
@@ -141,19 +137,15 @@ bool OneTest(const string_pair &test, CRFParser &parser)
         return false;
     }
     // Compare values, extra values in parsed result are ignored
-    for (auto value_pair : exp_values) {
-		dprintf("$P Compare with % = %\n", value_pair.first, value_pair.second);
+    for (auto value_pair : exp_values)
         if (value_pair.second != res_values[value_pair.first]) {
             // there may be a regular expression for check by unix grep
             if (value_pair.second.length() > 0 && value_pair.second[0] == '[')
                 continue;
-            printf("Failed! Field\"%s\" mismatch! \n\tFile:%s, "\
-                   " result:%s, Expected: %s\n",
-                   value_pair.first.c_str(), file_name.c_str(), 
-                   res_values[value_pair.first].c_str(), value_pair.second.c_str());
+            printf("Failed! Field\"%s\" mismatch! \n\tFile:%s, result:%s, Expected: %s\n",
+                   value_pair.second.c_str(), file_name.c_str(), res.c_str(), exp_result.c_str());
             return false;
         }
-	}
 
 
     dprintf("$P Finish\n");
@@ -162,11 +154,12 @@ bool OneTest(const string_pair &test, CRFParser &parser)
 
 void RfParserTest(string path)
 {
-    DPRINTF_DECLARE(dprintf, false);
+    DPRINTF_DECLARE(dprintf, true);
     dprintf("$P Start\n");
 
     bool allPassed = true;
-    CRFParser parser;
+    CLog *log = CLog::GetLog("Main");
+    CRFParser parser(log);
 
     //parser.EnableAnalyzer();
 
@@ -175,18 +168,18 @@ void RfParserTest(string path)
     //parser.AddProtocol(new CRFProtocolX10());
     //parser.AddProtocol(new CRFProtocolRaex());
     //parser.AddProtocol(new CRFProtocolNooLite());
-    //parser.AddProtocol("VHome");
+    //parser.AddProtocol("Oregon");
     parser.AddProtocol("All");
 
     if (path.length()) {
-        String::Vector files;
+        string_vector files;
         getAllTestFiles("./" + path, files);
         std::sort(files.begin(), files.end());
         printf("Directory %s, %d files\n", path.c_str(), (int)files.size());
         for (const string &f : files)
             printf("\t\t%s\n", f.c_str());
         for (const string &f : files) {
-            string res = DecodeFile(&parser, ("./" + path + "/" + f).c_str());
+            string res = DecodeFile(&parser, log, ("./" + path + "/" + f).c_str());
             printf("File: %s, decoded: %s\n", f.c_str(), res.c_str());
         }
         return;
@@ -204,7 +197,7 @@ void RfParserTest(string path)
                 String file, answer;
                 testWitoutComment.SplitByFirstOccurenceDelimiter(' ', file, answer);
                 //std::cout << "Test: " << file << " & " << answer << std::endl;;
-                allPassed &= OneTest(std::pair<string, string>(file, answer), parser);
+                allPassed &= OneTest(std::pair<string, string>(file, answer), log, parser);
             }
             test_file.close();
         } else {

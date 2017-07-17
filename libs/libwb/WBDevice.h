@@ -4,7 +4,9 @@
 #include <unordered_map>
 #include <string>
 
-#include "../libutils/Config.h"
+#ifdef USE_CONFIG
+    #include "../libutils/ConfigItem.h"
+#endif
 
 class LIBWB_API CWBControl
 {
@@ -46,8 +48,8 @@ class LIBWB_API CWBControl
 
     struct ControlNames {
         ControlType type;
-        std::string metaType;
-        std::string defaultName;
+        string metaType;
+        string defaultName;
     };
 
   protected:
@@ -65,38 +67,35 @@ class LIBWB_API CWBControl
     static std::vector<string> controlTypeToMetaType;
     static std::vector<string> controlTypeToDefaultName;
 
-    static ControlType getControlTypeByMetaType(const std::string &metaType);
+    static ControlType getControlTypeByMetaType(const string &metaType);
 
     // "type" - type of control
     // "name" is a name of control in mqtt tree and also description in web interface
     // "metaType" is the type that will be written into .../meta/type
     // upd: "metaType" will be generated from "type"
     ControlType type;
-    std::string name;
+    string name;
     // "readonly" is a flag answering if item is readonly in web-interface
     // "changed" is a flag that is used when we update mqtt
     bool readonly, changed;
     // "value" - value on control
-    std::string value;
-    std::string order, max;
-    std::string source, sourceType;
+    string value;
+    string source, sourceType;
 
     // when timeWhen comes, then valueThen will be written to value
     bool isValueChangeSheduled;
     time_t timeWhen;
-    std::string valueThen;
+    string valueThen;
 
-    const std::string &metaType() const;
+    const string &metaType() const;
 
-    const std::string &stringValue() const;
+    const string &stringValue() const;
     float floatValue() const;
 
-    CWBControl &setSource(const std::string &source_);
-    CWBControl &setSourceType(const std::string &sourceType_);
+    CWBControl &setSource(const string &source_);
+    CWBControl &setSourceType(const string &sourceType_);
 
-    CWBControl(const std::string &name, ControlType type, bool readonly = true);
-    CWBControl(const std::string &name_, ControlType type_, 
-            const std::string &initialValue, const std::string &order_, bool readonly_);
+    CWBControl(const string &name, ControlType type, bool readonly = true);
     CWBControl();
 };
 
@@ -110,8 +109,8 @@ class LIBWB_API CWBDevice
     typedef std::unordered_map<string, CWBDevice *> CWBDeviceMap;
     typedef std::unordered_map<string, string> StringMap;
   private:
-    std::string deviceName;
-    std::string deviceDescription;
+    string deviceName;
+    string deviceDescription;
     CControlMap deviceControls;
 
     // if this flag is NOT set then output functions won't write anything
@@ -128,43 +127,40 @@ class LIBWB_API CWBDevice
     // deviceName is the name in mqtt tree
     // deviceDescription will be written into .../meta/name
     CWBDevice();
-    CWBDevice(const std::string &deviceName, const std::string &deviceDescription);
+    CWBDevice(const string &deviceName, const string &deviceDescription);
     ~CWBDevice();
 
 
-    void findAndSetConfigs(Json::Value &devices);
+    void findAndSetConfigs(CConfigItem *devices);
 
-    const std::string &getName()
+    const string &getName()
     {
         return deviceName;
     };
-    const std::string &getDescription()
+    const string &getDescription()
     {
         return deviceDescription;
     };
-//~ #ifdef USE_CONFIG
-    //~ void init(CConfigItem config);
-//~ #endif
+#ifdef USE_CONFIG
+    void init(CConfigItem config);
+#endif
     void addControl(const CWBControl &device);
-    void addControl(const std::string &name, CWBControl::ControlType type, bool readonly = true);
-    void addControl(const std::string &name, CWBControl::ControlType type, 
-            const std::string &initialValue, const std::string &order, bool readonly);
-    bool controlExists(const std::string &name);
-    bool sourceExists(const std::string &source);
-    void setBySource(const std::string &source, const std::string &sourceType, std::string value);
-    void set(CWBControl::ControlType type, const std::string &value);
+    void addControl(const string &name, CWBControl::ControlType type, bool readonly = true);
+    bool controlExists(const string &name);
+    bool sourceExists(const string &source);
+    void setBySource(const string &source, const string &sourceType, string value);
+    void set(CWBControl::ControlType type, const string &value);
     void set(CWBControl::ControlType type, float value);
-    void set(const std::string &name, const std::string &value);
-    void set(const std::string &name, float value);
-    void setMax(const std::string &name, const std::string &max);
+    void set(const string &name, const string &value);
+    void set(const string &name, float value);
 
     // Sensor PM112 sends signal to enable smth for given time
     // So such function is needed...
-    void setForAndThen(const std::string &name, const std::string &value, int timeFor, const std::string &valueThen);
+    void setForAndThen(const string &name, const string &value, int timeFor, const string &valueThen);
     void updateScheduled(StringMap &);
 
-    float getFloat(const std::string &name);
-    const std::string &getString(const std::string &name);
+    float getFloat(const string &name);
+    const string &getString(const string &name);
 
     // output functions, they are returning changes that are to be done in mqtt
     void createDeviceValues(StringMap &);
@@ -176,7 +172,7 @@ class LIBWB_API CWBDevice
     {
         return &deviceControls;
     };
-    std::string getTopic(const std::string &control);
+    string getTopic(const string &control);
 
 };
 

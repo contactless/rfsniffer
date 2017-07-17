@@ -3,19 +3,14 @@
  * As I understand it sends signals to nooLite and
  * programmer is to see an effect
  * */
-#include <unistd.h>
 
 #include "../libs/libutils/logging.h"
+#include "../libs/libutils/thread.h"
 #include "../libs/libutils/Exception.h"
 #include "../libs/librf/spidev_lib++.h"
 #include "../libs/librf/RFM69OOKregisters.h"
 #include "../libs/librf/RFM69OOK.h"
 #include "../libs/librf/RFProtocolNooLite.h"
-
-inline void Sleep(long ms)
-{
-    usleep((ms) * 1000);
-};
 
 void dumpRegs(RFM69OOK *rfm)
 {

@@ -1,8 +1,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <sys/ioctl.h>
-
 #include "../libs/libutils/logging.h"
 #include "../libs/libutils/Exception.h"
 #include "../libs/librf/spidev_lib++.h"
@@ -44,7 +42,7 @@ int waitfordata(int fd, unsigned long maxusec)
                 }
             } while (ret == -1 && errno == EINTR);
             if (ret == -1) {
-                LOG(INFO) << "RF select() failed\n";
+                CLog::GetLog("Main")->Printf(0, "RF select() failed\n");
                 continue;
             }
         } while (ret == -1);
@@ -61,7 +59,8 @@ int waitfordata(int fd, unsigned long maxusec)
 void SnifferTest()
 {
     printf("Rfm69Test\n");
-    std::string m_lircDevice = "/dev/lirc0";
+    string m_lircDevice = "/dev/lirc0";
+    CLog *m_Log = CLog::GetLog("Main");
     int fd = open(m_lircDevice.c_str(), O_RDONLY);
     if (fd == -1) {
         fprintf(stderr, "error opening %s\n", m_lircDevice.c_str());
@@ -82,7 +81,7 @@ void SnifferTest()
                            "This program is only intended for receivers supporting the pulse/space layer.");
     }
 
-    CRFParser m_parser;
+    CRFParser m_parser(m_Log);
     m_parser.AddProtocol(new CRFProtocolRST());
     m_parser.AddProtocol(new CRFProtocolLivolo());
     m_parser.AddProtocol(new CRFProtocolX10());
@@ -101,26 +100,26 @@ void SnifferTest()
         size_t count = sizeof(lirc_t) * BUFFER_SIZE - (data_ptr - data) * sizeof(lirc_t);
 
         if (count == 0) {
-            LOG(INFO) << "RF buffer full";
+            m_Log->Printf(0, "RF buffer full");
             data_ptr = data;
             continue;
         }
 
         if (lastReport != time(NULL) && data_ptr != data) {
             //printf ("read for %ld bytes from %ld\n", count, data_ptr-data);
-            LOG(INFO) << "RF got data " << data_ptr - data << " bytes";
+            m_Log->Printf(100, "RF got data %ld bytes", data_ptr - data);
             lastReport = time(NULL);
         }
 
         if (data_ptr == data)
             packetStart = time(NULL);
         else if (!waitfordata(fd, 1000000) || data_ptr - data > 10000) {
-            std::string parsedResult = m_parser.Parse(data, data_ptr - data);
+            string parsedResult = m_parser.Parse(data, data_ptr - data);
             if (parsedResult.length()) {
-                LOG(INFO) << "RF Received: " << parsedResult;
+                m_Log->Printf(3, "RF Received: %s\n", parsedResult.c_str());
                 m_bExecute = false;
             } else {
-                LOG(INFO) << "Received " << data_ptr - data << " signals. Not decoded";
+                m_Log->Printf(10, "Received %ld signals. Not decoded\n", data_ptr - data);
             }
             data_ptr = data;
             packetStart = time(NULL);

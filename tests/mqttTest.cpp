@@ -15,7 +15,8 @@ using std::string;
 class TestMqttConnection
     : public mosqpp::mosquittopp
 {
-    std::string m_Server, m_sName;
+    string m_Server, m_sName;
+    CLog *m_Log;
     bool m_isConnected;
   public:
     TestMqttConnection();
@@ -38,6 +39,7 @@ TestMqttConnection::TestMqttConnection()
     : mosquittopp("TestMqttConnection"), m_isConnected(false)
 {
     m_Server  = "192.168.1.20";
+    m_Log = CLog::GetLog("Main");
 
     connect(m_Server.c_str());
     loop_start();
@@ -53,7 +55,7 @@ TestMqttConnection::~TestMqttConnection()
 void TestMqttConnection::on_connect(int rc)
 {
 
-    LOG(INFO) << m_sName << "::on_connect " << rc;
+    m_Log->Printf(1, "on_connect(%d)", rc);
 
     if (!rc) {
         m_isConnected = true;
@@ -64,43 +66,43 @@ void TestMqttConnection::on_connect(int rc)
 void TestMqttConnection::on_disconnect(int rc)
 {
     m_isConnected = false;
-    LOG(INFO) << m_sName << "::on_disconnect " << rc;
+    m_Log->Printf(1, "%s::on_disconnect(%d)", m_sName.c_str(), rc);
 
 }
 
 void TestMqttConnection::on_publish(int mid)
 {
-    LOG(INFO) << m_sName << "::on_publish " << mid;
+    m_Log->Printf(1, "%s::on_publish(%d)", m_sName.c_str(), mid);
 
 }
 
 void TestMqttConnection::on_message(const struct mosquitto_message *message)
 {
-    LOG(INFO) << m_sName << "::on_message(" << message->topic << " = " << message->payload << ")";
+    m_Log->Printf(1, "%s::on_message(%s=%s)", m_sName.c_str(), message->topic, message->payload);
 
 }
 
 void TestMqttConnection::on_subscribe(int mid, int qos_count, const int *granted_qos)
 {
-    LOG(INFO) << m_sName << "::on_subscribe " << mid;
+    m_Log->Printf(1, "%s::on_subscribe(%d)", m_sName.c_str(), mid);
 
 }
 
 void TestMqttConnection::on_unsubscribe(int mid)
 {
-    LOG(INFO) << m_sName << "::on_message " << mid;
+    m_Log->Printf(1, "%s::on_message(%d)", m_sName.c_str(), mid);
 
 }
 
 void TestMqttConnection::on_log(int level, const char *str)
 {
-    LOG(INFO) << m_sName << "::on_log(" << level << ", " << str << ")";
+    m_Log->Printf(1, "%s::on_log(%d, %s)", m_sName.c_str(), level, str);
 
 }
 
 void TestMqttConnection::on_error()
 {
-    LOG(INFO) <<  m_sName << "::on_error()";
+    m_Log->Printf(1, "%s::on_error()");
 
 }
 
@@ -116,13 +118,13 @@ void TestMqttConnection::Test()
     CWBDevice::StringMap v;
 
     wbdev.createDeviceValues(v);
-    LOG(INFO) << "Create test device";
+    m_Log->Printf(1, "Create test device");
 
     for (auto i : v) {
         publish(NULL, i.first.c_str(), i.second.size(), i.second.c_str(), 0, true);
-        LOG(INFO) << "publish " << i.first << " = " << i.second;
+        m_Log->Printf(1, "publish %s=%s", i.first.c_str(), i.second.c_str());
     }
-    LOG(INFO) << "Created";
+    m_Log->Printf(1, "Created");
 
 
     char Buffer[50];
@@ -134,16 +136,16 @@ void TestMqttConnection::Test()
 
     v.clear();
     wbdev.updateValues(v);
-    LOG(INFO) << "Update test device";
+    m_Log->Printf(1, "Update test device");
 
     for (auto i : v) {
         while (!m_isConnected)
             usleep(10);
 
         publish(NULL, i.first.c_str(), i.second.size(), i.second.c_str(), 0, true);
-        LOG(INFO) << "publish " << i.first << " = " << i.second;
+        m_Log->Printf(1, "publish %s=%s", i.first.c_str(), i.second.c_str());
     }
-    LOG(INFO) << "Updated";
+    m_Log->Printf(1, "Updated");
 
 
     sleep(3);

@@ -7,5 +7,3 @@ if [ "$1" = "purge" ]; then
         ucf --purge $CONFFILE
     fi
 fi
-
-update-rc.d -f wb-homa-rfsniffer remove
