@@ -1,13 +1,22 @@
+wb-homa-rfsniffer (1.0.7) stable; urgency=medium
+
+  * EV1527 (VHome, unnamed devices)
+  * Removed some unused code and features
+  * Option of enabling and disabling protocols and features
+
+ -- Yuri Pechatnov <yuri.pechatnov@wirenboard.ru>  Mon, 17 Jul 2017 23:59:59 +00001
+
+
 wb-homa-rfsniffer (1.0.6) stable; urgency=medium
-  
-  * HS chips (HS1527, HS2241, may be some more) protocol added 
+
+  * HS chips (HS1527, HS2241, may be some more) protocol added
   * Fixed some bugs
 
  -- Yuri Pechatnov <yuri.pechatnov@wirenboard.ru>  Mon, 07 Mar 2017 23:59:59 +0000
 
 
 wb-homa-rfsniffer (1.0.5) unstable; urgency=medium
-  
+
   * Now can be built in amd64 environment
   * Fixed some bugs
 
@@ -15,35 +24,35 @@ wb-homa-rfsniffer (1.0.5) unstable; urgency=medium
 
 
 wb-homa-rfsniffer (1.0.4) stable; urgency=medium
-  
+
   * Improved config - added device description fields
   * Now it's possible to recognise "dead" devices
 
  -- Yuri Pechatnov <yuri.pechatnov@wirenboard.ru>  Mon, 23 Jan 2017 23:59:59 +0000
- 
+
 wb-homa-rfsniffer (1.0.3) stable; urgency=medium
-  
+
   * A lot of changes in inner structure
   * Some improvements like better computing of consequent radio-packets
 
  -- Yuri Pechatnov <yuri.pechatnov@wirenboard.ru>  Mon, 27 Oct 2016 23:59:59 +0000
 
 wb-homa-rfsniffer (1.0.2) stable; urgency=medium
-  
+
   * Added Oregon V3 protocol
 
  -- Yuri Pechatnov <yuri.pechatnov@gmail.com>  Mon, 27 Oct 2016 23:59:59 +0000
 
 
 wb-homa-rfsniffer (1.0.1) stable; urgency=medium
-  
+
   * Added debianization
 
  -- Yuri Pechatnov <yuri.pechatnov@gmail.com>  Mon, 27 Oct 2016 23:59:59 +0000
 
 
 wb-homa-rfsniffer (1.0.0) unstable; urgency=medium
-  
+
   * forked from avp-avp/rfsniffer
 
  -- Yuri Pechatnov <yuri.pechatnov@gmail.com>  Mon, 27 Sep 2016 23:59:59 +0000
