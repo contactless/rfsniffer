@@ -42,7 +42,7 @@ string CRFProtocolVhome::DecodeData(const string& bits)
 		
     int btn = map[cmd];
     
-	if (btn == -1) {
+	if (btn == -1)
         return "";
     return String::ComposeFormat("addr=%d btn=%d", addr, btn);
 }
