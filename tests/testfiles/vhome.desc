@@ -1,0 +1,12 @@
+# you can use comments
+# delimeter between filename and answer is first space in the line
+
+# VHome (EV1527)
+# can't test it with enabled ev1527
+1btn-longpress1.rcf VHome:addr=36999 btn=2
+2btn-longpress1.rcf VHome:addr=27407 btn=1
+2btn-longpress2.rcf VHome:addr=27407 btn=3
+3btn-longpress1.rcf VHome:addr=65483 btn=1
+3btn-longpress2.rcf VHome:addr=65483 btn=2
+3btn-longpress3.rcf VHome:addr=65483 btn=3
+

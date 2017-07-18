@@ -30,7 +30,7 @@ class RFSniffer
     typedef base_type lirc_t;
 
     struct RFSnifferArgs {
-        std::string configName;
+        std::string config;
 
         bool bDebug;
         bool bDumpAllRegs;
@@ -57,7 +57,7 @@ class RFSniffer
 
         std::string savePath;
         bool inverted;
-        
+
         std::vector<std::string> enabledProtocols;
         std::vector<std::string> enabledFeatures;
 
@@ -78,7 +78,7 @@ class RFSniffer
     const static size_t dataBuffSize = maxMessageLength * 2;
 
     lirc_t dataBuff[dataBuffSize];
-    
+
 
     // utils
     bool waitForData(int fd, unsigned long maxusec);
@@ -88,8 +88,8 @@ class RFSniffer
     // read initial data
     void readEnvironmentVariables();
     void readCommandLineArguments(int argc, char **argv);
-    void tryReadConfigFile();
-    
+    void tryReadConfig();
+
     void logAllArguments();
 
     // initialize connections

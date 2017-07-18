@@ -81,7 +81,7 @@ void getAllTestFiles( string path, String::Vector &result )
 }
 
 
-bool OneTest(const string_pair &test, CRFParser &parser)
+bool OneTest(const string &path, const string_pair &test, CRFParser &parser)
 {
     DPRINTF_DECLARE(dprintf, false);
     dprintf("$P Start test=%\n", test);
@@ -114,7 +114,7 @@ bool OneTest(const string_pair &test, CRFParser &parser)
 
     dprintf("$P Before decoding\n");
     dprintf("$P exp_type = %, size(exp_values) = %\n", exp_type, exp_values.size());
-    String res = DecodeFile(&parser, (string("tests/testfiles/") + file_name).c_str());
+    String res = DecodeFile(&parser, (path + file_name).c_str());
 
 
     dprintf("$P After decoding before parsing decoded (got: %)\n", res);
@@ -142,22 +142,57 @@ bool OneTest(const string_pair &test, CRFParser &parser)
     }
     // Compare values, extra values in parsed result are ignored
     for (auto value_pair : exp_values) {
-		dprintf("$P Compare with % = %\n", value_pair.first, value_pair.second);
+        dprintf("$P Compare with % = %\n", value_pair.first, value_pair.second);
         if (value_pair.second != res_values[value_pair.first]) {
             // there may be a regular expression for check by unix grep
             if (value_pair.second.length() > 0 && value_pair.second[0] == '[')
                 continue;
             printf("Failed! Field\"%s\" mismatch! \n\tFile:%s, "\
                    " result:%s, Expected: %s\n",
-                   value_pair.first.c_str(), file_name.c_str(), 
+                   value_pair.first.c_str(), file_name.c_str(),
                    res_values[value_pair.first].c_str(), value_pair.second.c_str());
             return false;
         }
-	}
+    }
 
 
     dprintf("$P Finish\n");
     return true;
+}
+
+bool GroupTest(const string &group, const std::vector<string> &protocols) {
+    DPRINTF_DECLARE(dprintf, false);
+    dprintf("$P Start\n");
+
+    CRFParser parser;
+    for (const auto &protocol : protocols)
+        parser.AddProtocol(protocol);
+
+    bool allPassed = true;
+
+    // read tests from descriptive file
+    {
+        std::ifstream test_file;
+        test_file.open("tests/testfiles/" + group + ".desc");
+        if (test_file.is_open()) {
+            String test;
+            while (std::getline(test_file, test)) {
+                String testWitoutComment, comment;
+                test.SplitByFirstOccurenceDelimiter('#', testWitoutComment, comment);
+                String file, answer;
+                testWitoutComment.SplitByFirstOccurenceDelimiter(' ', file, answer);
+                //std::cout << "Test: " << file << " & " << answer << std::endl;;
+                allPassed &= OneTest("tests/testfiles/" + group + "/" , std::pair<string, string>(file, answer), parser);
+                dprintf("$P OK!\n");
+            }
+            test_file.close();
+        } else {
+            printf("Can't open testfiles descriptive file.");
+            exit(1);
+        }
+    }
+
+    return allPassed;
 }
 
 void RfParserTest(string path)
@@ -166,19 +201,11 @@ void RfParserTest(string path)
     dprintf("$P Start\n");
 
     bool allPassed = true;
-    CRFParser parser;
-
-    //parser.EnableAnalyzer();
-
-    //parser.AddProtocol(new CRFProtocolRST());
-    //parser.AddProtocol(new CRFProtocolLivolo());
-    //parser.AddProtocol(new CRFProtocolX10());
-    //parser.AddProtocol(new CRFProtocolRaex());
-    //parser.AddProtocol(new CRFProtocolNooLite());
-    //parser.AddProtocol("VHome");
-    parser.AddProtocol("All");
 
     if (path.length()) {
+        CRFParser parser;
+        parser.AddProtocol("All");
+
         String::Vector files;
         getAllTestFiles("./" + path, files);
         std::sort(files.begin(), files.end());
@@ -192,29 +219,8 @@ void RfParserTest(string path)
         return;
     }
 
-    // read tests from descriptive file
-    {
-        std::ifstream test_file;
-        test_file.open("tests/testfiles.desc");
-        if (test_file.is_open()) {
-            String test;
-            while (std::getline(test_file, test)) {
-                String testWitoutComment, comment;
-                test.SplitByFirstOccurenceDelimiter('#', testWitoutComment, comment);
-                String file, answer;
-                testWitoutComment.SplitByFirstOccurenceDelimiter(' ', file, answer);
-                //std::cout << "Test: " << file << " & " << answer << std::endl;;
-                allPassed &= OneTest(std::pair<string, string>(file, answer), parser);
-            }
-            test_file.close();
-        } else {
-            printf("Can't open testfiles descriptive file.");
-            exit(1);
-        }
-    }
-
-    //for (const string_pair test : Tests)
-    //    allPassed &= OneTest(test, log, parser);
+    allPassed &= GroupTest("mix", {"All"});
+    allPassed &= GroupTest("vhome", {"VHome"});
 
     dprintf("$P Before finish (%)\n", (allPassed ? "tests PASSED" : "tests FAILED"));
 

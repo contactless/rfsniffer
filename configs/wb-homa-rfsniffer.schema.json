@@ -1,182 +1,183 @@
 {
-	"$schema": "http://json-schema.org/draft-04/schema#",
-	"type": "object",
-	"title": "RFM69 Driver Configuration",
-	
-	"propertyOrder" : 2,
-	
-	"configFile": {
-		"path": "/etc/wb-homa-rfsniffer.conf",
-		"service": "wb-homa-rfsniffer"
-	},
-	"properties": {
-		"radio": {
-			"type": "object",
-			"title": "Radio settings",
-			"propertyOrder" : 1,
-			"properties" : {
-				"lirc_device": {
-					"description": "Adress of lirc device",
-					"type": "string",
-					"default": "/dev/lirc0"
-				},
-				"spi_device": {
-					"description": "Adress of SPI device",
-					"type": "string",
-					"default": "/dev/spidev32766.0"
-				},
-				"rssi": {
-					"description": "Received signal strength indicator(RSSI)",
-					"type": "number",
-					"maximum": 0,
-					"default": -90
-				},
-				//, "fixedThresh": 60
-				"rfm_irq": {
-					"description": "IRQ",
-					"type": "integer",
-					"minimum": 0,
-					"default": 38
-				}
-			}
-		},
-		"mqtt": {
-			"type": "object",
-			"title": "MQTT settings",
-			"propertyOrder" : 2,
-			"properties" : {
-				"host": {
-					"description": "MQTT host",
-					"type": "string",
-					"default": "local host"
-				}
-			}
-		},
-		"debug": {
-			"type": "object",
-			"title": "DEBUG settings",
-			"propertyOrder" : 10,
-			"properties": {
-				"save_path": {
-					"description": "Path to save debug info",
-					"type": "string",
-					"default": "."
-				},
-				"dump_stream": {
-					"description": "Dump all radio stream",
-					"type": "boolean",
-					"default": false
-				},
-				"log": {
-					"type": "array",	
-					"title": "Logs",
-					"items": {
-						"type": "object",
-						"title": "Log",
-						"properties": {
-							"name": {
-								"description": "Name",
-								"type": "string",
-								"default": "Main"
-							},
-							"file_name": {
-								"description": "File name",
-								"type": "string",
-								"default": "/run/wb-homa-rfsniffer.log"
-							},
-							"console_level": {
-								"description": "Console level",
-								"type": "integer",
-								"default": 5,
-								"minimum": 0
-							},
-							"file_level": {
-								"description": "File level",
-								"type": "integer",
-								"default": 3,
-								"minimum": 0
-							},
-							"log_time": {
-								"description": "Log time",
-								"type": "string",
-								"default": "yes"
-							}
-						}
-					}
-				}
-			}
-		},
-		  
-		"enabled_protocols": {
-			"type": "array",	
-			"title": "Enabled protocols",
-			"items": {
-				"type": "string", 
-				"enum": ["X10", "RST", "Raex", "Livolo", "Oregon", "nooLite", "Rubitek", "MotionSensor", "VHome", "EV1527"]
-			},
-			"uniqueItems": true
-		},
-		
-		"enabled_features": {
-			"type": "array",	
-			"title": "Enabled features",
-			"items": {
-				"type": "string", 
-				"enum": ["noolite_tx"]
-			},
-			"uniqueItems": true
-		},
-		  
-		"devices": {
-			"type": "object",
-			"title": "Device politics",
-			"propertyOrder" : 7,
-			"properties": {
-				"use_devices_list": {
-					"description": "Use list of known devices",
-					"type": "boolean",
-					"default": false,
-				},
-				"unknown_devices_politics": {
-					"description": "What is needed to do with devices that are not mentioned in the list? ",
-					"type": "string", 
-					"enum": [ "ignore", "show"],
-					"default": "show"
-					
-				},
-			
-				"known_devices": {
-					"type": "array",	
-					"title": "Known devices",
-					"items": {
-						"type": "object",
-						"title": "Device",
-						"properties": {
-							"name": {
-								"description": "Name as in mqtt tree",
-								"propertyOrder" : 1,
-								"type": "string",
-								"default": ""
-							},
-							"politics": {
-								"description": "What is needed to do with devices that are not mentioned in the list? ",
-								"propertyOrder" : 2,
-								"type": "string", 
-								"enum": [ "ignore", "show"],
-								"default": "show"
-							},
-							"heartbeat": {
-								"description": "Heartbeat (time in seconds which is needed to admit that device is dead, -1 for disable)",
-								"propertyOrder" : 3,
-								"type": "integer",
-								"default": -1,
-								"minimum": -1
-							}
-						},
-						"required": ["name"]
-					}
-				}
-			}
-		}
-	}
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "title": "RFM69 Driver Configuration",
+
+    "propertyOrder" : 2,
+
+    "configFile": {
+        "path": "/etc/wb-homa-rfsniffer.conf",
+        "service": "wb-homa-rfsniffer"
+    },
+    "properties": {
+        "radio": {
+            "type": "object",
+            "title": "Radio settings",
+            "propertyOrder" : 1,
+            "properties" : {
+                "lirc_device": {
+                    "description": "Adress of lirc device",
+                    "type": "string",
+                    "default": "/dev/lirc0"
+                },
+                "spi_device": {
+                    "description": "Adress of SPI device",
+                    "type": "string",
+                    "default": "/dev/spidev32766.0"
+                },
+                "rssi": {
+                    "description": "Received signal strength indicator(RSSI)",
+                    "type": "number",
+                    "maximum": 0,
+                    "default": -90
+                },
+                //, "fixedThresh": 60
+                "rfm_irq": {
+                    "description": "IRQ",
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 38
+                }
+            }
+        },
+        "mqtt": {
+            "type": "object",
+            "title": "MQTT settings",
+            "propertyOrder" : 2,
+            "properties" : {
+                "host": {
+                    "description": "MQTT host",
+                    "type": "string",
+                    "default": "local host"
+                }
+            }
+        },
+        "debug": {
+            "type": "object",
+            "title": "DEBUG settings",
+            "propertyOrder" : 10,
+            "properties": {
+                "save_path": {
+                    "description": "Path to save dumps and debug info",
+                    "type": "string",
+                    "default": "~/"
+                },
+                "dump_stream": {
+                    "description": "Dump all radio stream (along with normal work)",
+                    "type": "boolean",
+                    "default": false
+                },
+
+                "log": {
+                    "type": "array",
+                    "title": "Logs",
+                    "items": {
+                        "type": "object",
+                        "title": "Log",
+                        "properties": {
+                            "name": {
+                                "description": "Name",
+                                "type": "string",
+                                "default": "Main"
+                            },
+                            "file_name": {
+                                "description": "File name",
+                                "type": "string",
+                                "default": "/run/wb-homa-rfsniffer.log"
+                            },
+                            "console_level": {
+                                "description": "Console level",
+                                "type": "integer",
+                                "default": 5,
+                                "minimum": 0
+                            },
+                            "file_level": {
+                                "description": "File level",
+                                "type": "integer",
+                                "default": 3,
+                                "minimum": 0
+                            },
+                            "log_time": {
+                                "description": "Log time",
+                                "type": "string",
+                                "default": "yes"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+
+        "enabled_protocols": {
+            "type": "array",
+            "title": "Enabled protocols",
+            "items": {
+                "type": "string",
+                "enum": ["X10", "RST", "Raex", "Livolo", "Oregon", "nooLite", "Rubitek", "MotionSensor", "VHome", "EV1527"]
+            },
+            "uniqueItems": true
+        },
+
+        "enabled_features": {
+            "type": "array",
+            "title": "Enabled features",
+            "items": {
+                "type": "string",
+                "enum": ["noolite_tx"]
+            },
+            "uniqueItems": true
+        },
+
+        "devices": {
+            "type": "object",
+            "title": "Device politics",
+            "propertyOrder" : 7,
+            "properties": {
+                "use_devices_list": {
+                    "description": "Use list of known devices",
+                    "type": "boolean",
+                    "default": false,
+                },
+                "unknown_devices_politics": {
+                    "description": "What is needed to do with devices that are not mentioned in the list? ",
+                    "type": "string",
+                    "enum": [ "ignore", "show"],
+                    "default": "show"
+
+                },
+
+                "known_devices": {
+                    "type": "array",
+                    "title": "Known devices",
+                    "items": {
+                        "type": "object",
+                        "title": "Device",
+                        "properties": {
+                            "name": {
+                                "description": "Name as in mqtt tree",
+                                "propertyOrder" : 1,
+                                "type": "string",
+                                "default": ""
+                            },
+                            "politics": {
+                                "description": "What is needed to do with devices that are not mentioned in the list? ",
+                                "propertyOrder" : 2,
+                                "type": "string",
+                                "enum": [ "ignore", "show"],
+                                "default": "show"
+                            },
+                            "heartbeat": {
+                                "description": "Heartbeat (time in seconds which is needed to admit that device is dead, -1 for disable)",
+                                "propertyOrder" : 3,
+                                "type": "integer",
+                                "default": -1,
+                                "minimum": -1
+                            }
+                        },
+                        "required": ["name"]
+                    }
+                }
+            }
+        }
+    }
 }

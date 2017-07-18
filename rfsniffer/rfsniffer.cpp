@@ -12,7 +12,7 @@ typedef std::string string;
 using namespace strutils;
 
 RFSniffer::RFSnifferArgs::RFSnifferArgs():
-    configName(""),
+    config(""),
     bDebug(false),
     bDumpAllRegs(false),
     bLircPedantic(true),
@@ -38,7 +38,7 @@ RFSniffer::RFSnifferArgs::RFSnifferArgs():
 
     savePath("."),
     inverted(false),
-    
+
     enabledProtocols({"All"}),
     enabledFeatures({})
 {
@@ -146,10 +146,6 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
 
             case 's':
                 args.spiDevice = optarg;
-                if (args.spiDevice == "do_not_use") {
-                    args.spiDevice = "/dev/null";
-                    args.bRfmEnable = false;
-                }
                 break;
 
             case 'l':
@@ -194,24 +190,23 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
             case 'W':
                 args.bDumpAllLircStream = true;
                 break;
-            
+
             case 'w':
                 args.bDumpAllLircStream = true;
                 args.bSimultaneouslyDumpStreamAndWork = true;
                 break;
-            
+
             case 'c':
-                args.configName = optarg;
+                args.config = optarg;
                 break;
 
             case '?':
                 printf("Usage: rfsniffer [params]\n");
                 printf("-D - debug mode. Write good but not decoded packets to files\n");
                 printf("-g <DIO0 gpio> - set custom DIO0 GPIO number. Default %d\n", args.gpioInt);
-                printf("-s <spi device> - set custom SPI device. Default %s\n" \
-                       "    to disable SPI and RFM put \'do_not_use\' ", args.spiDevice.c_str());
+                printf("-s <spi device> - set custom SPI device. Default %s\n", args.spiDevice.c_str());
                 printf("-l <lirc device> - set custom lirc device. Default %s\n"
-                       "    Set it with '/dev/null' for do not exit when can't read.", args.lircDevice.c_str());
+                       "    If it is set with '/dev/null' driver will not read from it but still will not exit.", args.lircDevice.c_str());
                 printf("-m <mqtt host> - set custom mqtt host. Default %s\n", args.mqttHost.c_str());
                 printf("-W - write all data from lirc device to file until signal from keyboard\n");
                 printf("-w - like -W but simultaneously do normal work of driver\n");
@@ -223,7 +218,7 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
 
                 printf("-T - disable pedantic check of lirc character device (may use pipe instead)\n" \
                        "    disable using SPI and RFM, do specific test output\n");
-                printf("-c configfile - specify config file (parameters in config file are priority) \n");
+                printf("-c configfile or config itself - specify config file (parameters in config file are priority) \n");
                 //          printf("-f <sampling freq> - set custom sampling freq. Default %d\n", samplingFreq);
                 exit(0);
             default:
@@ -233,19 +228,24 @@ void RFSniffer::readCommandLineArguments(int argc, char **argv)
     }
 }
 
-void RFSniffer::tryReadConfigFile()
+void RFSniffer::tryReadConfig()
 {
-    if (args.configName.empty())
+    if (args.config.empty())
         return;
     try {
         Json::Value config;
         // reading
-        {
-            std::fstream fs(args.configName.c_str(), std::fstream::in);
+        if (args.config[0] != '{') {
+            // reading from file
+            std::fstream fs(args.config.c_str(), std::fstream::in);
             fs >> config;
             fs.close();
         }
-        
+        else {
+            // reading json config from string
+            std::istringstream(args.config) >> config;
+        }
+
         auto radio = config["radio"];
         if (!!radio) {
             auto lircDevice = radio["lirc_device"];
@@ -261,11 +261,11 @@ void RFSniffer::tryReadConfigFile()
             if (!!rssi)
                 args.rssi = rssi.asInt();
         }
-        
+
         auto mqttHost = config["mqtt"]["host"];
         if (!!mqttHost)
             args.mqttHost = mqttHost.asString();
-            
+
         auto debug = config["debug"];
         if (!!debug) {
             auto savePath = debug["save_path"];
@@ -277,20 +277,20 @@ void RFSniffer::tryReadConfigFile()
                 args.bSimultaneouslyDumpStreamAndWork = true;
             }
             auto log = debug["log"];
-            if (!!log) {				
-				if (!log.isArray())
-					throw std::runtime_error("log must be array");
-				for (int i = 0; i < (int)log.size(); ++i) {
-					auto logItem = log[i];
-					auto fileName = logItem["file_name"];
-					auto name = logItem["name"];
-					if (!name || !fileName)
-						throw std::runtime_error("incomplete log item");
-					log4cpp_AddOutput(name.asString(), fileName.asString());
-				} 
-			}
+            if (!!log) {
+                if (!log.isArray())
+                    throw std::runtime_error("log must be array");
+                for (int i = 0; i < (int)log.size(); ++i) {
+                    auto logItem = log[i];
+                    auto fileName = logItem["file_name"];
+                    auto name = logItem["name"];
+                    if (!name || !fileName)
+                        throw std::runtime_error("incomplete log item");
+                    log4cpp_AddOutput(name.asString(), fileName.asString());
+                }
+            }
         }
-        
+
         auto enabledProtocols = config["enabled_protocols"];
         if (!!enabledProtocols) {
             if (!enabledProtocols.isArray())
@@ -299,9 +299,9 @@ void RFSniffer::tryReadConfigFile()
             for (int i = 0; i < (int)enabledProtocols.size(); ++i) {
                 args.enabledProtocols.push_back(enabledProtocols[i].asString());
                 //fprintf(stderr, "Enabled protocol: %s\n", args.enabledProtocols.back().c_str());
-            }       
+            }
         }
-        
+
         auto enabledFeatures = config["enabled_features"];
         if (!!enabledFeatures) {
             if (!enabledFeatures.isArray())
@@ -310,19 +310,19 @@ void RFSniffer::tryReadConfigFile()
             for (int i = 0; i < (int)enabledFeatures.size(); ++i) {
                 args.enabledFeatures.push_back(enabledFeatures[i].asString());
                 //fprintf(stderr, "Enabled protocol: %s\n", args.enabledFeatures.back().c_str());
-            }       
+            }
         }
-        
+
         this->configJson = config;
-    } 
+    }
     catch (CHaException ex) {
         fprintf(stderr, "Failed load config. Error: %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
         exit(-1);
-    } 
+    }
     //catch (Json::Exception ex) {
     //    fprintf(stderr, "Failed load config. Error: %s", ex.what());
     //    exit(-1);
-    //} 
+    //}
     catch (std::exception ex) {
         fprintf(stderr, "Failed load config. Error: %s", ex.what());
         exit(-1);
@@ -330,15 +330,15 @@ void RFSniffer::tryReadConfigFile()
 }
 
 void RFSniffer::logAllArguments() {
-    
+
     LOG(INFO) << "RFSniffer parameters";
-    
+
     #define print_bool(a) LOG(INFO) << ("  ||  " #a " = ") << (args.a ? "true" : "false");
     #define print_str(a) LOG(INFO) << ("  ||  " #a " = '") << args.a << "'";
     #define print_int(a) LOG(INFO) << ("  ||  " #a " = ") << args.a;
     #define print_gap() LOG(INFO) << "  ||  ";
-    
-    print_str(configName);
+
+    print_str(config);
     print_bool(bDebug);
     print_bool(bDumpAllRegs);
     print_bool(bLircPedantic);
@@ -364,11 +364,11 @@ void RFSniffer::logAllArguments() {
     print_gap();
     print_str(savePath);
     print_bool(inverted);
-    
+
     #undef print_bool
-    #undef print_str    
-    #undef print_int    
-    #undef print_gap    
+    #undef print_str
+    #undef print_int
+    #undef print_gap
 }
 
 void RFSniffer::initSPI()
@@ -479,11 +479,11 @@ void RFSniffer::tryJustScan() throw(CHaException)
         }
     } else {
         LOG(ERROR) << "Error in parsing scanner params." \
-				"Use -S <low level>..<high level>/<seconds for step>\n";
+                "Use -S <low level>..<high level>/<seconds for step>\n";
         exit(-1);
     }
 
-    
+
     int curLevel = minLevel;
 
     while (curLevel < maxLevel) {
@@ -519,7 +519,7 @@ void RFSniffer::tryJustScan() throw(CHaException)
 
 void RFSniffer::tryFixThresh() throw(CHaException)
 {
-    if (args.fixedThresh) {
+    if (rfm && args.fixedThresh) {
         rfm->writeReg(REG_OOKPEAK, RF_OOKPEAK_THRESHTYPE_FIXED);
         rfm->writeReg(REG_OOKFIX, args.fixedThresh);
     }
@@ -554,7 +554,7 @@ void RFSniffer::tryDumpAllLircStream()
                 if (readTailBytes != -1)
                     resultBytes += readTailBytes;
             }
-            
+
             int result = resultBytes / sizeof(lirc_t);
             lircData.insert(lircData.end(), dataBuff, dataBuff + result);
         }
@@ -572,7 +572,7 @@ void RFSniffer::receiveForever() throw(CHaException)
 {
     DPRINTF_DECLARE(dprintf, false);
 
-    dprintf("$P Start!\n");    
+    dprintf("$P Start!\n");
 
     LOG(INFO) << "RF Receiver begins";
 
@@ -590,13 +590,13 @@ void RFSniffer::receiveForever() throw(CHaException)
 
     string dumpFileName;
     std::unique_ptr<FILE, int(*)(FILE *)> dumpFile(nullptr, fclose);
-    
+
     if (args.bDumpAllLircStream) {
         assert(args.bSimultaneouslyDumpStreamAndWork);
         dumpFileName = CRFParser::GenerateFileName("dump-all", args.savePath);
         // make unique_ptr for automatic close of file
         dumpFile = std::unique_ptr<FILE, int(*)(FILE *)>(fopen(dumpFileName.c_str(), "w"), fclose);
-        
+
         LOG(INFO) << "Saving stream dump to '" << dumpFileName << "'. Press Ctrl-C to stop driver";
     }
 
@@ -656,12 +656,12 @@ void RFSniffer::receiveForever() throw(CHaException)
                         dprintf("$P No more input data. Exiting!\n");
                         // if lirc is a fictive device then break
                         // if lirc is dumb device (/dev/null) consider situation as just lack of data
-                        if (args.lircDevice != "/dev/null") 
+                        if (args.lircDevice != "/dev/null")
                             break;
                     }
                 } else {
                     dprintf("$P % bytes were read from lirc device\n", resultBytes);
-                    
+
                     // I hope this never happen
                     while (resultBytes % sizeof(lirc_t) != 0) {
                         LOG(INFO) << "Bad amount (amount % 4 != 0) of bytes read from lirc";
@@ -673,7 +673,7 @@ void RFSniffer::receiveForever() throw(CHaException)
                     }
 
                     int result = resultBytes / sizeof(lirc_t);
-                    
+
                     if (dumpFile) {
                         fwrite(dataBuff, sizeof(lirc_t), result, dumpFile.get());
                         fflush(dumpFile.get());
@@ -698,8 +698,8 @@ void RFSniffer::receiveForever() throw(CHaException)
                 //~ LOG(INFO) << 3, "You can find stream dump in '%s'", dumpFileName.c_str());
                 //~ break;
             //~ }
-            
-            
+
+
             dprintf("$P after read more\n");
 
 
@@ -745,13 +745,13 @@ void RFSniffer::run(int argc, char **argv)
     dprintf("$P Environment variables have been read.\n");
     readCommandLineArguments(argc, argv);
     dprintf("$P Command line arguments have been read.\n");
-    tryReadConfigFile();
+    tryReadConfig();
     dprintf("$P Config file has been read.\n");
-    
+
     log4cpp_AddOstream();
-    
+
     logAllArguments();
-    
+
     try {
         dprintf("$P before SPI has been inited.\n");
         initSPI();

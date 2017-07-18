@@ -8,22 +8,27 @@ LIRC="./lirc_rfm_test_device"
 GPROF_REPORT="./gprof_report.log"
 VALGRIND_MASSIF_REPORT="./valgrind_massif_report.log"
 
-if ! [[ $# -gt 1 ]]; then
+if [ -z "$OPTS" ]
+then
+    OPTS=""
+fi
+
+if [ -z "$EXE" ]
+then
+    EXE="./wb-homa-rfsniffer"
+fi
+
+if [ -z "$TESTS_DESCR" ]
+then
+    TESTS_DESCR=""
+fi
+
+if [ -z "$TESTS_FOLDER" ]; then
     echo "Need more arguments"
     echo "Need path to executable and path to tests"
-    echo "Usage 1: tests/simulate_lirc.sh rfsniffer/wb-homa-rfsniffer tests/testfiles"
-    echo "Usage 2: tests/simulate_lirc.sh rfsniffer/wb-homa-rfsniffer tests/testfiles tests/testfiles.desc"
-    exit -1
+    echo "Usage 1: [EXE=executable] [OPTS=options] TESTS_FOLDER=folder [TESTS_DESCR=descr_file] tests/simulate_lirc.sh"
+    exit 0
 fi
-
-EXE=$1
-TESTS_FOLDER=$2
-TESTS_DESCR=""
-
-if [[ $# -gt 2 ]]; then
-    TESTS_DESCR=$3
-fi
-
 
 if ! [ -f $EXE ]; then
     echo "Can not find $EXE"
@@ -36,24 +41,21 @@ if ! [ -d $TESTS_FOLDER ]; then
 fi
 
 
-rm  -v -f $LIRC
+rm -v -f $LIRC
 
-echo "create fifo ($LIRC) instead of character device"
-
-#mkfifo $LIRC
 rm -f $LIRC
 
 echo "take $EXE as executable rfsniffer"
 
-CMD="$EXE -T -l $LIRC"
+CMD="$EXE -T -l $LIRC $OPTS"
 
 # Make sure only root can run our script
 if [[ $EUID -ne 0 ]]; then
     echo "Don't try to stop service wb-homa-rfsniffer"
-	echo "It's probably not WB device"
+    echo "It's probably not WB device"
 else
-	echo "Stop service wb-homa-rfsniffer to avoid contradictions"
-	service wb-homa-rfsniffer stop
+    echo "Stop service wb-homa-rfsniffer to avoid contradictions"
+    service wb-homa-rfsniffer stop
 fi
 
 # too long too wait
@@ -77,10 +79,10 @@ if [ -z "$TESTS_DESCR" ]; then
     done
 else
     # read file line by line
-    while read LINE; 
-    do 
+    while read LINE;
+    do
         # cut first word (it's test filename)
-        # and get answer 
+        # and get answer
         FILE_NAME=`echo $LINE | cut -d '#' -f -1 | cut -d $' ' -f -1`
         if [ -z "$FILE_NAME" ]; then
             continue

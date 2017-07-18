@@ -88,14 +88,6 @@ capture-1404-083811.rcf Raex:raw=087BF0807FFFFF ch=08 btn=2
 capture-1408-204138.rcf RST:id=1b00 h=46 t=14.1
 capture-1004-105819.rcf RST:id=1b10 h=82 t=29.1
 
-# VHome (EV1527)
-#1btn-longpress1.rcf VHome:addr=36999 type=1 btn=1
-#2btn-longpress1.rcf VHome:addr=27407 type=2 btn=1
-#2btn-longpress2.rcf VHome:addr=27407 type=2 btn=2
-#3btn-longpress1.rcf VHome:addr=75 type=3 btn=1
-#3btn-longpress2.rcf VHome:addr=75 type=3 btn=2
-#3btn-longpress3.rcf VHome:addr=75 type=3 btn=3
-
 # remote control with ABCD buttons on EV1527
 EV1527_remoteABCD_keyA.rcf EV1527:addr=52102 cmd=4
 EV1527_remoteABCD_keyB.rcf EV1527:addr=52102 cmd=8

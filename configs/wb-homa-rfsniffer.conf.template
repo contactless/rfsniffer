@@ -1,44 +1,44 @@
 // This file is template or was generated automatically, see for generate_configs.py
 // Configuration options for __WB_VERSION_FOR_REPLACE__
 {
-	"radio": {
-		"lirc_device": "__LIRC_DEVICE_FOR_REPLACE__",
-		"spi_device": "__SPI_DEVICE_FOR_REPLACE__",
-		"rssi": -90,
-		"rfm_irq": __IRQ_FOR_REPLACE__
-	},
+    "radio": {
+        "lirc_device": "__LIRC_DEVICE_FOR_REPLACE__",
+        "spi_device": "__SPI_DEVICE_FOR_REPLACE__",
+        "rssi": -90,
+        "rfm_irq": __IRQ_FOR_REPLACE__
+    },
 
-	"mqtt": {
-		"host": "localhost"
-	},
-	
-	"enabled_protocols": ["X10", "RST", "Raex", "Livolo", "Oregon", "nooLite", "Rubitek", "MotionSensor", "EV1527"],
-	"enabled_features": ["noolite_tx"],
+    "mqtt": {
+        "host": "localhost"
+    },
 
-	"debug":{
-		"save_path": ".",
-		"dump_stream": false, 
+    "enabled_protocols": ["X10", "RST", "Raex", "Livolo", "Oregon", "nooLite", "Rubitek", "MotionSensor", "EV1527"],
+    "enabled_features": ["noolite_tx"],
 
-		"log": [
-			{
-				"name": "Main",
-				"file_name": "/run/wb-homa-rfsniffer.log",
-				"console_level": 5,
-				"file_level": 3,
-				"log_time": "yes"
-			}
-		]
-	},
-	
-	"devices": {
-		"use_devices_list" : false,
-		"unknown_devices_politics" : "show",
-		"known_devices" : [
-			{
-				"name": "noolite_rx_0x149f",
-				"politics": "show",
-				"heartbeat": 7300
-			}
-		]
-	}
+    "debug":{
+        "save_path": "~/",
+        "dump_stream": false,
+
+        "log": [
+            {
+                "name": "Main",
+                "file_name": "/run/wb-homa-rfsniffer.log",
+                "console_level": 5,
+                "file_level": 3,
+                "log_time": "yes"
+            }
+        ]
+    },
+
+    "devices": {
+        "use_devices_list" : false,
+        "unknown_devices_politics" : "show",
+        "known_devices" : [
+            {
+                "name": "noolite_rx_0x149f",
+                "politics": "show",
+                "heartbeat": 7300
+            }
+        ]
+    }
 }
