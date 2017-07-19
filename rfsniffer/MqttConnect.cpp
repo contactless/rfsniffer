@@ -156,6 +156,7 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
         LOG(INFO) << command;
         m_nooLite.EncodeData(command, 2000, buffer, bufferSize);
         if (m_RFM) {
+            m_RFM->receiveEnd();
             m_RFM->send(buffer, bufferSize);
             m_RFM->receiveBegin();
         }
