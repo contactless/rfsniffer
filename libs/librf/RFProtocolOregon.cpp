@@ -415,7 +415,6 @@ string CRFProtocolOregon::DecodePacket(const std::string &raw_)
 
 string CRFProtocolOregon::DecodeData(const std::string &packet) // Преобразование бит в данные
 {
-    // printf("Oregon decodeData: %s\n", packet.c_str());
     std::string parsed;
     for (auto device = devices.begin(); device != devices.end() && parsed.length() == 0; device++)
         parsed = device->DecodeData(packet);
@@ -425,56 +424,6 @@ string CRFProtocolOregon::DecodeData(const std::string &packet) // Преобразовани
         return "raw:" + packet;
     }
     return parsed;
-
-    /*
-    std::string type = packet.substr(1, 4);
-    // TODO: check if 1d30 is correct?
-    if (type == "1D20" || type == "1D30" || type == "F824" || type == "F8B4") {
-
-        //   ID   C RC F TTT - H  ? CRC
-        // a 1d20 1 51 8 742 0 64 4 a3 0a
-        // a 1d20 1 51 0 222 0 83 8 03 fb
-
-        int channel = packet[5] - '0';
-        int id = ((packet[7] - '0') << 4) + (packet[6] - '0');
-        float temp = (float)0.1 * atoi(reverse(packet.substr(9, 3)));
-        if (packet[12] != '0')
-            temp *= -1;
-        int hum = atoi(reverse(packet.substr(13, 2)));
-        char buffer[40];
-        snprintf(buffer, sizeof(buffer), "type=%s id=%02X ch=%d t=%.1f h=%d", type.c_str(), id, channel,
-                 temp, hum);
-        return buffer;
-    } else if (type == "EC40" || type == "C844" ) {
-        int channel = packet[5] - '0';
-        int id = ((packet[6] - '0') << 4) + (packet[7] - '0');
-        float temp = (float)0.1 * atoi(reverse(packet.substr(9, 3)));
-        if (packet[12] != '0')
-            temp *= -1;
-        char buffer[40];
-        snprintf(buffer, sizeof(buffer), "type=%s id=%02X ch=%d t=%.1f", type.c_str(), id, channel, temp);
-        return buffer;
-    } else {
-        LOG(INFO) << 4, "Unknown sensor type %s. Data: %s", type.c_str(), packet.c_str());
-        return "raw:" + packet;
-    }
-
-    return "";
-    * /
-    /*  unsigned long l1 = bits2long(packet.substr(0, 32));
-    unsigned long l2 = bits2long(packet.substr(32, 32));
-    unsigned long l3 = bits2long(packet.substr(64, 32));
-
-    unsigned long l4 = bits2long(packet2.substr(0, 32));
-    unsigned long l5 = bits2long(packet2.substr(32, 32));
-    unsigned long l6 = bits2long(packet2.substr(64, 32));
-
-    char Buffer[200];
-    snprintf(Buffer, sizeof(Buffer), "%08X%08X%04X", l1, l2, l3);
-    std::string res = Buffer;
-    snprintf(Buffer, sizeof(Buffer), "%08X%08X%04X", l4, l5, l6);
-    return res+"_"+reverse(Buffer);*/
-
 }
 
 

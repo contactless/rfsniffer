@@ -251,7 +251,7 @@ void CRFParser::SaveFile(base_type *data, size_t size, const char *prefix, std::
             return;
         };
 
-        size_t ignore_ = write(of, data, sizeof(data[0]) * size);
+        write(of, data, sizeof(data[0]) * size);
         close(of);
     }
 #endif

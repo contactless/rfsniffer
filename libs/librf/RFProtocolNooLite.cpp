@@ -120,7 +120,7 @@ bool CRFProtocolNooLite::bits2packet(const std::string &bits, uint8_t *packet, s
                                      uint8_t *CRC)
 {
     size_t bytes = (bits.substr(1).length() + 7) / 8;
-    size_t extraBits = bits.substr(1).length() % 8;
+    //~ size_t extraBits = bits.substr(1).length() % 8;
 
     if (*packetLen < bytes)
         return false;
@@ -147,7 +147,7 @@ bool CRFProtocolNooLite::bits2packet(const std::string &bits, uint8_t *packet, s
 string CRFProtocolNooLite::DecodePacket(const std::string &raw_)
 {
     DPRINTF_DECLARE(dprintf, false);
-    
+
     String raw = String(raw_);
 
     // shortest nooLite message - 5 bytes - 40 bits - 40 signals at minimum
@@ -172,7 +172,7 @@ string CRFProtocolNooLite::DecodePacket(const std::string &raw_)
 
             if (bits2packet(res, packet.data(), &packetLen))
                 return res;
-           
+
         }
     }
 
@@ -216,7 +216,7 @@ string CRFProtocolNooLite::DecodeData(const string
     */
 
     dprintf("$P bits: (%), packet: (", bits);
-    for (int i = 0; i < packetLen && dprintf.isActive(); i++)
+    for (size_t i = 0; i < packetLen && dprintf.isActive(); i++)
         dprintf.c("%02X ", (int)packet[i]);
     dprintf(")\n");
 
@@ -225,7 +225,7 @@ string CRFProtocolNooLite::DecodeData(const string
     int received_crc = packet[packetLen - 1];
     if (calculated_crc != received_crc) {
         LOG(INFO) << String::ComposeFormat(
-				"CRFProtocolNooLite::DecodeData - Incorrect packet - wrong CRC (received %02x != %02x calculated)",
+                "CRFProtocolNooLite::DecodeData - Incorrect packet - wrong CRC (received %02x != %02x calculated)",
                 received_crc, calculated_crc);
         return "";
     }
@@ -234,7 +234,7 @@ string CRFProtocolNooLite::DecodeData(const string
     int fmt = packet[packetLen - 2];
     //                  0  1   2  3  4  5  6   7
     int fmt2length[] = {5, 8, -1, 9, 6, 7, 8, 10};
-    if (fmt < 0 || fmt >= sizeof(fmt2length) / sizeof(int) || fmt2length[fmt] != (int)packetLen) {
+    if (fmt < 0 || fmt >= int(sizeof(fmt2length) / sizeof(int)) || fmt2length[fmt] != (int)packetLen) {
         LOG(INFO) << "CRFProtocolNooLite::DecodeData - Incorrect packet - strange "\
                      "fmt=" << fmt << ", received_len=" << packetLen;
         return "";
@@ -359,7 +359,7 @@ string CRFProtocolNooLite::DecodeData(const string
         }
         default:
             LOG(INFO) << String::ComposeFormat(
-					"unknown_format=true len=%d addr=%04x fmt=%02x crc=%02x", packetLen,
+                    "unknown_format=true len=%d addr=%04x fmt=%02x crc=%02x", packetLen,
                     (int)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (int)fmt,
                     (int)packet[packetLen - 1]);
     }

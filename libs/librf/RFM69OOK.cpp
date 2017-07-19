@@ -96,7 +96,7 @@ bool RFM69OOK::initialize()
     };
 
     for (byte i = 0; CONFIG[i][0] != 255; i++) {
-        byte cur = readReg(CONFIG[i][0]);
+        // byte cur = readReg(CONFIG[i][0]);
         //if (cur!=CONFIG[i][1] )
         //  printf ("SET %x from %x to %x\n", CONFIG[i][0], cur, CONFIG[i][1]);
         writeReg(CONFIG[i][0], CONFIG[i][1]);
@@ -341,7 +341,7 @@ byte RFM69OOK::readReg(byte addr)
 {
     unsigned char val, tmp;
     tmp = addr & 0x7F;
-    int res = m_spi->xfer2(&tmp, 1, &val, 1);
+    m_spi->xfer2(&tmp, 1, &val, 1);
     return val;
 
 }
@@ -351,7 +351,7 @@ void RFM69OOK::writeReg(byte addr, byte value)
     unsigned char data[2], tmp;
     data[0] = addr | 0x80;
     data[1] = value;
-    int res = m_spi->xfer2(data, 2, &tmp, 0);
+    m_spi->xfer2(data, 2, &tmp, 0);
 }
 
 void RFM69OOK::setHighPower(bool onOff)

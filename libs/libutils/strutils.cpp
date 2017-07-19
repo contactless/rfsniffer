@@ -172,7 +172,7 @@ int BufferWriter::printf(const char *format, ...)
         va_end (args);
         if (written_length < 0)
             return written_length;
-        if (offset + written_length + 1 >= buff.size()) {
+        if (offset + written_length + 1 >= (int)buff.size()) {
             buff.resize((offset + written_length + 1) * 2);
             continue;
         }

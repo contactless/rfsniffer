@@ -15,8 +15,8 @@ typedef std::string string;
 
 CMqttConnection::CMqttConnection(string Server, RFM69OOK *rfm,
                                  Json::Value devicesConfig, const std::vector<std::string> &enabledFeatures)
-    : m_Server(Server), m_isConnected(false),
-      mosquittopp("RFsniffer"), m_RFM(rfm), m_devicesConfig(devicesConfig)
+    : mosquittopp("RFsniffer"), m_Server(Server), m_isConnected(false),
+      m_RFM(rfm), m_devicesConfig(devicesConfig)
 {
     DPRINTF_DECLARE(dprintf, false);
     m_Server = Server;
@@ -25,7 +25,7 @@ CMqttConnection::CMqttConnection(string Server, RFM69OOK *rfm,
 
     connect(m_Server.c_str());
     loop_start();
-    
+
     dprintf("$P CMqttConnection inited, noolite_tx %s\n", (m_NooLiteTxEnabled ? "enabled" : "disabled"));
 }
 
@@ -38,15 +38,15 @@ CMqttConnection::~CMqttConnection()
 
 void CMqttConnection::CreateNooliteTxUniversal(const std::string &addr) {
     std::string name = String::ComposeFormat("noolite_tx_%s", addr.c_str());
-    
+
     CWBDevice *dev = m_Devices[name];
-    
+
     if (dev)
         return;
-    
+
     std::string desc = String::ComposeFormat("Noolite TX %s", addr.c_str());
     dev = new CWBDevice(name, desc);
-    
+
     dev->addControl("level", CWBControl::Range, "0", "1", false);
     dev->setMax("level", "100");
     dev->addControl("state", CWBControl::Switch, "0", "2", false);
@@ -60,9 +60,9 @@ void CMqttConnection::CreateNooliteTxUniversal(const std::string &addr) {
     dev->setMax("shadow_level", "100");
     dev->addControl("bind", CWBControl::PushButton, "0", "20", false);
     dev->addControl("unbind", CWBControl::PushButton, "0", "21", false);
-    
+
     CreateDevice(dev);
-    
+
     /*
     'bind'  : { 'value' : 0,
                 'meta': {  'type' : 'pushbutton',
@@ -75,22 +75,22 @@ void CMqttConnection::CreateNooliteTxUniversal(const std::string &addr) {
 
 
 void CMqttConnection::on_connect(int rc)
-{   
+{
     LOG(INFO) << "mqtt::on_connect(" << rc << ")";
 
     if (!rc) {
         m_isConnected = true;
     }
-        
+
     if (m_NooLiteTxEnabled) {
         for (const std::string &addr : {"0xd61", "0xd62", "0xd63"}) {
             CreateNooliteTxUniversal(addr);
             string topic = String::ComposeFormat("/devices/noolite_tx_%s/controls/#", addr.c_str());
-            
+
             LOG(INFO) << "subscribe to " << topic;
             subscribe(NULL, topic.c_str());
         }
-        
+
         SendUpdate();
     }
 }
@@ -450,7 +450,7 @@ void CMqttConnection::NewMessage(String message)
         const int cmd = values["cmd"].IntValue();
 
         const String devName = "ev1527_" + addr;
-        
+
         CWBDevice *dev = m_Devices[devName];
         if (!dev)
         {
@@ -477,11 +477,11 @@ void CMqttConnection::NewMessage(String message)
         dev->set(type, value);
     } else if (type == "HS24Bits") {
         int msg = values["msg_id"].IntValue(), ch = values["ch"].IntValue();
-        
+
         String name = String::ComposeFormat("hs24bits_%d_%d", msg, ch);
-        
+
         static const String control_name = "state";
-        
+
         CWBDevice *dev = m_Devices[name];
         if (!dev) {
             String desc = String::ComposeFormat("HS24Bits %d (%d)", msg, ch);
@@ -489,8 +489,8 @@ void CMqttConnection::NewMessage(String message)
             dev->addControl(control_name, CWBControl::Switch, true);
             CreateDevice(dev);
         }
-        
-        dev->setForAndThen(control_name, "1", 10, "0");        
+
+        dev->setForAndThen(control_name, "1", 10, "0");
     }
 
     SendUpdate();

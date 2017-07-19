@@ -37,9 +37,9 @@ string CRFProtocolRST::DecodePacket(const std::string &packet)
 
     for (const char s : packet) {
         if (s == 'b' ) {
-            bits += "0";
+            bits.push_back('0');
         } else if (s == 'c') {
-            bits += "1";
+            bits.push_back('1');
         } else if (s == 'A') {
             continue;
         } else

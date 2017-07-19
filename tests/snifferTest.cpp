@@ -92,7 +92,7 @@ void SnifferTest()
     const size_t BUFFER_SIZE = 1024 * 1024;
     lirc_t *data = new lirc_t[BUFFER_SIZE];
     lirc_t *data_ptr = data;
-    time_t lastReport = 0, packetStart = time(NULL);
+    time_t lastReport = 0; //, packetStart = time(NULL);
     bool m_bExecute = true;
     while (m_bExecute) {
         int result;
@@ -112,8 +112,8 @@ void SnifferTest()
             lastReport = time(NULL);
         }
 
-        if (data_ptr == data)
-            packetStart = time(NULL);
+        //if (data_ptr == data)
+        //    packetStart = time(NULL);
         else if (!waitfordata(fd, 1000000) || data_ptr - data > 10000) {
             std::string parsedResult = m_parser.Parse(data, data_ptr - data);
             if (parsedResult.length()) {
@@ -123,7 +123,7 @@ void SnifferTest()
                 LOG(INFO) << "Received " << data_ptr - data << " signals. Not decoded";
             }
             data_ptr = data;
-            packetStart = time(NULL);
+            //packetStart = time(NULL);
         }
 
         result = read(fd, (void *)data_ptr, count);

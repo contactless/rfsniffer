@@ -37,20 +37,20 @@ string CRFProtocolRubitek::DecodePacket(const std::string &pkt)
     std::string packet = pkt, res;
     if (packet.length() == 49) {
         if (packet[48] == 'B')
-            packet += "c";
+            packet.push_back('c');
         if (packet[48] == 'C')
-            packet += "c";
+            packet.push_back('c');
     } else
         return "";
 
-    for (unsigned int i = 0; i < packet.length() - 1; i += 2) {
+    for (int i = 0; i < (int)packet.length() - 1; i += 2) {
         std::string part = packet.substr(i, 2);
-        if (part == "Bc")
-            res += "0";
-        else if (part == "Cb")
-            res += "1";
+        if (packet[i] == 'B' && packet[i + 1] == 'c')
+            res.push_back('0');
+        else if (packet[i] == 'C' && packet[i + 1] == 'b')
+            res.push_back('1');
         else
-            return 0;
+            return "";
     }
 
     return res;

@@ -55,10 +55,10 @@ string CRFProtocolLivolo::DecodePacket(const std::string &packet)
         }
 
         if (s == 'b' || s == 'B') {
-            bits += "0";
+            bits.push_back('0');
             waitSecondShort = true;
         } else if (s == 'c' || s == 'C') {
-            bits += "1";
+            bits.push_back('1');
         }
     }
 

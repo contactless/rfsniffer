@@ -33,9 +33,9 @@ string CRFProtocolX10::DecodePacket(const std::string &packet)
 
     for (const char i : packet) {
         if (i == 'b')
-            bits += "0";
+            bits.push_back('0');
         else if (i == 'c')
-            bits += "1";
+            bits.push_back('1');
         else if (i == 'd')
             break;
         else if (i == 'A')
@@ -75,14 +75,14 @@ string CRFProtocolX10::DecodeData(const std::string &packet)
     if (byte2 & 1) {
         unit = 0;
         // Bit magic to create X10 CMD_DIM (B0100) or CMD_BRIGHT (B0101) nibble
-        command = byte2 >> 3 & 0x1 ^ 0x5;
+        command = ((byte2 >> 3) & 0x1) ^ 0x5;
     }
     // On or Off
     else {
         // Swap some bits to create unit integer from binary data
-        unit = (byte2 >> 3 | byte2 << 1 & 0x4 | byte1 >> 2 & 0x8) + 1;
+        unit = ((byte2 >> 3) | ((byte2 << 1) & 0x4) | ((byte1 >> 2) & 0x8)) + 1;
         // Bit magic to create X10 CMD_ON (B0010) or CMD_OFF (B0011) nibble
-        command = byte2 >> 2 & 0x1 | 0x2;
+        command = ((byte2 >> 2) & 0x1) | 0x2;
     }
 
     char res[10];
@@ -99,7 +99,7 @@ static const uint8_t HOUSE_CODE[16] = {
 
 char CRFProtocolX10::parseHouseCode(uint8_t data)
 {
-    for (uint8_t i = 0; i <= 0xF; i++) {
+    for (uint8_t i = 0; i < 0xF; i++) {
         if (HOUSE_CODE[i] == data) return i + 65;
     }
 

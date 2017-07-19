@@ -37,11 +37,6 @@ void Rfm69Test()
     spi_config.delay = 0;
     spi_config.bits_per_word = 8;
 
-    uint8_t tx_buffer[32];
-    uint8_t rx_buffer[32];
-
-
-
     SPI mySPI("/dev/spidev32766.0", &spi_config);
 
     if (!mySPI.begin()) {
