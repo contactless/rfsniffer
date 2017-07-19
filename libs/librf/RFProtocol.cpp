@@ -52,9 +52,9 @@ string CRFProtocol::Parse(InputContainerIterator first, InputContainerIterator l
     std::vector<base_type> input(first, last);
     dprintf("$P Got % data, try to parse TIME=%\n", input.size(), inputTime);
     m_InnerRepeat = 0;
-    
+
     std::string parsed = Parse(first, last);
-    
+
     if (parsed.empty())
         return "";
     if (parsed != m_LastParsed) {
@@ -64,17 +64,17 @@ string CRFProtocol::Parse(InputContainerIterator first, InputContainerIterator l
     }
     int64_t delayFromPreviousPacket = inputTime - m_LastParsedTime;
     m_LastParsedTime = inputTime;
-    
+
     m_CurrentRepeat += m_InnerRepeat;
-    
+
     dprintf("$P parsed % (% times of %)\n", parsed, m_CurrentRepeat, m_MinRepeat);
     if (delayFromPreviousPacket > MAX_DELAY_BETWEEN_PACKETS) {
-        dprintf("$P parsed % (% times of %) - dropped to % repeat because of long delay (% > %)\n", 
-                parsed, m_CurrentRepeat, m_MinRepeat, m_InnerRepeat, 
+        dprintf("$P parsed % (% times of %) - dropped to % repeat because of long delay (% > %)\n",
+                parsed, m_CurrentRepeat, m_MinRepeat, m_InnerRepeat,
                 delayFromPreviousPacket, MAX_DELAY_BETWEEN_PACKETS);
         m_CurrentRepeat = m_InnerRepeat;
     }
-        
+
     if (m_CurrentRepeat >= m_MinRepeat) {
         m_CurrentRepeat = 0;
         return parsed;
@@ -127,7 +127,7 @@ string CRFProtocol::Parse(InputContainerIterator first, InputContainerIterator l
         std::string data = DecodeData(bits);
         if (data.empty())
             return "";
-            
+
         std::string res = getName() + ":" + data;
         return res;
     }
@@ -395,10 +395,10 @@ string CRFProtocol::ManchesterEncode(const std::string &bits, bool invert, char 
         bool bit = (c == '1');
 
         if (bit ^ invert) {
-            res += "Aa";
             //lastPulse = false;
         } else {
-            res += "aA";
+            res.push_back('a');
+            res.push_back('A');
             //lastPulse = true;
         }
 

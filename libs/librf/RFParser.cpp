@@ -251,8 +251,14 @@ void CRFParser::SaveFile(base_type *data, size_t size, const char *prefix, std::
             return;
         };
 
-        write(of, data, sizeof(data[0]) * size);
+        size_t ret = write(of, data, sizeof(data[0]) * size);
+
         close(of);
+
+        if (ret == -1) {
+            throw CHaException(CHaException::ErrSystemAPIError, "Can't save file");
+        }
+
     }
 #endif
 }

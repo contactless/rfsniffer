@@ -335,7 +335,7 @@ string CRFProtocolOregon::DecodePacket(const std::string &raw_)
                 if (second)
                     return "";
 
-                packet += '0';
+                packet.push_back('0');
                 demand_next_c = 'B';
                 second = true;
                 break;
@@ -343,7 +343,7 @@ string CRFProtocolOregon::DecodePacket(const std::string &raw_)
                 if (second)
                     return "";
 
-                packet += '1';
+                packet.push_back('1');
                 demand_next_c = 'b';
                 second = true;
                 break;
@@ -351,7 +351,7 @@ string CRFProtocolOregon::DecodePacket(const std::string &raw_)
                 if (second)
                     second = false;
                 else {
-                    packet += '1';
+                    packet.push_back('1');
                     second = true;
                 }
                 break;
@@ -359,7 +359,7 @@ string CRFProtocolOregon::DecodePacket(const std::string &raw_)
                 if (second)
                     second = false;
                 else {
-                    packet += '0';
+                    packet.push_back('0');
                     second = true;
                 }
                 break;

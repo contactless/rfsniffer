@@ -127,7 +127,7 @@ bool CRFProtocolNooLite::bits2packet(const std::string &bits, uint8_t *packet, s
 
     std::string reverseBits = reverse(bits.substr(1));
     while (reverseBits.length() % 8)
-        reverseBits += '0';
+        reverseBits.push_back('0');
 
     for (uint32_t i = 0; i < bytes; i++) {
         packet[bytes - 1 - i] = (uint8_t)bits2long(reverseBits.substr(i * 8,
@@ -377,7 +377,7 @@ string CRFProtocolNooLite::bits2timings(const std::string &bits)
 {
     std::string start;
     for (int i = 0; i < 39; i++) {
-        start += '1';
+        start.push_back('1');
     }
 
     return 'A' + ManchesterEncode(start, true, 'a', 'b', 'A', 'B')
