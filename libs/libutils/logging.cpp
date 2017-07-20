@@ -16,7 +16,7 @@ void log4cpp_AddOstream(bool addIfThereIsNoOutputs) {
 
     appender->setLayout(new log4cpp::BasicLayout());
 
-    root.setPriority(log4cpp::Priority::NOTSET);
+    root.setPriority(log4cpp::Priority::DEBUG);
     root.addAppender(appender);
 }
 

@@ -139,6 +139,11 @@ void CRFParser::TryToParseExistingData() {
                     m_InputData.begin() + protocolBegin,
                     m_InputData.end(), m_InputTime);
         }
+        catch (std::exception e) {
+            LOG(CRIT) << "Error in parser. Protocol: " << protocol->getName()
+                    << " message: " << e.what();
+            continue;
+        }
         catch (...) {
             LOG(CRIT) << "Error in parser. Protocol: " << protocol->getName();
             continue;
