@@ -110,41 +110,40 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
 {
     try {
         LOG(INFO) << "mqtt::on_message(" << message->topic << " = " << message->payload << ")";
-        String::Vector v = String(message->topic).Split('/');
+        // /devices/noolite_tx_0xd62/controls/switch/on
+        String devicesConst, deviceName, controlsConst, controlName, onConst;
+        std::tie(devicesConst, deviceName, controlsConst, controlName, onConst) =
+                String(message->topic).Split<5>('/');
 
-        if (v.size() != 6)
+        LOG(DEBUG) << devicesConst << "/" << deviceName << "/" << controlsConst << "/" << controlName << "/" << onConst;
+
+        if (devicesConst != "devices" || controlsConst != "controls" || onConst != "on") {
             return;
+        }
 
-        if (v[5] != "on")
+        size_t pos = deviceName.find("0x");
+        if (pos == string::npos || pos > deviceName.length() - 2)
             return;
+        String addr = deviceName.substr(pos + 2);
 
-        std::string addr = v[2];
-        size_t pos = addr.find("0x");
-        if (pos == string::npos || pos > addr.length() - 2)
-            return;
-        addr = addr.substr(pos + 2);
-
-        std::string control = v[4];
-
-        LOG(INFO) << addr.c_str() << "control " << control.c_str() << " set to " << message->payload;
+        LOG(INFO) << addr.c_str() << "control " << controlName.c_str() << " set to " << message->payload;
         uint8_t cmd = 4;
         std::string extra;
 
-        if (control == "state")
+        if (controlName == "state")
             cmd = atoi((char *)message->payload) ? 2 : 0;
-        else if (control == "level") {
+        else if (controlName == "level") {
             cmd = 6;
             extra = string(" level=") + (char *)message->payload;
-        } else if (control == "color") {
+        } else if (controlName == "color") {
             cmd = 6;
             String::Vector v = String((char *)message->payload).Split(';');
             if (v.size() == 3) {
                 extra += " fmt=3 r=" + v[0] + " g=" + v[1] + " b=" + v[2];
             }
         }
-
         else {
-            cmd = m_nooLite.getCommand(control);
+            cmd = m_nooLite.getCommand(controlName);
             if (cmd == CRFProtocolNooLite::nlcmd_error)
                 return;
         }

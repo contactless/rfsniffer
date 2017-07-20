@@ -132,8 +132,18 @@ void CRFParser::TryToParseExistingData() {
             continue;
         }
 
-        std::string parsed = protocol->Parse(m_InputData.begin() + protocolBegin,
-                                        m_InputData.end(), m_InputTime);
+        std::string parsed;
+
+        try {
+            parsed = protocol->Parse(
+                    m_InputData.begin() + protocolBegin,
+                    m_InputData.end(), m_InputTime);
+        }
+        catch (...) {
+            LOG(CRIT) << "Error in parser. Protocol: " << protocol->getName();
+            continue;
+        }
+
         dprintf("$P Parsed = \'%\'\n", parsed);
 
         if (!parsed.empty()) {

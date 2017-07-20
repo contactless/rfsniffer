@@ -74,6 +74,12 @@ void String::SplitByFirstOccurenceDelimiter(char delimiter, string &first, strin
     }
 }
 
+
+template <>
+std::tuple<> String::Split<0>(char delimeter, size_t beginPos) const {
+    return std::tuple<>();
+}
+
 void String::Split(char dlmt, std::vector<String> &splitted) const
 {
     splitted.clear();

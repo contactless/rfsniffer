@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <tuple>
+#include <array>
 #include <unordered_map>
 #include <string.h>
 
@@ -65,6 +67,31 @@ class String : public std::string
     void Split(char delimiter, std::vector<String> &splitted) const;
     void Split(const string &delimiter, std::vector<String> &splitted) const;
 
+
+    template <typename T, size_t N, typename ...TTypes>
+    struct TupleTypeGenerator : TupleTypeGenerator<T, N - 1, T, TTypes...> {};
+
+    template <typename T, typename ...TTypes>
+    struct TupleTypeGenerator<T, 0, TTypes...> {
+        typedef std::tuple<TTypes...> type;
+    };
+
+    template <size_t N>
+    typename TupleTypeGenerator<String, N>::type Split(char delimeter, size_t beginPos = 0) const {
+        String part = "";
+        if (beginPos < length()) {
+            int pos = find(delimeter, beginPos);
+            if (pos == npos) {
+                pos = length();
+            }
+            part = SubstrFromTo(beginPos, pos);
+            beginPos = pos + 1;
+        }
+        return std::tuple_cat(
+            std::tuple<String>(part),
+            Split<N - 1>(delimeter, beginPos)
+        );
+    }
     /*!
     Splits String by delimiter to some ones
     \param [in] delimiter Delimiter
@@ -112,13 +139,18 @@ class String : public std::string
     {
         return atoi(c_str());
     };
-    
+
 
     inline float FloatValue() const
     {
         return atof(c_str());
     };
 };
+
+
+
+template <>
+std::tuple<> String::Split<0>(char delimeter, size_t beginPos) const;
 
 
 class BufferWriter
@@ -212,8 +244,10 @@ enum BASE_PATH_TYPE {
 
 std::string GetBasePath(BASE_PATH_TYPE type);
 
-
 };
+
+
+
 
 /*
 
