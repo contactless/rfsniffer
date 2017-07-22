@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <exception>
 
 
 /*******************************************
@@ -13,7 +14,7 @@
 * ����� CHaException
 *
 ********************************************/
-class CHaException
+class CHaException : std::exception
 {
     /*******************************************
     *
@@ -91,7 +92,7 @@ class CHaException
     * std::string <b>m_Message</b> - ����� ����������
     *
     ********************************************/
-    std::string m_Message;
+    std::string m_Message, m_Explanation;
 
   public:
     /*******************************************
@@ -186,6 +187,10 @@ class CHaException
         return std::string("CHaException") + " (ErrorCodes::" + m_TypeDescriptions[m_code] + "): " +
                m_Message;
     };
+
+    std::string what() {
+        return (m_Explanation = GetExplanation()).c_str();
+    }
 };
 
 #define NOT_IMPLEMENTED throw CHaException(CHaException::ErrNotImplemented, "%s(%d)", __FILE__, __LINE__)

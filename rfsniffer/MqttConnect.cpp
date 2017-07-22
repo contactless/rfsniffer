@@ -166,8 +166,8 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
         m_nooLite.EncodeData(command, 2000, buffer, bufferSize);
         dprintf("$P After encoding\n");
         if (m_RFM) {
-            dprintf("$P Before receiveEnd\n");
-            m_RFM->receiveEnd();
+            //dprintf("$P Before receiveEnd\n");
+            //m_RFM->receiveEnd();
             dprintf("$P Before send\n");
             m_RFM->send(buffer, bufferSize);
             dprintf("$P Before receiveBegin\n");

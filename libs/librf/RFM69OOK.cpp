@@ -155,6 +155,8 @@ void RFM69OOK::sendFrame(const void *buffer, uint8_t bufferSize)
     while ((readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY) == 0x00)
         usleep(5); // wait for ModeReady
 
+    usleep(15);
+
     writeReg(REG_DIOMAPPING1, RF_DIOMAPPING1_DIO0_00); // DIO0 is "Packet Sent"
 
     unsigned char data[RF69OOK_MAX_DATA_LEN + 2], tmp[RF69OOK_MAX_DATA_LEN + 2];
@@ -168,11 +170,15 @@ void RFM69OOK::sendFrame(const void *buffer, uint8_t bufferSize)
 
     m_spi->xfer2(data, bufferSize + 2, tmp, 0);
 
+    Sleep(200);
+
     // no need to wait for transmit mode to be ready since its handled by the radio
     setMode(RF69OOK_MODE_TX);
     uint32_t txStart = millis();
     while (!getGPIO(m_gpioInt) && millis() - txStart < RF69_TX_LIMIT_MS)
         Sleep(20);
+
+    Sleep(300);
 
     setMode(RF69OOK_MODE_STANDBY);
 }
