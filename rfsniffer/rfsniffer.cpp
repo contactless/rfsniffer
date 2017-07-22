@@ -734,7 +734,7 @@ void RFSniffer::closeConnections()
 
 void RFSniffer::run(int argc, char **argv)
 {
-    DPrintf::globallyEnable(false);
+    DPrintf::globallyEnable(true);
     //DPrintf::setDefaultOutputStream(fopen("rfs.log", "wt"));
     DPrintf::setPrefixLength(40);
 

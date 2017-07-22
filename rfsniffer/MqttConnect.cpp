@@ -112,7 +112,8 @@ void CMqttConnection::on_publish(int mid)
 
 void CMqttConnection::on_message(const struct mosquitto_message *message)
 {
-    //return;
+    DPRINTF_DECLARE(dprintf, true);
+    dprintf("$P Start!\n");
     try {
         if (!message->topic || !message->payload) {
             return;
@@ -120,12 +121,10 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
 
         String payload = (char*)message->payload;
         String topic = (char*)message->topic;
-        LOG(INFO) << "mqtt::on_message(" << topic << " = " << payload << ")";
+        LOG(INFO) << "CMqttConnection::on_message " << topic << " = " << payload << ")";
         //     /devices /noolite_tx_0xd62/controls      /switch      /on
         String devicesConst, deviceName, controlsConst, controlName, onConst;
         std::tie(devicesConst, deviceName, controlsConst, controlName, onConst) = topic.Split<5>('/');
-
-        LOG(DEBUG) << "Parts are: '" << devicesConst <<  "', '" << deviceName << "', '" << controlsConst << "', '" << controlName << "', '" << onConst << "'";
 
         if (devicesConst != "devices" || controlsConst != "controls" || onConst != "on") {
             return;
@@ -136,7 +135,6 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
             return;
         String addr = deviceName.substr(pos + 2);
 
-        LOG(INFO) << addr.c_str() << " control " << controlName.c_str() << " set to " << payload;
         uint8_t cmd = 4;
         std::string extra;
 
@@ -164,11 +162,17 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
         static uint8_t buffer[1000];
         size_t bufferSize = sizeof(buffer);
         std::string command = "nooLite:cmd=" + itoa(cmd) + " addr=" + addr + extra;
-        LOG(INFO) << command;
+        LOG(INFO) << "CMqttConnection::on_message command: " << command;
+
+        dprintf("$P Before encoding\n");
         m_nooLite.EncodeData(command, 2000, buffer, bufferSize);
+        dprintf("$P After encoding\n");
         if (m_RFM) {
+            dprintf("$P Before receiveEnd\n");
             m_RFM->receiveEnd();
+            dprintf("$P Before send\n");
             m_RFM->send(buffer, bufferSize);
+            dprintf("$P Before receiveBegin\n");
             m_RFM->receiveBegin();
         }
     } catch (CHaException ex) {
