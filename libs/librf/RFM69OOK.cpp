@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <sys/time.h>
+#include <memory>
 #ifdef __MACH__
     #include <mach/clock.h>
     #include <mach/mach.h>
@@ -42,8 +43,10 @@
 #include "RFM69OOK.h"
 #include "RFM69OOKregisters.h"
 #include "../libutils/Exception.h"
+#include "../libutils/strutils.h"
 #include "../libutils/logging.h"
 
+using namespace strutils;
 
 volatile byte RFM69OOK::_mode;  // current transceiver state
 volatile int RFM69OOK::RSSI;      // most accurate RSSI during reception (closest to the reception)
@@ -413,18 +416,26 @@ bool RFM69OOK::receiveDone()
 
 bool RFM69OOK::getGPIO(int num)
 {
-    char buffer[128];
-    snprintf(buffer, sizeof(buffer), "/sys/class/gpio/gpio%d/value", num);
-    FILE *f = fopen(buffer, "r");
-    if (!f)
-        throw CHaException(CHaException::ErrBadParam, buffer);
+    String gpioFileName = String::ComposeFormat("/sys/class/gpio/gpio%d/value", num);
+    auto gpioFile = std::unique_ptr<FILE, int(*)(FILE *)>(fopen(gpioFileName.c_str(), "r"), fclose);
 
-    if (fread(buffer, 1, 1, f) != 1 ) {
-        fclose(f);
+    if (!gpioFile) {
+        auto exportFile = std::unique_ptr<FILE, int(*)(FILE *)>(fopen("/sys/class/gpio/export", "w"), fclose);
+
+        if (!exportFile) {
+            throw CHaException(CHaException::ErrBadParam, "Can open neither gpio file nor export file =(");
+        }
+        fprintf(exportFile.get(), "%s", String::ValueOf(num).c_str());
+
+        gpioFile.reset(fopen(gpioFileName.c_str(), "r"));
+    }
+    if (!gpioFile) {
+        throw CHaException(CHaException::ErrBadParam, "Can't open " + gpioFileName);
+    }
+    char buffer[10];
+    if (fread(buffer, 1, 1, gpioFile.get()) != 1) {
         throw CHaException(CHaException::ErrBadParam, "Read GPIO file failed");
     }
-    fclose(f);
-
     return buffer[0] == '1';
 }
 
