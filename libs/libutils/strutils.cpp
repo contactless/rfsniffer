@@ -76,39 +76,29 @@ void String::SplitByFirstOccurenceDelimiter(char delimiter, string &first, strin
 
 
 template <>
-std::tuple<> String::Split<0>(char delimeter, size_t beginPos) const {
+std::tuple<> String::Split<0>(char, size_t, bool) const {
     return std::tuple<>();
 }
 
-void String::Split(char dlmt, std::vector<String> &splitted) const
+
+template <typename TDelimeter>
+void String::Split(const TDelimeter &dlmt, std::vector<String> &splitted, bool ignoreEmpty) const
 {
     splitted.clear();
     size_t begin_pos = 0, pos;
 
     while ((pos = find(dlmt, begin_pos)) != npos) {
-        if (pos != begin_pos)
+        if (pos != begin_pos || !ignoreEmpty)
             splitted.push_back(SubstrFromTo(begin_pos, pos));
-        begin_pos = pos + 1;
+        begin_pos = pos + Size(dlmt);
     }
 
-    if (begin_pos != length())
+    if (begin_pos < length() || (!ignoreEmpty && begin_pos == length()))
         splitted.push_back(SubstrFromTo(begin_pos, length()));
 }
 
-void String::Split(const string &dlmt, std::vector<String> &splitted) const
-{
-    splitted.clear();
-    size_t begin_pos = 0, pos;
-
-    while ((pos = find(dlmt, begin_pos)) != npos) {
-        if (pos != begin_pos)
-            splitted.push_back(SubstrFromTo(begin_pos, pos));
-        begin_pos = pos + dlmt.length();
-    }
-
-    if (begin_pos != length())
-        splitted.push_back(SubstrFromTo(begin_pos, length()));
-}
+template void String::Split(const char &dlmt, std::vector<String> &splitted, bool ignoreEmpty) const;
+template void String::Split(const std::string &dlmt, std::vector<String> &splitted, bool ignoreEmpty) const;
 
 Vector String::Split(char delimiter) const
 {

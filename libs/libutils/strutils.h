@@ -21,22 +21,26 @@ class String : public std::string
     typedef std::vector<String> Vector;
     typedef std::unordered_map<String, String, std::hash<string> > Map;
 
-    inline const string &StdString() const
-    {
+    inline static size_t Size(char) {
+        return 1;
+    }
+
+    inline static size_t Size(const std::string &s) {
+        return s.size();
+    }
+
+    inline const string &StdString() const {
         return *this;
     }
-    inline string &StdString()
-    {
+    inline string &StdString() {
         return *this;
     }
 
-    inline String Substr(size_t begin_pos, size_t length) const
-    {
+    inline String Substr(size_t begin_pos, size_t length) const {
         return String(substr(begin_pos, length));
     }
 
-    inline String SubstrFromTo(size_t begin_pos, int end_pos) const
-    {
+    inline String SubstrFromTo(size_t begin_pos, int end_pos) const {
         return String(substr(begin_pos, end_pos - begin_pos));
     }
 
@@ -60,12 +64,13 @@ class String : public std::string
     void SplitByFirstOccurenceDelimiter(char delimiter, string &first, string &second) const;
 
     /*!
-    Splits String by delimiter to some ones
+    Splits String by delimiter (only char or std::string) to some ones
     \param [in] delimiter Delimiter
     \param [out] splitted Strings between delimiter occurences
+    \param [in] ignoreEmpty Do not include empty parts in result
     */
-    void Split(char delimiter, std::vector<String> &splitted) const;
-    void Split(const string &delimiter, std::vector<String> &splitted) const;
+    template <typename TDelimeter>
+    void Split(const TDelimeter &delimeter, std::vector<String> &splitted, bool ignoreEmpty = true) const;
 
 
     template <typename T, size_t N, typename ...TTypes>
@@ -77,19 +82,22 @@ class String : public std::string
     };
 
     template <size_t N>
-    typename TupleTypeGenerator<String, N>::type Split(char delimeter, size_t beginPos = 0) const {
+    typename TupleTypeGenerator<String, N>::type Split(char delimeter, size_t beginPos = 0, bool ignoreEmpty = true) const {
         String part = "";
         if (beginPos < length()) {
-            int pos = find(delimeter, beginPos);
+            size_t pos = find(delimeter, beginPos);
+            if (pos == beginPos && ignoreEmpty) {
+                return Split<N>(delimeter, beginPos + Size(delimeter), ignoreEmpty);
+            }
             if (pos == npos) {
                 pos = length();
             }
             part = SubstrFromTo(beginPos, pos);
-            beginPos = pos + 1;
+            beginPos = pos + Size(delimeter);
         }
         return std::tuple_cat(
-            std::tuple<String>(part),
-            Split<N - 1>(delimeter, beginPos)
+            std::tuple<String>(std::move(part)),
+            Split<N - 1>(delimeter, beginPos, ignoreEmpty)
         );
     }
     /*!
@@ -150,7 +158,7 @@ class String : public std::string
 
 
 template <>
-std::tuple<> String::Split<0>(char delimeter, size_t beginPos) const;
+std::tuple<> String::Split<0>(char, size_t, bool) const;
 
 
 class BufferWriter

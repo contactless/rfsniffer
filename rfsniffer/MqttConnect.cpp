@@ -81,9 +81,12 @@ void CMqttConnection::on_connect(int rc)
     if (!rc) {
         m_isConnected = true;
     }
+    else {
+        LOG(WARN) << "mqtt::on_connect Connection failed";
+    }
 
     if (m_NooLiteTxEnabled) {
-        for (const std::string &addr : {"0xd61", "0xd62", "0xd63"}) {
+        for (const std::string &addr : {"0xd61"/*, "0xd62", "0xd63"*/}) {
             CreateNooliteTxUniversal(addr);
             string topic = String::ComposeFormat("/devices/noolite_tx_%s/controls/#", addr.c_str());
 
@@ -99,23 +102,30 @@ void CMqttConnection::on_disconnect(int rc)
 {
     m_isConnected = false;
     LOG(INFO) << "mqtt::on_disconnect(" << rc << ")";
+    reconnect_async();
 }
 
 void CMqttConnection::on_publish(int mid)
 {
-    LOG(INFO) << "mqtt::on_publish(" << mid << ")";
+    //LOG(INFO) << "mqtt::on_publish(" << mid << ")";
 }
 
 void CMqttConnection::on_message(const struct mosquitto_message *message)
 {
+    //return;
     try {
-        LOG(INFO) << "mqtt::on_message(" << message->topic << " = " << message->payload << ")";
-        // /devices/noolite_tx_0xd62/controls/switch/on
-        String devicesConst, deviceName, controlsConst, controlName, onConst;
-        std::tie(devicesConst, deviceName, controlsConst, controlName, onConst) =
-                String(message->topic).Split<5>('/');
+        if (!message->topic || !message->payload) {
+            return;
+        }
 
-        LOG(DEBUG) << devicesConst << "/" << deviceName << "/" << controlsConst << "/" << controlName << "/" << onConst;
+        String payload = (char*)message->payload;
+        String topic = (char*)message->topic;
+        LOG(INFO) << "mqtt::on_message(" << topic << " = " << payload << ")";
+        //     /devices /noolite_tx_0xd62/controls      /switch      /on
+        String devicesConst, deviceName, controlsConst, controlName, onConst;
+        std::tie(devicesConst, deviceName, controlsConst, controlName, onConst) = topic.Split<5>('/');
+
+        LOG(DEBUG) << "Parts are: '" << devicesConst <<  "', '" << deviceName << "', '" << controlsConst << "', '" << controlName << "', '" << onConst << "'";
 
         if (devicesConst != "devices" || controlsConst != "controls" || onConst != "on") {
             return;
@@ -126,20 +136,21 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
             return;
         String addr = deviceName.substr(pos + 2);
 
-        LOG(INFO) << addr.c_str() << "control " << controlName.c_str() << " set to " << message->payload;
+        LOG(INFO) << addr.c_str() << " control " << controlName.c_str() << " set to " << payload;
         uint8_t cmd = 4;
         std::string extra;
 
         if (controlName == "state")
-            cmd = atoi((char *)message->payload) ? 2 : 0;
+            cmd = payload.IntValue() ? 2 : 0;
         else if (controlName == "level") {
             cmd = 6;
-            extra = string(" level=") + (char *)message->payload;
+            extra = string(" level=") + payload;
         } else if (controlName == "color") {
             cmd = 6;
-            String::Vector v = String((char *)message->payload).Split(';');
-            if (v.size() == 3) {
-                extra += " fmt=3 r=" + v[0] + " g=" + v[1] + " b=" + v[2];
+            String r, g, b;
+            std::tie(r, g, b) = payload.Split<3>(';');
+            if (!r.empty() && !g.empty() && !b.empty()) {
+                extra += " fmt=3 r=" + r + " g=" + g + " b=" + b;
             }
         }
         else {
@@ -148,8 +159,9 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
                 return;
         }
 
+        //return;
 
-        static uint8_t buffer[100];
+        static uint8_t buffer[1000];
         size_t bufferSize = sizeof(buffer);
         std::string command = "nooLite:cmd=" + itoa(cmd) + " addr=" + addr + extra;
         LOG(INFO) << command;
@@ -161,6 +173,8 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
         }
     } catch (CHaException ex) {
         LOG(INFO) << "Exception " << ex.GetMsg() << "(" << ex.GetCode() << ")";
+    } catch (std::exception e) {
+        LOG(INFO) << "on_message: caught exception - " << e.what();
     }
 
 }
@@ -177,7 +191,9 @@ void CMqttConnection::on_unsubscribe(int mid)
 
 void CMqttConnection::on_log(int level, const char *str)
 {
-    LOG(INFO) << "mqtt::on_log(" << level << ", " << str << ")";
+    if (level & (MOSQ_LOG_ERR | MOSQ_LOG_WARNING | MOSQ_LOG_NOTICE | MOSQ_LOG_INFO)) {
+        LOG(INFO) << "mqtt::on_log(" << level << ", " << str << ")";
+    }
 }
 
 void CMqttConnection::on_error()

@@ -266,7 +266,7 @@ void CRFParser::SaveFile(base_type *data, size_t size, const char *prefix, std::
             return;
         };
 
-        size_t ret = write(of, data, sizeof(data[0]) * size);
+        int ret = write(of, data, sizeof(data[0]) * size);
 
         close(of);
 
