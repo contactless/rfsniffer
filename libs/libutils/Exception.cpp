@@ -68,12 +68,15 @@ CHaException::CHaException(ErrorCodes code, string Message)
 {
     m_code = code;
     m_Message = Message;
+    m_Explanation = std::string("CHaException") + " (ErrorCodes::" +
+            m_TypeDescriptions[m_code] + "): " + m_Message;
 }
 
 CHaException::CHaException(const CHaException &ex)
 {
     m_code = ex.m_code;
     m_Message = ex.m_Message;
+    m_Explanation = ex.m_Explanation;
 }
 
 
@@ -92,6 +95,7 @@ CHaException::CHaException(ErrorCodes code, const char *Format, ...)
     va_end (marker);
     m_code = code;
     m_Message = Buffer;
+    m_Explanation = GetExplanation();
 }
 
 CHaException::~CHaException(void)

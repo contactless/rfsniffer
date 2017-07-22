@@ -145,7 +145,7 @@ class CHaException : std::exception
     ********************************************/
     CHaException(ErrorCodes code, std::string Message);
     CHaException(ErrorCodes code, const char *Format, ...);
-    ~CHaException(void);
+    virtual ~CHaException(void) throw();
 
     /*******************************************
     *
@@ -173,23 +173,22 @@ class CHaException : std::exception
     * ����� ���������� ����� ����������
     *
     ********************************************/
-    std::string GetMessage()
+    std::string GetMessage() const
     {
         return m_Message;
     };
-    std::string GetMsg()
+    std::string GetMsg() const
     {
         return m_Message;
     };
 
-    std::string GetExplanation()
+    std::string GetExplanation() const
     {
-        return std::string("CHaException") + " (ErrorCodes::" + m_TypeDescriptions[m_code] + "): " +
-               m_Message;
+        return m_Explanation;
     };
 
-    std::string what() {
-        return (m_Explanation = GetExplanation()).c_str();
+    const char* what() const throw() {
+        return m_Explanation.c_str();
     }
 };
 
