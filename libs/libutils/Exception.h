@@ -145,7 +145,7 @@ class CHaException : std::exception
     ********************************************/
     CHaException(ErrorCodes code, std::string Message);
     CHaException(ErrorCodes code, const char *Format, ...);
-    virtual ~CHaException(void) throw();
+    virtual ~CHaException(void) throw() {};
 
     /*******************************************
     *

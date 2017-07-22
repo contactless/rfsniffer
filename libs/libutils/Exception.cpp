@@ -98,7 +98,4 @@ CHaException::CHaException(ErrorCodes code, const char *Format, ...)
     m_Explanation = GetExplanation();
 }
 
-CHaException::~CHaException(void)
-{
-}
 

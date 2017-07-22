@@ -43,6 +43,7 @@
 #include "RFM69OOK.h"
 #include "RFM69OOKregisters.h"
 #include "../libutils/Exception.h"
+#include "../libutils/DebugPrintf.h"
 #include "../libutils/strutils.h"
 #include "../libutils/logging.h"
 
@@ -151,6 +152,10 @@ void RFM69OOK::send(const void *buffer, uint8_t size)
 // internal function
 void RFM69OOK::sendFrame(const void *buffer, uint8_t bufferSize)
 {
+    DPRINTF_DECLARE(dprintf, true);
+
+    dprintf("$P Start\n");
+
     setMode(RF69OOK_MODE_STANDBY); // turn off receiver to prevent reception while filling fifo
     while ((readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY) == 0x00)
         usleep(5); // wait for ModeReady
@@ -168,7 +173,9 @@ void RFM69OOK::sendFrame(const void *buffer, uint8_t bufferSize)
     //~ if (m_Log)
         //~ m_Log->PrintBuffer(1, data, bufferSize + 2);
 
+    dprintf("$P Before xfer2\n");
     m_spi->xfer2(data, bufferSize + 2, tmp, 0);
+    dprintf("$P After xfer2\n");
 
     Sleep(200);
 
@@ -181,6 +188,7 @@ void RFM69OOK::sendFrame(const void *buffer, uint8_t bufferSize)
     Sleep(300);
 
     setMode(RF69OOK_MODE_STANDBY);
+    dprintf("$P Finish\n");
 }
 
 bool RFM69OOK::canSend()
