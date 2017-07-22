@@ -24,7 +24,7 @@ common_linker_flags = ["-lmosquittopp", "-lpthread", "-llog4cpp"] + (["-ldw"] if
 
 only_release_compiler_flags = ["-O2"]
 # notice: -pg flag conflicts with valgrind!
-only_debug_compiler_flags = ["-g", "-O0", "-Wall"]
+only_debug_compiler_flags = ["-g", "-O0", "-Wall", "-Wextra", "-Wchkp", "-Wformat=2", "-Winit-self", "-Wimplicit-fallthrough"]
 #only_debug_compiler_flags = ["-g", "-pg", "-Wall"]
 
 release_compiler_flags = common_compiler_flags + only_release_compiler_flags

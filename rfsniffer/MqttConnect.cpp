@@ -135,7 +135,7 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
             return;
         String addr = deviceName.substr(pos + 2);
 
-        uint8_t cmd = 4;
+        int8_t cmd = 4;
         std::string extra;
 
         if (controlName == "state")
