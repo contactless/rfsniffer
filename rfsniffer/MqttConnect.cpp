@@ -157,8 +157,6 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
                 return;
         }
 
-        //return;
-
         static uint8_t buffer[1000];
         size_t bufferSize = sizeof(buffer);
         std::string command = "nooLite:cmd=" + itoa(cmd) + " addr=" + addr + extra;
@@ -176,7 +174,7 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
             m_RFM->receiveBegin();
         }
     } catch (CHaException ex) {
-        LOG(INFO) << "Exception " << ex.GetMsg() << "(" << ex.GetCode() << ")";
+        LOG(INFO) << "on_message: Exception " << ex.GetExplanation() << ")";
     } catch (std::exception e) {
         LOG(INFO) << "on_message: caught exception - " << e.what();
     }

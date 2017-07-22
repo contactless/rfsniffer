@@ -18,9 +18,9 @@ int main(int argc, char *argv[])
 {
 
     // activate function-debug output
-    DPrintf::globallyEnable(false);
+    DPrintf::globallyEnable(true);
     DPrintf::setPrefixLength(50);
-    if (0) {
+    if (1) {
         DPRINTF_DECLARE(dprint, false);
         dprint("$P Hello world!\n");
         dprint << "hehe" << "12133" << 13242 << (int *)nullptr << std::endl;

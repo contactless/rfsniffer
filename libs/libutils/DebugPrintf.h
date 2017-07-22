@@ -41,8 +41,6 @@ class DPrintf
 
     void printPrefix(const char **format);
 
-
-
     bool printFormatStringToNextParameter(const char *&s);
 
     int formatPrintRecursive(const char *s);

@@ -108,7 +108,7 @@ bool OneTest(const string &path, const string_pair &test, CRFParser &parser)
         if (exp_value.find('=') != exp_value.npos)
             exp_values = exp_value.SplitToPairs();
     } catch (CHaException ex) {
-        printf("Failed! Format of TEST is incorrect! Test: %s\n", exp_result.c_str());
+        printf("Failed! Format of TEST is incorrect! Test: %s, Exception: %s\n", exp_result.c_str(), ex.GetExplanation());
         return false;
     }
 
@@ -127,8 +127,8 @@ bool OneTest(const string &path, const string_pair &test, CRFParser &parser)
         if (res_value.find('=') != res_value.npos)
             res_values = res_value.SplitToPairs();
     } catch (CHaException ex) {
-        printf("Failed! Format is incorrect! File:%s, result:%s, Expected: %s\n", file_name.c_str(),
-               res.c_str(), exp_result.c_str());
+        printf("Failed! Format is incorrect! File:%s, result:%s, Expected: %s, Exception: %s\n", file_name.c_str(),
+               res.c_str(), exp_result.c_str(), ex.GetExplanation());
         return false;
     }
 

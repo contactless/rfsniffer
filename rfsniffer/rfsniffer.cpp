@@ -316,7 +316,7 @@ void RFSniffer::tryReadConfig()
         this->configJson = config;
     }
     catch (CHaException ex) {
-        fprintf(stderr, "Failed load config. Error: %s (%d)", ex.GetMsg().c_str(), ex.GetCode());
+        fprintf(stderr, "Failed load config. Error: %s", ex.GetExplanation().c_str());
         exit(-1);
     }
     //catch (Json::Exception ex) {
