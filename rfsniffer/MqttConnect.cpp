@@ -302,14 +302,14 @@ void CMqttConnection::NewMessage(String message)
                     //dev->set(control_name, "1");
                     dev->set(interval_control_name, values["time"]);
 
-                } else if (cmd == "0") {
+                } else if (cmdInt == 0) {
                     dev->set(control_name, "0");
-                    if (dev->controlExists("level")) {
+                    if (dev->controlExists(shadow_level_control_name)) {
                         dev->set(shadow_level_control_name, "0");
                     }
-                } else if (cmd == "2") {
+                } else if (cmdInt == 2) {
                     dev->set(control_name, "1");
-                } else if (cmd == "4") {
+                } else if (cmdInt == 4) {
                     dev->set(control_name, dev->getString(control_name) == "1" ? "0" : "1");
                 }
                 break;
