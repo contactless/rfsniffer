@@ -84,14 +84,13 @@ void getAllTestFiles( string path, String::Vector &result )
 bool OneTest(const string &path, const string_pair &test, CRFParser &parser)
 {
     DPRINTF_DECLARE(dprintf, false);
-    dprintf("$P Start test=%\n", test);
-
     String file_name = test.first, exp_result = test.second;
 
     if (file_name.empty()) {
-        dprintf("$P Finish because empty name\n");
+        //dprintf("$P Finish because empty name\n");
         return true;
     }
+    dprintf("$P Start test=%\n", test);
 
     // expected values
     String exp_type, exp_value;
@@ -102,7 +101,7 @@ bool OneTest(const string &path, const string_pair &test, CRFParser &parser)
     String::Map res_values;
 
 
-    dprintf("$P Before parsing test\n");
+    //dprintf("$P Before parsing test\n");
     try {
         exp_result.SplitByExactlyOneDelimiter(":", exp_type, exp_value);
         if (exp_value.find('=') != exp_value.npos)
@@ -112,12 +111,16 @@ bool OneTest(const string &path, const string_pair &test, CRFParser &parser)
         return false;
     }
 
-    dprintf("$P Before decoding\n");
-    dprintf("$P exp_type = %, size(exp_values) = %\n", exp_type, exp_values.size());
+    //dprintf("$P Before decoding\n");
+    //dprintf("$P exp_type = %, size(exp_values) = %\n", exp_type, exp_values.size());
     String res = DecodeFile(&parser, (path + file_name).c_str());
 
+    if (exp_type.empty() || exp_result.empty()) {
+        printf("Empty test result! File:%s, result:%s\n", file_name.c_str(), res.c_str());
+        return false;
+    }
 
-    dprintf("$P After decoding before parsing decoded (got: %)\n", res);
+    //dprintf("$P After decoding before parsing decoded (got: %)\n", res);
 
     // Simple check for cases with not "a=1 b=2..." format
     if (res == exp_result)
@@ -147,7 +150,10 @@ bool OneTest(const string &path, const string_pair &test, CRFParser &parser)
             // there may be a regular expression for check by unix grep
             if (value_pair.second.length() > 0 && value_pair.second[0] == '[')
                 continue;
-            printf("Failed! Field\"%s\" mismatch! \n\tFile:%s, "\
+
+            printf("Failed! Fields mismatch! File:%s, result:%s, Expected: %s\n", file_name.c_str(), res.c_str(),
+               exp_result.c_str());
+            printf("Field\"%s\" mismatch! \n\tFile:%s, "\
                    " result:%s, Expected: %s\n",
                    value_pair.first.c_str(), file_name.c_str(),
                    res_values[value_pair.first].c_str(), value_pair.second.c_str());

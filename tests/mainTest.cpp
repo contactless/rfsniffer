@@ -5,6 +5,7 @@
 
 #include "../libs/libutils/DebugPrintf.h"
 #include "../libs/libutils/strutils.h"
+#include "../libs/libutils/logging.h"
 //#include "../lua/liblua.h"
 
 using std::string;
@@ -16,6 +17,7 @@ void MqttTest();
 
 int main(int argc, char *argv[])
 {
+    log4cpp_AddOstream();
 
     // activate function-debug output
     DPrintf::globallyEnable(false);
