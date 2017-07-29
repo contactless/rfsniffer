@@ -256,6 +256,8 @@ void CMqttConnection::NewMessage(String message)
         dev->set("Temperature", t);
         dev->set("Humidity", h);
     } else if (type == "nooLite") {
+        static const String shadow_level_control_name = "shadow_level";
+
         LOG(INFO) << "Msg from nooLite " << value;
 
         // nooLite:sync=80 cmd=21 type=2 t=24.6 h=39 s3=ff bat=0 addr=1492 fmt=07 crc=a2
@@ -303,7 +305,7 @@ void CMqttConnection::NewMessage(String message)
                 } else if (cmd == "0") {
                     dev->set(control_name, "0");
                     if (dev->controlExists("level")) {
-                        dev->set("level", "0");
+                        dev->set(shadow_level_control_name, "0");
                     }
                 } else if (cmd == "2") {
                     dev->set(control_name, "1");
@@ -314,13 +316,17 @@ void CMqttConnection::NewMessage(String message)
             }
             case CRFProtocolNooLite::nlcmd_shadow_set_bright:
             case CRFProtocolNooLite::nlcmd_shadow_level: { // set brightness
-                static const String level_control_name = "level";
+                static const String state_control_name = "state";
                 static const String rgb_control_name = "color";
                 if (values.count("level")) {
-                    if (!dev->controlExists(level_control_name)) {
-                        dev->addControl(level_control_name, CWBControl::Generic, true);
+                    if (!dev->controlExists(shadow_level_control_name)) {
+                        dev->addControl(shadow_level_control_name, CWBControl::Generic, true);
                     }
-                    dev->set(level_control_name, values["level"]);
+                    if (!dev->controlExists(state_control_name)) {
+                        dev->addControl(state_control_name, CWBControl::Switch, true);
+                    }
+                    dev->set(state_control_name, values["level"].IntValue() ? "1" : "0");
+                    dev->set(shadow_level_control_name, values["level"]);
                 }
 
                 if (values.count("r") && values.count("g") && values.count("b")) {
