@@ -312,12 +312,18 @@ string CRFProtocol::ManchesterDecode(const std::string &raw, bool expectPulse, c
 
     t_state state = expectPulse ? expectStartPulse : expectStartPause;
     std::string res;
+    res.reserve(75);
+
+    char pulseBit = '1', pauseBit = '0';
+    if (!expectPulse) {
+        std::swap(pulseBit, pauseBit);
+    }
 
     for (char c : raw) {
         switch (state) {
             case expectStartPulse:   // Ожидаем короткий пульс, всегда 1
                 if (c == shortPulse) {
-                    res += expectPulse ? "1" : "0";
+                    res.push_back(pulseBit);
                     state = expectMiddlePause;
                 } else {
                     return "";
@@ -325,7 +331,7 @@ string CRFProtocol::ManchesterDecode(const std::string &raw, bool expectPulse, c
                 break;
             case expectStartPause:  // Ожидаем короткую паузу, всегда 0
                 if (c == shortPause) {
-                    res += expectPulse ? "0" : "1";
+                    res.push_back(pauseBit);
                     state = expectMiddlePulse;
                 } else {
                     return "";
@@ -335,8 +341,8 @@ string CRFProtocol::ManchesterDecode(const std::string &raw, bool expectPulse, c
                 if (c == shortPulse) {
                     state = expectStartPause;
                 } else if (c == longPulse) {
+                    res.push_back(pulseBit);
                     state = expectMiddlePause;
-                    res += expectPulse ? "1" : "0";
                 } else {
                     return "";
                 }
@@ -345,8 +351,8 @@ string CRFProtocol::ManchesterDecode(const std::string &raw, bool expectPulse, c
                 if (c == shortPause) {
                     state = expectStartPulse;
                 } else if (c == longPause) {
+                    res.push_back(pauseBit);
                     state = expectMiddlePulse;
-                    res += expectPulse ? "0" : "1";
                 } else {
                     return "";
                 }
@@ -391,22 +397,28 @@ string CRFProtocol::ManchesterEncode(const std::string &bits, bool invert, char 
                                      char longPause, char shortPulse, char longPulse)
 {
     std::string res;
+    res.reserve(bits.size() * 2);
     for (char c : bits) {
-        bool bit = (c == '1');
-
-        if (bit ^ invert) {
-            //lastPulse = false;
+        if ((c == '1') ^ invert) {
+            res.push_back(shortPulse);
+            res.push_back(shortPause);
         } else {
-            res.push_back('a');
-            res.push_back('A');
-            //lastPulse = true;
+            res.push_back(shortPause);
+            res.push_back(shortPulse);
         }
 
     }
 
-    res = replaceDouble(res, shortPause, longPause);
-    res = replaceDouble(res, shortPulse, longPulse);
-
+    size_t curPos = 1;
+    for (size_t i = 1; i < res.size(); i++) {
+        if (res[i] == res[curPos - 1]) {
+            res[curPos - 1] = (res[i] == shortPause) ? longPause : longPulse;
+        }
+        else {
+            res[curPos++] = res[i];
+        }
+    }
+    res.resize(curPos);
     return res;
 }
 
@@ -426,7 +438,12 @@ void CRFProtocol::EncodeData(const std::string &data, uint16_t bitrate, uint8_t 
 void CRFProtocol::EncodePacket(const std::string &bits, uint16_t bitrate, uint8_t *buffer,
                                size_t &bufferSize)
 {
+
+    DPRINTF_DECLARE(dprintf, false);
+
     std::string timings = bits2timings(bits);
+    dprintf("$P % -> %\n", bits, timings);
+
     uint16_t bitLen = 1000000L / bitrate;
     memset(buffer, 0, bufferSize);
 

@@ -7,6 +7,8 @@
 typedef std::string string;
 using namespace strutils;
 
+using std::ostream;
+
 static const range_type g_timing_pause[7] = {
     { 380, 750 },
     { 851, 1400 },
@@ -54,9 +56,35 @@ static const char *g_nooLite_Commands[] = {
     "temperature",      //21 – передача информации о текущей температуре и
     //     влажности (Информация о температуре и влажности содержится в
     //     поле «Данные к команде_x».)
+    "test_result",      //22
+    "shadow_load_preset", //23
+    "shadow_set_bright", //24
+    "temporary_on",     //25
+    "modes",            //26
     NULL
 };
 static int g_nooLite_Commands_len = 21;
+
+const int CRFProtocolNooLite::fmt2length[] =
+//       0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+        {5, 6, 7, 9, 5, 6, 7, 9, 5, 6, 7, 9, 5, 6, 7, 9};
+// I see cyclicity here...
+
+CRFProtocolNooLite::CPacket::CPacket(bool correct): correct(correct) {}
+
+ostream &operator<<(ostream &out, const CRFProtocolNooLite::CPacket &pack) {
+    out << "nooLitePacket(";
+    out << "flip=" << (int)pack.flip << ", ";
+    out << "cmd=" << (int)pack.cmd << ", ";
+    out << "addr=" << std::hex << (int)pack.addr << ", ";
+    out << "res=" << (int)pack.res << ", ";
+    out << "fmt=" << (int)pack.fmt << "";
+    for (int i = 0; i < 4; i++)
+        out << ", d" << i << "=" << std::hex << (int)pack.d[i];
+    out << ")";
+    return out;
+}
+
 
 CRFProtocolNooLite::CRFProtocolNooLite()
     : CRFProtocol(g_timing_pause, g_timing_pulse, 0, 1, "AaAaAaAaAaAaAaAaAaAc")
@@ -147,8 +175,8 @@ bool CRFProtocolNooLite::bits2packet(const std::string &bits, uint8_t *packet, s
 string CRFProtocolNooLite::DecodePacket(const std::string &raw_)
 {
     DPRINTF_DECLARE(dprintf, false);
-
     String raw = String(raw_);
+    dprintf("$P Noolite decode packet, raw = %\n", raw);
 
     // shortest nooLite message - 5 bytes - 40 bits - 40 signals at minimum
     // TODO move this logic to RFProtocol
@@ -179,18 +207,16 @@ string CRFProtocolNooLite::DecodePacket(const std::string &raw_)
     return "";
 }
 
-string CRFProtocolNooLite::DecodeData(const string
-                                      &bits) // Ïðåîáðàçîâàíèå áèò â äàííûå
-{
+CRFProtocolNooLite::CPacket CRFProtocolNooLite::DecodeBitsToStruct(const string &bits) {
     DPRINTF_DECLARE(dprintf, false);
     uint8_t packet[20];
     size_t packetLen = sizeof(packet);
 
     if (!bits2packet(bits, packet, &packetLen))
-        return bits;
+        return CPacket(false);
 
     if (packetLen < 5)
-        return bits;
+        return CPacket(false);
 
     /*
     #                        [ (FLIP) CMD  ] [           RGB          ] [   ?  ] [      ADDR     ] [ FMT  ] [ CRC  ]
@@ -227,144 +253,135 @@ string CRFProtocolNooLite::DecodeData(const string
         LOG(INFO) << String::ComposeFormat(
                 "CRFProtocolNooLite::DecodeData - Incorrect packet - wrong CRC (received %02x != %02x calculated)",
                 received_crc, calculated_crc);
-        return "";
+        return CPacket(false);
     }
     int crc = received_crc;
 
     int fmt = packet[packetLen - 2];
-    //                  0  1   2  3  4  5  6   7
-    int fmt2length[] = {5, 8, -1, 9, 6, 7, 8, 10};
-    if (fmt < 0 || fmt >= int(sizeof(fmt2length) / sizeof(int)) || fmt2length[fmt] != (int)packetLen) {
+
+    if (fmt < 0 || fmt >= int(sizeof(fmt2length) / sizeof(int)) ||
+        !(fmt2length[fmt] == (int)packetLen ||
+            (fmt2length[fmt] + 1 == (int)packetLen && fmt > 3))) {
         LOG(INFO) << "CRFProtocolNooLite::DecodeData - Incorrect packet - strange "\
                      "fmt=" << fmt << ", received_len=" << packetLen;
-        return "";
+        return CPacket(false);
     }
 
-    switch (fmt) {
-        // PM111, outer button PK311, ...
-        case 0: {
-            bool sync = (packet[0] & 8) != 0;
-            int cmd = packet[0] >> 4;
-            if (cmd == 0 || cmd == 2) {
-                // for cmd = 0 | 2
-                // motion sensor (PM111) (repeats >= 2)
-                // something strange (PT111 in some modes) (repeats = 1)
-                // so demand repeats >= 2
-                return String::ComposeFormat("flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
-                                             (int)((packet[2] << 8) + packet[1]), fmt, crc);
-                // + " __repeat=2";
-            } else {
-                // command 4 and everything else
-                return String::ComposeFormat("flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
-                                             (int)((packet[2] << 8) + packet[1]), fmt, crc);
-            }
+    bool isLongCmd = (fmt2length[fmt] + 1 == (int)packetLen);
 
-        }
-        // connecting noolite devices send this message
-        // or setting level
+    CPacket ret;
+    if (isLongCmd) {
+        ret.flip = (packet[0] & 0x80) != 0;
+        ret.cmd = packet[1];
+
+    } else {
+        ret.flip = (packet[0] & 0x08) != 0;
+        ret.cmd = packet[0] >> 4;
+    }
+    ret.fmt = fmt;
+    ret.addr = (uint16_t(packet[packetLen - 3]) << 8) | uint16_t(packet[packetLen - 4]);
+    ret.crc = crc;
+
+    for (int i = 0; i < 4 && 1 + isLongCmd + i < (int)packetLen - 4; i++)
+        ret.d[i] = packet[1 + isLongCmd + i];
+    dprintf("$P ret = %\n", ret);
+    return ret;
+}
+
+string CRFProtocolNooLite::DecodeData(const string
+                                      &bits) // Ïðåîáðàçîâàíèå áèò â äàííûå
+{
+    DPRINTF_DECLARE(dprintf, false);
+
+    CPacket pack = DecodeBitsToStruct(bits);
+
+    int easyFmt = pack.fmt % 4;
+
+    BufferWriter buffer;
+    buffer.printf("flip=%d cmd=%d ", (int)pack.flip, (int)pack.cmd);
+
+    uint32_t data = 0;
+    switch (easyFmt) {
         case 1: {
-            bool sync = (packet[0] & 8) != 0;
-            int cmd = packet[0] >> 4;
-            return String::ComposeFormat("flip=%d cmd=%d level=%02x addr=%04x fmt=%02x crc=%02x", sync, cmd,
-                                         (int)packet[1], (int)((packet[3] << 8) + packet[2]), fmt, crc);
-        }
-
-        // untested
+            data = pack.d[0];
+            break;
+        };
+        case 2: {
+            data = ((uint32_t)pack.d[0] << 8) | (uint32_t)pack.d[1];
+            break;
+        };
         case 3: {
-            bool sync = (packet[0] & 8) != 0;
-            int cmd = packet[0] >> 4;
-            return String::ComposeFormat("flip=%d cmd=%d r=%d g=%d b=%d unknown=%d addr=%04x fmt=%02x crc=%02x",
-                                         sync, cmd,
-                                         (int)packet[1], (int)packet[2], (int)packet[3], (int)packet[4], (int)((packet[6] << 8) + packet[5]),
-                                         fmt, crc);
-        }
-        // untested
-        case 4: {
-            bool sync = (packet[0] & 0x80) != 0;
-            int cmd = packet[1];
-            return String::ComposeFormat("flip=%d cmd=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
-                                         (int)((packet[3] << 8) + packet[2]), fmt, crc);
-        }
-
-        // PM112
-        case 5: {
-            //  format is
-            // 80 19 01 5F 4B 05 49
-            // 0x80 - 00 или 80 - что-то вроде flip. Сначала идут три сообщения с 80, потом три с 00
-            // 0x19 - видимо команда
-            // 0x01 - время включения. Подразумевается от 5 секунд до 22 минут (5сек * x)
-            // 5F4B - адрес
-            // OxO5 - формат
-            // 0x49 - crc
-            bool sync = (packet[0] & 0x80) != 0;
-            int cmd = packet[1];
-            return String::ComposeFormat("flip=%d cmd=%d time=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
-                                         (int)packet[2] * 5, (int)((packet[4] << 8) + packet[3]), fmt, crc);
-        }
-
-        // untested
-        case 6:  {
-            bool sync = (packet[0] & 0x80) != 0;
-            int cmd = packet[1];
-            return String::ComposeFormat("flip=%d cmd=%d time=%d addr=%04x fmt=%02x crc=%02x", sync, cmd,
-                                         (int)((packet[3] << 8) + packet[2]) * 5, (int)((packet[5] << 8) + packet[4]), fmt, crc);
-        }
-
-        // PT111 and ...
-        case 7: {
-            if (packet[1] == 21) {
-                int type = (packet[3] >> 4) & 7;
-                int t_raw = ((packet[3] & 0xF) << 8) | packet[2];
-                const int t_signum_bit = 11, t_signum_bit_mask = (1 << t_signum_bit);
-
-                // it seems to be right
-                float t = 0.1 * ((t_raw & t_signum_bit_mask) ?
-                                 -((t_signum_bit_mask << 1) - t_raw) : +t_raw);
-
-                // here is a BUG, I can't see negative temperature
-                //float t = (float)0.1 * ((packet[3] & 8) ? 4096 - t0 : t0);
-
-                int h = packet[4];
-                int s3 = packet[5];
-                int bat = ((packet[3] & 0x80) != 0);
-
-                int flip = (int)packet[0] ? 1 : 0;
-                int cmd = (int)packet[1];
-                if (type == 2) {
-                    return String::ComposeFormat(
-                               "flip=%d cmd=%d type=%d t=%.1f h=%d s3=%02x low_bat=%d addr=%04x fmt=%02x crc=%02x",
-                               flip, cmd, type, t, h, s3, bat,
-                               (int)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (int)fmt,
-                               (int)packet[packetLen - 1]);
-                } else if (type == 3) {
-                    return String::ComposeFormat(
-                               "flip=%d cmd=%d type=%d t=%.1f s3=%02x low_bat=%d addr=%04x fmt=%02x crc=%02x",
-                               flip, cmd, type, t, s3, bat,
-                               (int)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (int)fmt,
-                               (int)packet[packetLen - 1]);
-                } else {
-                    return String::ComposeFormat(
-                               "flip=%d cmd=%02x type=%02x b3=%02x b4=%02x b5=%02x addr=%04x fmt=%02x crc=%02x",
-                               flip, cmd, (int)packet[2], (int)packet[3],
-                               (int)packet[4], (int)packet[5], (int)((packet[7] << 8) + packet[6]),
-                               (int)packet[8], (int)packet[9]);
-                }
-
-            } else {
-                return String::ComposeFormat(
-                           "cmd=%02x b1=%02x b2=%02x b3=%02x b4=%02x b5=%02x addr=%04x fmt=%02x crc=%02x", (int)packet[0],
-                           (int)packet[1], (int)packet[2], (int)packet[3], (int)packet[4], (int)packet[5],
-                           (int)((packet[7] << 8) + packet[6]), (int)packet[8], (int)packet[9]);
-            }
-        }
-        default:
-            LOG(INFO) << String::ComposeFormat(
-                    "unknown_format=true len=%d addr=%04x fmt=%02x crc=%02x", packetLen,
-                    (int)((packet[packetLen - 3] << 8) + packet[packetLen - 4]), (int)fmt,
-                    (int)packet[packetLen - 1]);
+            data = ((uint32_t)pack.d[0] << 24) | ((uint32_t)pack.d[1] << 16) | ((uint32_t)pack.d[2] << 8) | (uint32_t)pack.d[3];
+            break;
+        };
+        default: {};
     }
 
-    return "";
+    bool successSwitch = true;
+    switch (pack.cmd) {
+        case nlcmd_temporary_on: {
+            buffer.printf("time=%d ", data * 5);
+            break;
+        };
+        case nlcmd_shadow_set_bright:
+        case nlcmd_shadow_level: {
+            if (easyFmt == 1) {
+                // pc118 it's magic
+                int level = (data - 0x23) * 10 / 12;
+                // (level % 10 == 0) must be true
+                buffer.printf("level=%d ", level);
+                break;
+            }
+            if (easyFmt == 3) {
+                buffer.printf("r=%d g=%d b=%d unknown=%d ", (int)pack.d[0], (int)pack.d[1], (int)pack.d[2], (int)pack.d[3]);
+                break;
+            }
+            successSwitch = false;
+            break;
+        };
+        case nlcmd_temp_humi: {
+            if (easyFmt != 3) {
+                successSwitch = false;
+                break;
+            }
+
+            int type = (pack.d[1] >> 4) & 7;
+            int t_raw = ((uint32_t)(pack.d[1] & 0xF) << 8) | pack.d[0];
+            const int t_signum_bit = 11, t_signum_bit_mask = (1 << t_signum_bit);
+
+            float t = 0.1 * (
+                (t_raw & t_signum_bit_mask) ?
+                -((t_signum_bit_mask << 1) - t_raw) :
+                +t_raw
+            );
+
+            int h = pack.d[2];
+            int s3 = pack.d[3];
+            int bat = ((pack.d[1] & 0x80) != 0);
+
+            if (type == 2) {
+                buffer.printf("type=%d t=%.1f h=%d s3=%02x low_bat=%d ", type, t, h, s3, bat);
+            } else if (type == 3) {
+                buffer.printf("type=%d t=%.1f s3=%02x low_bat=%d ", type, t, s3, bat);
+            } else {
+                successSwitch = false;
+            }
+            break;
+        };
+        default: {
+            successSwitch = false;
+        };
+    }
+
+    if (!successSwitch && easyFmt != 0) {
+        buffer.printf("data=%08x ", data);
+    }
+
+    buffer.printf("addr=%04x fmt=%02x crc=%02x",
+            (int)pack.addr, (int)pack.fmt, (int)pack.crc);
+
+    dprintf("$P ret = %\n", buffer.getString());
+    return buffer.getString();
 }
 
 bool CRFProtocolNooLite::needDump(const std::string &rawData)
@@ -375,14 +392,16 @@ bool CRFProtocolNooLite::needDump(const std::string &rawData)
 
 string CRFProtocolNooLite::bits2timings(const std::string &bits)
 {
+    DPRINTF_DECLARE(dprintf, false);
     std::string start;
     for (int i = 0; i < 39; i++) {
         start.push_back('1');
     }
-
+    std::string encodedBits = ManchesterEncode(bits, true, 'a', 'b', 'A', 'B');
+    dprintf("$P manch encode gives: % -> %\n", bits, encodedBits);
+    // it is not obvious but consequent pauses 'b' and 'a' form pause 'c'
     return 'A' + ManchesterEncode(start, true, 'a', 'b', 'A', 'B')
-           + 'b' + ManchesterEncode(bits, true, 'a', 'b', 'A', 'B')
-           + 'b' + ManchesterEncode(bits, true, 'a', 'b', 'A', 'B');
+           + 'b' + encodedBits + 'b' + encodedBits;
 }
 
 string l2bits(uint16_t val, int bits)

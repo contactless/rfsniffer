@@ -23,10 +23,12 @@ common_compiler_flags = ["-pthread", "-std=c++0x"]
 common_linker_flags = ["-lmosquittopp", "-lpthread", "-llog4cpp"] + (["-ldw"] if debug_mode else [])
 
 only_release_compiler_flags = ["-O2"]
+
 # notice: -pg flag conflicts with valgrind!
 only_debug_compiler_flags = ["-g", "-O0", "-Wall", "-Wextra",
         "-Wformat=2", "-Winit-self",
         "-Wsequence-point", "-Wfloat-equal"]
+
 #only_debug_compiler_flags = ["-g", "-pg", "-Wall"]
 
 release_compiler_flags = common_compiler_flags + only_release_compiler_flags

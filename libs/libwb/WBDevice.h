@@ -75,7 +75,7 @@ class LIBWB_API CWBControl
     std::string name;
     // "readonly" is a flag answering if item is readonly in web-interface
     // "changed" is a flag that is used when we update mqtt
-    bool readonly, changed;
+    bool readonly, changed, initialized;
     // "value" - value on control
     std::string value;
     std::string order, max;
@@ -95,7 +95,7 @@ class LIBWB_API CWBControl
     CWBControl &setSourceType(const std::string &sourceType_);
 
     CWBControl(const std::string &name, ControlType type, bool readonly = true);
-    CWBControl(const std::string &name_, ControlType type_, 
+    CWBControl(const std::string &name_, ControlType type_,
             const std::string &initialValue, const std::string &order_, bool readonly_);
     CWBControl();
 };
@@ -147,7 +147,7 @@ class LIBWB_API CWBDevice
 //~ #endif
     void addControl(const CWBControl &device);
     void addControl(const std::string &name, CWBControl::ControlType type, bool readonly = true);
-    void addControl(const std::string &name, CWBControl::ControlType type, 
+    void addControl(const std::string &name, CWBControl::ControlType type,
             const std::string &initialValue, const std::string &order, bool readonly);
     bool controlExists(const std::string &name);
     bool sourceExists(const std::string &source);
