@@ -174,7 +174,7 @@ bool CRFProtocolNooLite::bits2packet(const std::string &bits, uint8_t *packet, s
 
 string CRFProtocolNooLite::DecodePacket(const std::string &raw_)
 {
-    DPRINTF_DECLARE(dprintf, true);
+    DPRINTF_DECLARE(dprintf, false);
     String raw = String(raw_);
     dprintf("$P Noolite decode packet, raw = %\n", raw);
 
@@ -392,7 +392,7 @@ bool CRFProtocolNooLite::needDump(const std::string &rawData)
 
 string CRFProtocolNooLite::bits2timings(const std::string &bits)
 {
-    DPRINTF_DECLARE(dprintf, true);
+    DPRINTF_DECLARE(dprintf, false);
     std::string start;
     for (int i = 0; i < 39; i++) {
         start.push_back('1');

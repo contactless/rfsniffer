@@ -112,7 +112,7 @@ void CMqttConnection::on_publish(int mid)
 
 void CMqttConnection::on_message(const struct mosquitto_message *message)
 {
-    DPRINTF_DECLARE(dprintf, true);
+    DPRINTF_DECLARE(dprintf, false);
     dprintf("$P Start!\n");
     try {
         if (!message->topic || !message->payload) {

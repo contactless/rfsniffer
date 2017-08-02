@@ -400,18 +400,25 @@ string CRFProtocol::ManchesterEncode(const std::string &bits, bool invert, char 
     res.reserve(bits.size() * 2);
     for (char c : bits) {
         if ((c == '1') ^ invert) {
-            res.push_back('A');
-            res.push_back('a');
+            res.push_back(shortPulse);
+            res.push_back(shortPause);
         } else {
-            res.push_back('a');
-            res.push_back('A');
+            res.push_back(shortPause);
+            res.push_back(shortPulse);
         }
 
     }
 
-    res = replaceDouble(res, shortPause, longPause);
-    res = replaceDouble(res, shortPulse, longPulse);
-
+    size_t curPos = 1;
+    for (size_t i = 1; i < res.size(); i++) {
+        if (res[i] == res[curPos - 1]) {
+            res[curPos - 1] = (res[i] == shortPause) ? longPause : longPulse;
+        }
+        else {
+            res[curPos++] = res[i];
+        }
+    }
+    res.resize(curPos);
     return res;
 }
 
@@ -432,12 +439,11 @@ void CRFProtocol::EncodePacket(const std::string &bits, uint16_t bitrate, uint8_
                                size_t &bufferSize)
 {
 
-    DPRINTF_DECLARE(dprintf, true);
+    DPRINTF_DECLARE(dprintf, false);
 
-    dprintf("$P EncodePacket bits are: %\n", bits);
     std::string timings = bits2timings(bits);
-    dprintf("$P EncodePacket timings are: %\n", timings);
-    dprintf("$P EncodePacket timings.V2 are: %\n", m_PacketDelimeter + timings);
+    dprintf("$P % -> %\n", bits, timings);
+
     uint16_t bitLen = 1000000L / bitrate;
     memset(buffer, 0, bufferSize);
 
