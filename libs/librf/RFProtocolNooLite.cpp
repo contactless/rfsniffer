@@ -146,9 +146,9 @@ bool CRFProtocolNooLite::bits2packet(const std::string &bits, uint8_t *packet, s
 
 string CRFProtocolNooLite::DecodePacket(const std::string &raw_)
 {
-    DPRINTF_DECLARE(dprintf, false);
-
+    DPRINTF_DECLARE(dprintf, true);
     String raw = String(raw_);
+    dprintf("$P Noolite decode packet, raw = %\n", raw);
 
     // shortest nooLite message - 5 bytes - 40 bits - 40 signals at minimum
     // TODO move this logic to RFProtocol
@@ -375,14 +375,16 @@ bool CRFProtocolNooLite::needDump(const std::string &rawData)
 
 string CRFProtocolNooLite::bits2timings(const std::string &bits)
 {
+    DPRINTF_DECLARE(dprintf, true);
     std::string start;
     for (int i = 0; i < 39; i++) {
         start.push_back('1');
     }
-
+    std::string encodedBits = ManchesterEncode(bits, true, 'a', 'b', 'A', 'B');
+    dprintf("$P manch encode gives: % -> %\n", bits, encodedBits);
+    // it is not obvious but consequent pauses 'b' and 'a' form pause 'c'
     return 'A' + ManchesterEncode(start, true, 'a', 'b', 'A', 'B')
-           + 'b' + ManchesterEncode(bits, true, 'a', 'b', 'A', 'B')
-           + 'b' + ManchesterEncode(bits, true, 'a', 'b', 'A', 'B');
+           + 'b' + encodedBits + 'b' + encodedBits;
 }
 
 string l2bits(uint16_t val, int bits)

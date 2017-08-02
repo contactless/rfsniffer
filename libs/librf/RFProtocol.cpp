@@ -391,15 +391,14 @@ string CRFProtocol::ManchesterEncode(const std::string &bits, bool invert, char 
                                      char longPause, char shortPulse, char longPulse)
 {
     std::string res;
+    res.reserve(bits.size() * 2);
     for (char c : bits) {
-        bool bit = (c == '1');
-
-        if (bit ^ invert) {
-            //lastPulse = false;
+        if ((c == '1') ^ invert) {
+            res.push_back('A');
+            res.push_back('a');
         } else {
             res.push_back('a');
             res.push_back('A');
-            //lastPulse = true;
         }
 
     }
@@ -426,7 +425,13 @@ void CRFProtocol::EncodeData(const std::string &data, uint16_t bitrate, uint8_t 
 void CRFProtocol::EncodePacket(const std::string &bits, uint16_t bitrate, uint8_t *buffer,
                                size_t &bufferSize)
 {
+
+    DPRINTF_DECLARE(dprintf, true);
+
+    dprintf("$P EncodePacket bits are: %\n", bits);
     std::string timings = bits2timings(bits);
+    dprintf("$P EncodePacket timings are: %\n", timings);
+    dprintf("$P EncodePacket timings.V2 are: %\n", m_PacketDelimeter + timings);
     uint16_t bitLen = 1000000L / bitrate;
     memset(buffer, 0, bufferSize);
 
