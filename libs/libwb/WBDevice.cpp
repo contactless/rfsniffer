@@ -71,15 +71,15 @@ std::vector<std::string> CWBControl::controlTypeToDefaultName =
 
 
 CWBControl::CWBControl(string_cref name_, ControlType type_, bool readonly_):
-    type(type_), name(name_), readonly(readonly_), isValueChangeSheduled(false)
+    type(type_), name(name_), readonly(readonly_), changed(true), initialized(false), isValueChangeSheduled(false)
 {
     if (name.empty())
         name = controlTypeToDefaultName[type];
 }
 
-CWBControl::CWBControl(string_cref name_, ControlType type_, 
+CWBControl::CWBControl(string_cref name_, ControlType type_,
             string_cref initialValue, string_cref order_, bool readonly_):
-    type(type_), name(name_), readonly(readonly_), value(initialValue), 
+    type(type_), name(name_), readonly(readonly_), changed(true), initialized(false), value(initialValue),
     order(order_), max(""), isValueChangeSheduled(false)
 {
     if (name.empty())
@@ -87,7 +87,7 @@ CWBControl::CWBControl(string_cref name_, ControlType type_,
 }
 
 CWBControl::CWBControl(): type(ControlType::Error), name(""), readonly(false),
-    isValueChangeSheduled(false) {}
+    changed(true), initialized(false), isValueChangeSheduled(false) {}
 
 string_cref CWBControl::metaType() const
 {
@@ -183,23 +183,23 @@ void CWBDevice::findAndSetConfigs(Json::Value &devices)
         return;
 
     auto knownDevices = devices["known_devices"];
-    
-	if (!!knownDevices) {
-		if (!knownDevices.isArray())
-			throw std::runtime_error("known_devices must be array");
-		for (int i = 0; i < (int)knownDevices.size(); ++i) {
-			auto dev = knownDevices[i];
-			dprintf("$P There is a variant : %\n",
+
+    if (!!knownDevices) {
+        if (!knownDevices.isArray())
+            throw std::runtime_error("known_devices must be array");
+        for (int i = 0; i < (int)knownDevices.size(); ++i) {
+            auto dev = knownDevices[i];
+            dprintf("$P There is a variant : %\n",
                     dev["name"].asString());
             if (dev["name"].asString() == deviceName) {
-				deviceIsActive = !(dev["politics"].asString() == "ignore");
-				heartbeat = dev["heartbeat"].asInt();
-				dprintf.c("$P found device in the list! "\
-						  "politics=%s   heartbeat=%d\n",
-						  (deviceIsActive ? "show" : "ignore"), heartbeat);
-			}  
-		}		
-	}
+                deviceIsActive = !(dev["politics"].asString() == "ignore");
+                heartbeat = dev["heartbeat"].asInt();
+                dprintf.c("$P found device in the list! "\
+                          "politics=%s   heartbeat=%d\n",
+                          (deviceIsActive ? "show" : "ignore"), heartbeat);
+            }
+        }
+    }
 }
 
 
@@ -220,15 +220,15 @@ void CWBDevice::addControl(const std::string &name, ControlType type, bool reado
     addControl(CWBControl(name, type, readonly));
 }
 
-void CWBDevice::addControl(const std::string &name, CWBControl::ControlType type, 
-        const std::string &initialValue, const std::string &order, bool readonly) 
+void CWBDevice::addControl(const std::string &name, CWBControl::ControlType type,
+        const std::string &initialValue, const std::string &order, bool readonly)
 {
-    addControl(CWBControl(name, type, initialValue, order, readonly));       
+    addControl(CWBControl(name, type, initialValue, order, readonly));
 }
 
 bool CWBDevice::controlExists(const std::string &name)
 {
-	return deviceControls.count(name);
+    return deviceControls.count(name);
 }
 
 void CWBDevice::set(CWBControl::ControlType type, string_cref value)
@@ -243,7 +243,7 @@ void CWBDevice::set(string_cref name, string_cref value)
     CControlMap::iterator i = deviceControls.find(name);
 
     if (i == deviceControls.end())
-        throw CHaException(CHaException::ErrBadParam, name);
+        throw CHaException(CHaException::ErrBadParam, "CWBDevice::set : " + name);
 
     i->second.value = value;
     i->second.changed = true;
@@ -265,7 +265,7 @@ void CWBDevice::setMax(string_cref name, string_cref max)
     CControlMap::iterator i = deviceControls.find(name);
 
     if (i == deviceControls.end())
-        throw CHaException(CHaException::ErrBadParam, name);
+        throw CHaException(CHaException::ErrBadParam, "CWBDevice::setMax : " + name);
 
     i->second.max = max;
     i->second.changed = true;
@@ -283,7 +283,7 @@ void CWBDevice::setForAndThen(const std::string &name, const std::string &value,
     CControlMap::iterator i = deviceControls.find(name);
 
     if (i == deviceControls.end())
-        throw CHaException(CHaException::ErrBadParam, name);
+        throw CHaException(CHaException::ErrBadParam, "CWBDevice::setForAndThen : " + name);
 
     i->second.value = value;
     i->second.changed = true;
@@ -322,7 +322,7 @@ float CWBDevice::getFloat(string_cref name)
     CControlMap::iterator i = deviceControls.find(name);
 
     if (i == deviceControls.end())
-        throw CHaException(CHaException::ErrBadParam, name);
+        throw CHaException(CHaException::ErrBadParam, "CWBDevice::getFloat : " + name);
 
     return i->second.floatValue();
 }
@@ -332,7 +332,7 @@ string_cref CWBDevice::getString(string_cref name)
     CControlMap::iterator i = deviceControls.find(name);
 
     if (i == deviceControls.end())
-        throw CHaException(CHaException::ErrBadParam, name);
+        throw CHaException(CHaException::ErrBadParam, "CWBDevice::getString : " + name);
 
 
     return i->second.stringValue();
@@ -347,20 +347,7 @@ void CWBDevice::createDeviceValues(StringMap &v)
 
     v[base + "/meta/name"] = deviceDescription;
 
-    for(const auto &i : deviceControls) {
-        const CWBControl &control = i.second;
-        const std::string controlBase = base + "/controls/" + control.name;
-        v[controlBase] = control.value;
-        v[controlBase + "/meta/type"] = i.second.metaType();
-        if (control.order.empty())
-            v[controlBase + "/meta/order"] = String::ValueOf((int)i.second.type);
-        else
-            v[controlBase + "/meta/order"] = control.order;
-        if (!control.max.empty())
-            v[controlBase + "/meta/max"] = control.max;
-        if (i.second.readonly)
-            v[controlBase + "/meta/readonly"] = "1";
-    }
+    updateValues(v);
 }
 
 bool CWBDevice::isAlive()
@@ -396,9 +383,23 @@ void CWBDevice::updateValues(StringMap &v)
     const std::string base = "/devices/" + deviceName;
 
     for(auto &i : deviceControls) {
-        if (i.second.changed) {
-            v[base + "/controls/" + i.second.name] = i.second.value;
-            i.second.changed = false;
+        CWBControl &control = i.second;
+        const std::string controlBase = base + "/controls/" + control.name;
+        if (!control.initialized) {
+            v[controlBase + "/meta/type"] = control.metaType();
+            if (control.order.empty())
+                v[controlBase + "/meta/order"] = String::ValueOf((int)control.type);
+            else
+                v[controlBase + "/meta/order"] = control.order;
+            if (!control.max.empty())
+                v[controlBase + "/meta/max"] = control.max;
+            if (control.readonly)
+                v[controlBase + "/meta/readonly"] = "1";
+            control.initialized = true;
+        }
+        if (control.changed) {
+            v[controlBase] = control.value;
+            control.changed = false;
         }
     }
 }

@@ -274,111 +274,130 @@ void CMqttConnection::NewMessage(String message)
         dev->set("Temperature", t);
         dev->set("Humidity", h);
     } else if (type == "nooLite") {
+        static const String shadow_level_control_name = "shadow_level";
+
         LOG(INFO) << "Msg from nooLite " << value;
 
         // nooLite:sync=80 cmd=21 type=2 t=24.6 h=39 s3=ff bat=0 addr=1492 fmt=07 crc=a2
 
-        String id = values["addr"], cmd = values["cmd"];
+        const String id = values["addr"], cmd = values["cmd"];
 
         if (id.empty() || cmd.empty()) {
             LOG(INFO) << "Msg from nooLite INCORRECT " << value;
             return;
         }
 
-        int cmdInt = cmd.IntValue();
+        const String name = string("noolite_rx_0x") + id;
+        const int cmdInt = cmd.IntValue();
+
+        CWBDevice *dev = m_Devices[name];
+        if (!dev) {
+            const String desc = string("Noolite") + " [0x" + id + "]";
+            dev = new CWBDevice(name, desc);
+            CreateDevice(dev);
+        }
 
         switch (cmdInt) {
             // Motion sensors PM111, PM112, ...
-            case 0: // set 0
-            case 2: // set 1
-            case 4: // change value between 0 and 1
-            case 24:
-            case 25: { // set as 1 for a while
-                String name = string("noolite_rx_0x_switch") + id;
-                bool enableForAWhile = (cmdInt == 24 || cmdInt == 25);
+            case CRFProtocolNooLite::nlcmd_off: // set 0
+            case CRFProtocolNooLite::nlcmd_on: // set 1
+            case CRFProtocolNooLite::nlcmd_switch: // change value between 0 and 1
+            case CRFProtocolNooLite::nlcmd_temporary_on: { // set as 1 for a while
                 static const String control_name = "state";
                 static const String interval_control_name = "timeout";
-                CWBDevice *dev = m_Devices[name];
-                if (!dev) {
-                    String desc = string("Noolite switch ") + " [0x" + id + "]";
-                    dev = new CWBDevice(name, desc);
+                const bool enableForAWhile = (cmdInt == 25);
+
+                if (!dev->controlExists(control_name)) {
                     dev->addControl(control_name, CWBControl::Switch, true);
-                    if (enableForAWhile)
-                        dev->addControl(interval_control_name, CWBControl::Generic, true);
-                    CreateDevice(dev);
                 }
+                if (enableForAWhile && !dev->controlExists(interval_control_name)) {
+                    dev->addControl(interval_control_name, CWBControl::Generic, true);
+                }
+
                 if (enableForAWhile) {
                     // PM112, ...
                     dev->setForAndThen(control_name, "1", values["time"].IntValue(), "0");
                     //dev->set(control_name, "1");
                     dev->set(interval_control_name, values["time"]);
 
-                } else if (cmd == "0")
+                } else if (cmdInt == 0) {
                     dev->set(control_name, "0");
-                else if (cmd == "2")
+                    if (dev->controlExists(shadow_level_control_name)) {
+                        dev->set(shadow_level_control_name, "0");
+                    }
+                } else if (cmdInt == 2) {
                     dev->set(control_name, "1");
-                else if (cmd == "4")
+                } else if (cmdInt == 4) {
                     dev->set(control_name, dev->getString(control_name) == "1" ? "0" : "1");
-
+                }
                 break;
             }
-
-            case 6: { // set brightness
-                String name = string("noolite_rx_0x_color") + id;
-                static const String control_name = "Color";
-                CWBDevice *dev = m_Devices[name];
-                if (!dev) {
-                    String desc = string("Noolite color ") + " [0x" + id + "]";
-                    dev = new CWBDevice(name, desc);
-                    dev->addControl(control_name, CWBControl::Rgb, true);
-                    CreateDevice(dev);
+            case CRFProtocolNooLite::nlcmd_shadow_set_bright:
+            case CRFProtocolNooLite::nlcmd_shadow_level: { // set brightness
+                static const String state_control_name = "state";
+                static const String rgb_control_name = "color";
+                if (values.count("level")) {
+                    if (!dev->controlExists(shadow_level_control_name)) {
+                        dev->addControl(shadow_level_control_name, CWBControl::Generic, true);
+                    }
+                    if (!dev->controlExists(state_control_name)) {
+                        dev->addControl(state_control_name, CWBControl::Switch, true);
+                    }
+                    dev->set(state_control_name, values["level"].IntValue() ? "1" : "0");
+                    dev->set(shadow_level_control_name, values["level"]);
                 }
-                dev->set(control_name, String::ComposeFormat("%s;%s;%s",
-                         values["r"].c_str(), values["g"].c_str(), values["b"].c_str()));
+
+                if (values.count("r") && values.count("g") && values.count("b")) {
+                    if (!dev->controlExists(rgb_control_name)) {
+                        dev->addControl(rgb_control_name, CWBControl::Rgb, true);
+                    }
+                    dev->set(rgb_control_name, String::ComposeFormat("%s;%s;%s",
+                            values["r"].c_str(), values["g"].c_str(), values["b"].c_str()));
+                }
                 break;
             }
 
             // Temperature sensor
-            case 21: { // puts info about temperature and humidity
-                String name = string("noolite_rx_0x_th") + id;
-                String t = values["t"], h = values["h"];
-                static const String low_battery_control_name = "Low battery";
-                CWBDevice *dev = m_Devices[name];
-                if (!dev) {
-                    String desc = string("Noolite Sensor PT111") + " [0x" + id + "]";
-                    dev = new CWBDevice(name, desc);
-                    dev->addControl("Temperature", CWBControl::Temperature, true);
-
-                    if (h.length() > 0)
-                        dev->addControl("Humidity", CWBControl::RelativeHumidity, true);
-
-
-                    dev->addControl("", CWBControl::BatteryLow, true);
-
-                    CreateDevice(dev);
+            case CRFProtocolNooLite::nlcmd_temp_humi: { // puts info about temperature and humidity
+                static const String temperature_control_name = "temperature";
+                static const String humidity_control_name = "humidity";
+                static const String low_bat_control_name = CWBControl::controlTypeToDefaultName[CWBControl::BatteryLow];
+                if (values.count("t")) {
+                    if (!dev->controlExists(temperature_control_name)) {
+                        dev->addControl(temperature_control_name, CWBControl::Temperature, true);
+                    }
+                    dev->set(temperature_control_name, values["t"]);
                 }
+                if (values.count("h")) {
+                    if (!dev->controlExists(humidity_control_name)) {
+                        dev->addControl(humidity_control_name, CWBControl::RelativeHumidity, true);
+                    }
+                    dev->set(humidity_control_name, values["h"]);
+                }
+                if (values.count("low_bat")) {
+                    if (!dev->controlExists(low_bat_control_name)) {
+                        dev->addControl(low_bat_control_name, CWBControl::BatteryLow, true);
+                    }
+                    dev->set(low_bat_control_name, values["low_bat"]);
+                }
+                break;
+            }
 
-                dev->set("Temperature", t);
-                if (h.length() > 0)
-                    dev->set("Humidity", h);
-                dev->set(CWBControl::BatteryLow, values["low_bat"]);
+            case CRFProtocolNooLite::nlcmd_unbind:
+            case CRFProtocolNooLite::nlcmd_bind: {
+                // ignore these commands
                 break;
             }
 
             default: {
-                String name = string("noolite_rx_0x_unknown") + id;
-                CWBDevice *dev = m_Devices[name];
-                static const String cmd_control_name = "command",
-                                    cmd_desc_control_name = "command_description";
-                if (!dev) {
-                    String desc = string("Noolite device ") + " [0x" + id + "]";
-                    dev = new CWBDevice(name, desc);
-                    dev->addControl(cmd_control_name, CWBControl::Generic, true);
-                    dev->addControl(cmd_desc_control_name, CWBControl::Text, true);
-                    CreateDevice(dev);
+                const String control_name = String::ComposeFormat("cmd_%d", cmdInt);
+                if (values.count("data")) {
+                    if (!dev->controlExists(control_name)) {
+                        dev->addControl(control_name, CWBControl::Text, true);
+                    }
+                    dev->set(control_name, values["data"]);
+
                 }
-                dev->set(cmd_control_name, cmd);
-                dev->set(cmd_desc_control_name, CRFProtocolNooLite::getDescription(cmdInt));
                 break;
             }
         }

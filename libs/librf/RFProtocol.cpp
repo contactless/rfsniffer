@@ -312,12 +312,18 @@ string CRFProtocol::ManchesterDecode(const std::string &raw, bool expectPulse, c
 
     t_state state = expectPulse ? expectStartPulse : expectStartPause;
     std::string res;
+    res.reserve(75);
+
+    char pulseBit = '1', pauseBit = '0';
+    if (!expectPulse) {
+        std::swap(pulseBit, pauseBit);
+    }
 
     for (char c : raw) {
         switch (state) {
             case expectStartPulse:   // Ожидаем короткий пульс, всегда 1
                 if (c == shortPulse) {
-                    res += expectPulse ? "1" : "0";
+                    res.push_back(pulseBit);
                     state = expectMiddlePause;
                 } else {
                     return "";
@@ -325,7 +331,7 @@ string CRFProtocol::ManchesterDecode(const std::string &raw, bool expectPulse, c
                 break;
             case expectStartPause:  // Ожидаем короткую паузу, всегда 0
                 if (c == shortPause) {
-                    res += expectPulse ? "0" : "1";
+                    res.push_back(pauseBit);
                     state = expectMiddlePulse;
                 } else {
                     return "";
@@ -335,8 +341,8 @@ string CRFProtocol::ManchesterDecode(const std::string &raw, bool expectPulse, c
                 if (c == shortPulse) {
                     state = expectStartPause;
                 } else if (c == longPulse) {
+                    res.push_back(pulseBit);
                     state = expectMiddlePause;
-                    res += expectPulse ? "1" : "0";
                 } else {
                     return "";
                 }
@@ -345,8 +351,8 @@ string CRFProtocol::ManchesterDecode(const std::string &raw, bool expectPulse, c
                 if (c == shortPause) {
                     state = expectStartPulse;
                 } else if (c == longPause) {
+                    res.push_back(pauseBit);
                     state = expectMiddlePulse;
-                    res += expectPulse ? "0" : "1";
                 } else {
                     return "";
                 }

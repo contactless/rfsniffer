@@ -8,6 +8,102 @@ capture-2708-132933.rcf X10:D2ON
 capture-0307-215444.rcf nooLite:flip=1 cmd=4 addr=9a13 fmt=00 crc=76
 capture-0307-215449.rcf nooLite:flip=0 cmd=4 addr=9a13 fmt=00 crc=6a
 
+# noolite mtrf-64
+
+#~ noolite_mtrf64_brightdown1_addr0_00000.rcf nooLite:flip=4
+#~ noolite_mtrf64_brightup3_addr0_00000.rcf   nooLite:flip=4
+#~ noolite_mtrf64_clearmem132_addr0_00000.rcf nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_00000.rcf        nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_d0-1_00000.rcf   nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_d0-2_00000.rcf   nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_d0-15_00000.rcf  nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_d0-255_00000.rcf nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_d1-255_00000.rcf nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_d2-255_00000.rcf nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_d3-255_00000.rcf nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_fmt1_00000.rcf   nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_fmt2_00000.rcf   nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_fmt7_00000.rcf   nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_fmt15_00000.rcf  nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_fmt31_00000.rcf  nooLite:flip=4
+
+# res -  affect nothing
+#~ noolite_mtrf64_off0_addr0_res1_00000.rcf   nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_res2_00000.rcf   nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_res15_00000.rcf  nooLite:flip=4
+#~ noolite_mtrf64_off0_addr0_res255_00000.rcf nooLite:flip=4
+
+#~ noolite_mtrf64_off0_addr1_00000.rcf        nooLite:flip=4
+#~ noolite_mtrf64_off0_addrffffffff_00000.rcf nooLite:flip=4
+#~ noolite_mtrf64_on2_addr0_00000.rcf         nooLite:flip=4
+
+#~ noolite_mtrf64_off0_addrff_fmt0_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt1_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt2_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt3_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt4_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt5_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt6_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt6_res5_d1234_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt7_res5_d1234_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt8_res5_d1234_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt9_res5_d1234_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt10_res5_d1234_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt11_res5_d1234_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt12_res5_d1234_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt13_res5_d1234_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt14_res5_d1234_0000.rcf
+#~ noolite_mtrf64_off0_addrff_fmt15_res5_d1234_0000.rcf
+
+
+# test channel
+noolite_mtrf64_bind15_fmt3_d137F_ch0.rcf nooLite:flip=0 cmd=15 data=0103070f addr=ab40 fmt=03 crc=96
+noolite_mtrf64_bind15_fmt3_d137F_ch1.rcf nooLite:flip=1 cmd=15 data=0103070f addr=ab41 fmt=03 crc=17
+#~ noolite_mtrf64_bind15_fmt3_d137F_ch3.rcf
+#~ noolite_mtrf64_bind15_fmt3_d137F_ch7.rcf
+#~ noolite_mtrf64_bind15_fmt3_d137F_ch15.rcf
+#~ noolite_mtrf64_bind15_fmt3_d137F_ch31.rcf
+noolite_mtrf64_bind15_fmt3_d137F_ch63.rcf nooLite:flip=0 cmd=15 data=0103070f addr=ab7f fmt=03 crc=17
+
+# test data
+noolite_mtrf64_d137F_fmt0.rcf nooLite:flip=1 cmd=0 addr=ab40 fmt=00 crc=e0
+noolite_mtrf64_d137F_fmt1.rcf nooLite:flip=0 cmd=0 data=00000001 addr=ab40 fmt=01 crc=2d
+noolite_mtrf64_d137F_fmt2.rcf nooLite:flip=1 cmd=0 data=00000103 addr=ab40 fmt=02 crc=a4
+noolite_mtrf64_d137F_fmt3.rcf nooLite:flip=0 cmd=0 data=0103070f addr=ab40 fmt=03 crc=b1
+
+# test cmd (transformation of fmt 3 -> 7 is normal)
+noolite_mtrf64_d137F_fmt3_cmd0.rcf nooLite:flip=1 cmd=0 data=0103070f addr=ab40 fmt=03 crc=9b
+noolite_mtrf64_d137F_fmt3_cmd15.rcf nooLite:flip=0 cmd=15 data=0103070f addr=ab40 fmt=03 crc=96
+noolite_mtrf64_d137F_fmt3_cmd16.rcf nooLite:flip=1 cmd=16 data=0103070f addr=ab40 fmt=07 crc=29
+#~ noolite_mtrf64_d137F_fmt3_cmd25.rcf
+#~ noolite_mtrf64_d137F_fmt3_cmd128.rcf
+#~ noolite_mtrf64_d137F_fmt3_cmd129.rcf
+#~ noolite_mtrf64_d137F_fmt3_cmd130.rcf
+#~ noolite_mtrf64_d137F_fmt3_cmd131.rcf
+#~ noolite_mtrf64_d137F_fmt3_cmd132.rcf
+
+# noolite pc118
+
+noolite_pc118_ch1_bind.rcf nooLite:flip=1 cmd=15 addr=25f8 fmt=00 crc=fb
+noolite_pc118_ch1_unbind.rcf nooLite:flip=0 cmd=9 addr=25f8 fmt=00 crc=77
+noolite_pc118_ch2_100perc.rcf nooLite:flip=1 cmd=6 level=100 addr=25f9 fmt=01 crc=39
+noolite_pc118_ch2_bind.rcf nooLite:flip=1 cmd=15 addr=25f9 fmt=00 crc=50
+noolite_pc118_ch3_100perc.rcf nooLite:flip=0 cmd=6 level=100 addr=25fa fmt=01 crc=e3
+noolite_pc118_ch4_100perc.rcf nooLite:flip=0 cmd=6 level=100 addr=25fb fmt=01 crc=48
+
+noolite_pc118_level0.rcf nooLite:flip=0 cmd=0 addr=25f8 fmt=00 crc=96
+noolite_pc118_level10.rcf nooLite:flip=1 cmd=6 level=10 addr=25f8 fmt=01 crc=0d
+noolite_pc118_level20.rcf nooLite:flip=0 cmd=6 level=20 addr=25f8 fmt=01 crc=05
+noolite_pc118_level30.rcf nooLite:flip=1 cmd=6 level=30 addr=25f8 fmt=01 crc=81
+noolite_pc118_level40.rcf nooLite:flip=0 cmd=6 level=40 addr=25f8 fmt=01 crc=89
+noolite_pc118_level50.rcf nooLite:flip=1 cmd=6 level=50 addr=25f8 fmt=01 crc=a5
+noolite_pc118_level60.rcf nooLite:flip=0 cmd=6 level=60 addr=25f8 fmt=01 crc=dd
+noolite_pc118_level70.rcf nooLite:flip=1 cmd=6 level=70 addr=25f8 fmt=01 crc=c9
+noolite_pc118_level80.rcf nooLite:flip=0 cmd=6 level=80 addr=25f8 fmt=01 crc=88
+noolite_pc118_level90.rcf nooLite:flip=1 cmd=6 level=90 addr=25f8 fmt=01 crc=a4
+noolite_pc118_level100.rcf nooLite:flip=0 cmd=6 level=100 addr=25f8 fmt=01 crc=ac
+
+
 
 
 # noolite PT111
@@ -29,7 +125,7 @@ capture-2701-015346.rcf nooLite:flip=0 cmd=25 time=5 addr=4b5f fmt=05 crc=a3
 capture-2901-155816.rcf nooLite:flip=0 cmd=4 addr=ab91 fmt=00 crc=ae
 capture-2901-155817.rcf nooLite:flip=1 cmd=4 addr=ab91 fmt=00 crc=b2
 
-# Действия были такие: 
+# Действия были такие:
 # пульт PU212-1, адрес 0x1a9f (две кнопки), адрес 0x1a9e (одна кнопка, вызов сценария)
 #
 # долгое нажатие на кнопки увеличения/уменьшения яркости - нужно рулить диммером. Как я понимаю вначале идет команда 1 или 3 (вверх или вниз), при отпускании команда 10.
@@ -94,7 +190,7 @@ EV1527_remoteABCD_keyB.rcf EV1527:addr=52102 cmd=8
 EV1527_remoteABCD_keyC.rcf EV1527:addr=52102 cmd=1
 EV1527_remoteABCD_keyD.rcf EV1527:addr=52102 cmd=2
 
-# HS Chip 24 bits 
+# HS Chip 24 bits
 # motion sensor
 dump-all-3103-215824-001.rcf HS24Bits:msg_id=149194 ch=10
 dump-all-3103-213852-001.rcf HS24Bits:msg_id=149194 ch=6
