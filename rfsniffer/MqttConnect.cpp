@@ -24,14 +24,14 @@ CMqttConnection::CMqttConnection(string Server, RFM69OOK *rfm,
     m_NooLiteTxEnabled = (std::find(enabledFeatures.begin(), enabledFeatures.end(), "noolite_tx") != enabledFeatures.end());
 
     connect(m_Server.c_str());
-    loop_start();
+    //loop_start();
 
     dprintf("$P CMqttConnection inited, noolite_tx %s\n", (m_NooLiteTxEnabled ? "enabled" : "disabled"));
 }
 
 CMqttConnection::~CMqttConnection()
 {
-    loop_stop(true);
+    //loop_stop(true);
 }
 
 
@@ -100,9 +100,9 @@ void CMqttConnection::on_connect(int rc)
 
 void CMqttConnection::on_disconnect(int rc)
 {
-    m_isConnected = false;
+    //m_isConnected = false;
     LOG(INFO) << "mqtt::on_disconnect(" << rc << ")";
-    reconnect_async();
+    reconnect();
 }
 
 void CMqttConnection::on_publish(int mid)
@@ -140,7 +140,7 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
 
         if (controlName == "state")
             cmd = payload.IntValue() ? 2 : 0;
-        else if (controlName == "level") {
+        else if (controlName == "shadow_level") {
             cmd = 6;
             extra = string(" level=") + payload;
         } else if (controlName == "color") {

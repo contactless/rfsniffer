@@ -82,6 +82,7 @@ class RFSniffer
 
     // utils
     bool waitForData(int fd, unsigned long maxusec);
+    int waitForData(std::initializer_list<int> fd, unsigned long maxusec);
     std::string composeString(const char *format, ...);
     void showCandidates(const std::string &path, const std::string &filePrefix);
 

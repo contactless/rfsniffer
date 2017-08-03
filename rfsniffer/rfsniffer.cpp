@@ -77,6 +77,48 @@ bool RFSniffer::waitForData(int fd, unsigned long maxusec)
     return false;
 }
 
+int RFSniffer::waitForData(std::initializer_list<int> fd, unsigned long maxusec)
+{
+    DPRINTF_DECLARE(dprintf, false);
+
+    fd_set fds;
+    int ret;
+    struct timeval tv;
+    tv.tv_sec = maxusec / 1000000;
+    tv.tv_usec = maxusec % 1000000;
+
+    while (1) {
+        FD_ZERO(&fds);
+        for (int oneFD : fd) {
+            dprintf("$P set fd %\n", oneFD);
+            FD_SET(oneFD, &fds);
+        }
+        do {
+            do {
+                dprintf("$P fd upper bound %\n", *std::max_element(fd.begin(), fd.end()) + 1);
+                ret = select(*std::max_element(fd.begin(), fd.end()) + 1, &fds, NULL, NULL, (maxusec > 0 ? &tv : NULL));
+                if (ret == 0)
+                    return 0;
+            } while (ret == -1 && errno == EINTR);
+            if (ret == -1) {
+                LOG(WARN) << "RF select() failed\n";
+                continue;
+            }
+        } while (ret == -1);
+
+        int ret = 0;
+        for (int oneFD : fd) {
+            dprintf("$P check fd %\n", oneFD);
+            ++ret;
+            if (FD_ISSET(oneFD, &fds)) {
+                return ret;
+            }
+        }
+    }
+
+    return 0;
+}
+
 
 std::string RFSniffer::composeString(const char *format, ...)
 {
@@ -570,7 +612,7 @@ void RFSniffer::tryDumpAllLircStream()
 
 void RFSniffer::receiveForever() throw(CHaException)
 {
-    DPRINTF_DECLARE(dprintf, false);
+    DPRINTF_DECLARE(dprintf, true);
 
     dprintf("$P Start!\n");
 
@@ -582,6 +624,8 @@ void RFSniffer::receiveForever() throw(CHaException)
     auto devicesConfig = configJson["devices"];
 
     CMqttConnection conn(args.mqttHost, rfm.get(), devicesConfig, args.enabledFeatures);
+
+    int connFD = conn.socket();
 
     CRFParser parser;
 
@@ -603,7 +647,7 @@ void RFSniffer::receiveForever() throw(CHaException)
     int lastRSSI = -1000, minGoodRSSI = 0;
     time_t lastReport = 0, lastRegularWorkTime = time(NULL);
 
-    dprintf("$P Start cycle\n");
+    dprintf("$P Start cycle lircFD = %, connFD = %\n", lircFD, connFD);
 
 
     while (true) {
@@ -620,6 +664,7 @@ void RFSniffer::receiveForever() throw(CHaException)
                     fprintf(stderr, "TEST_RF_RECEIVED %s\n", parsedResult.c_str());
                 try {
                     conn.NewMessage(parsedResult);
+                    conn.loop(0);
                 } catch (CHaException ex) {
                     LOG(ERROR) << "conn.NewMessage failed: Exception " << ex.GetExplanation();
                     if (args.bCoreTestMod)
@@ -628,78 +673,82 @@ void RFSniffer::receiveForever() throw(CHaException)
             }
 
             // do not read very often
-            usleep(100000);
-            // process incoming messages
-            conn.loop(500);
+            // and process incoming messages
+            if (conn.loop(10) != MOSQ_ERR_SUCCESS) {
+                conn.reconnect();
+            }
             // try get more data and sleep if fail
             const int waitDataReadUsec = 1000000;
-            if (waitForData(lircFD, waitDataReadUsec)) {
-                /*
-                 * This strange thing is needed to lessen received trash
-                 */
-                if (0 && rfm) {
-                    rfm->receiveEnd();
-                    usleep(10000);
-                    rfm->receiveBegin();
-                }
-                // do not try to read much, because it easier to process it by small parts
-                //size_t tryToReadCount = std::min(normalMessageLength, remainingDataCount());
-                dprintf("$P before read() call (can read % bytes) \n", sizeof(dataBuff));
-                int resultBytes = read(lircFD, (void *)dataBuff, sizeof(dataBuff));
-                dprintf("$P after read() call\n");
-
-                if (resultBytes == 0) {
-                    if (args.bLircPedantic) {
-                        LOG(INFO) << "read() failed [during endless cycle]\n";
+            switch (waitForData({lircFD, connFD}, waitDataReadUsec)) {
+                case 1: {
+                    dprintf("$P got data from lirc\n");
+                    /*
+                     * This strange thing is needed to lessen received trash
+                     */
+                    if (0 && rfm) {
+                        rfm->receiveEnd();
+                        usleep(10000);
+                        rfm->receiveBegin();
                     }
-                    if (args.bCoreTestMod) {
-                        dprintf("$P No more input data. Exiting!\n");
-                        // if lirc is a fictive device then break
-                        // if lirc is dumb device (/dev/null) consider situation as just lack of data
-                        if (args.lircDevice != "/dev/null")
-                            break;
+                    // do not try to read much, because it easier to process it by small parts
+                    //size_t tryToReadCount = std::min(normalMessageLength, remainingDataCount());
+                    dprintf("$P before read() call (can read % bytes) \n", sizeof(dataBuff));
+                    int resultBytes = read(lircFD, (void *)dataBuff, sizeof(dataBuff));
+                    dprintf("$P after read() call\n");
+
+                    if (resultBytes == 0) {
+                        if (args.bLircPedantic) {
+                            LOG(INFO) << "read() failed [during endless cycle]\n";
+                        }
+                        if (args.bCoreTestMod) {
+                            dprintf("$P No more input data. Exiting!\n");
+                            // if lirc is a fictive device then break
+                            // if lirc is dumb device (/dev/null) consider situation as just lack of data
+                            if (args.lircDevice != "/dev/null")
+                                break;
+                        }
+                    } else {
+                        dprintf("$P % bytes were read from lirc device\n", resultBytes);
+
+                        // I hope this never happen
+                        while (resultBytes % sizeof(lirc_t) != 0) {
+                            LOG(INFO) << "Bad amount (amount % 4 != 0) of bytes read from lirc";
+                            usleep(waitDataReadUsec);
+                            int remainBytes = sizeof(lirc_t) - resultBytes % sizeof(lirc_t);
+                            int readTailBytes = read(lircFD, (void *)((char *)dataBuff + resultBytes), remainBytes);
+                            if (readTailBytes != -1)
+                                resultBytes += readTailBytes;
+                        }
+
+                        int result = resultBytes / sizeof(lirc_t);
+
+                        if (dumpFile) {
+                            fwrite(dataBuff, sizeof(lirc_t), result, dumpFile.get());
+                            fflush(dumpFile.get());
+                        }
+
+                        /// pass data to parser
+                        dprintf("$P before AddInputData() call\n");
+                        parser.AddInputData(dataBuff, result);
+                        dprintf("$P after AddInputData() call\n");
+
+                        if (lastReport != time(NULL) && result >= 32) {
+                            LOG(INFO) << "RF got data " << result << " signals. RSSI=" << lastRSSI;
+                            lastReport = time(NULL);
+                        }
+
+                        if (rfm)
+                            lastRSSI = rfm->readRSSI();
                     }
-                } else {
-                    dprintf("$P % bytes were read from lirc device\n", resultBytes);
-
-                    // I hope this never happen
-                    while (resultBytes % sizeof(lirc_t) != 0) {
-                        LOG(INFO) << "Bad amount (amount % 4 != 0) of bytes read from lirc";
-                        usleep(waitDataReadUsec);
-                        int remainBytes = sizeof(lirc_t) - resultBytes % sizeof(lirc_t);
-                        int readTailBytes = read(lircFD, (void *)((char *)dataBuff + resultBytes), remainBytes);
-                        if (readTailBytes != -1)
-                            resultBytes += readTailBytes;
-                    }
-
-                    int result = resultBytes / sizeof(lirc_t);
-
-                    if (dumpFile) {
-                        fwrite(dataBuff, sizeof(lirc_t), result, dumpFile.get());
-                        fflush(dumpFile.get());
-                    }
-
-                    /// pass data to parser
-                    dprintf("$P before AddInputData() call\n");
-                    parser.AddInputData(dataBuff, result);
-                    dprintf("$P after AddInputData() call\n");
-
-                    if (lastReport != time(NULL) && result >= 32) {
-                        LOG(INFO) << "RF got data " << result << " signals. RSSI=" << lastRSSI;
-                        lastReport = time(NULL);
-                    }
-
-                    if (rfm)
-                        lastRSSI = rfm->readRSSI();
-                }
+                    break;
+                };
+                case 2: {
+                    dprintf("$P got data from mqtt\n");
+                    conn.loop();
+                    break;
+                };
+                default: {};
             }
-            //~ it doesn't work somehow
-            //~ if (args.bDumpAllLircStream && waitForData(0, 100)) {
-                //~ LOG(INFO) << 3, "You can find stream dump in '%s'", dumpFileName.c_str());
-                //~ break;
-            //~ }
-
-
             dprintf("$P after read more\n");
 
 
@@ -734,7 +783,7 @@ void RFSniffer::closeConnections()
 
 void RFSniffer::run(int argc, char **argv)
 {
-    DPrintf::globallyEnable(true);
+    DPrintf::globallyEnable(false);
     //DPrintf::setDefaultOutputStream(fopen("rfs.log", "wt"));
     DPrintf::setPrefixLength(40);
 

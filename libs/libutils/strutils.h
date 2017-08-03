@@ -118,8 +118,8 @@ class String : public std::string
     Map SplitToPairs(char out_pair_delimiter = ' ', char in_pair_delimiter = '=') const;
 
 
-    String &operator=(const String &str) = default;
-    String &operator=(String &&str) = default;
+    String &operator=(const String &) = default;
+    String &operator=(String &&) = default;
 
     String(): string() {}
 

@@ -328,6 +328,7 @@ string CRFProtocolNooLite::DecodeData(const string
             if (easyFmt == 1) {
                 // pc118 it's magic
                 int level = (data - 0x23) * 10 / 12;
+                dprintf("$P data = %, level = %\n", data, level);
                 // (level % 10 == 0) must be true
                 buffer.printf("level=%d ", level);
                 break;
@@ -428,7 +429,8 @@ string CRFProtocolNooLite::data2bits(const std::string &data)
     std::string sCmd = values["cmd"];
     std::string sFmt = values["fmt"];
     std::string sFlip = values["flip"];
-    std::string sLevel = values["level"];
+    //int level = (data - 0x23) * 10 / 12;
+    std::string sLevel = String::ValueOf(values["level"].IntValue() * 12 / 10 + 0x23);
     std::string sr = values["r"];
     uint8_t r = sr.length() ? atoi(sr) : 255;
     std::string sg = values["g"];
