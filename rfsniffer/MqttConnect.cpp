@@ -197,9 +197,9 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
             m_RFM->receiveBegin();
         }
     } catch (CHaException ex) {
-        LOG(INFO) << "on_message: Exception " << ex.GetExplanation() << ")";
+        LOG(ERROR) << "on_message: Exception " << ex.GetExplanation() << ")";
     } catch (std::exception e) {
-        LOG(INFO) << "on_message: caught exception - " << e.what();
+        LOG(ERROR) << "on_message: caught exception - " << e.what();
     }
 
 }

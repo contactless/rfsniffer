@@ -637,7 +637,7 @@ void RFSniffer::receiveForever() throw(CHaException)
                     /*
                      * This strange thing is needed to lessen received trash
                      */
-                    if (rfm) {
+                    if (0 && rfm) {
                         rfm->receiveEnd();
                         usleep(10000);
                         rfm->receiveBegin();
@@ -735,7 +735,7 @@ void RFSniffer::closeConnections()
 
 void RFSniffer::run(int argc, char **argv)
 {
-    DPrintf::globallyEnable(true);
+    DPrintf::globallyEnable(false);
     //DPrintf::setDefaultOutputStream(fopen("rfs.log", "wt"));
     DPrintf::setPrefixLength(40);
 

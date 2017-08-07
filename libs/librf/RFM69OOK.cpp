@@ -159,6 +159,31 @@ unsigned long millis(void)
     return ( ts.tv_sec * 1000 + ts.tv_nsec / 1000000L );
 }
 
+bool RFM69OOK::canSend()
+{
+    if (_mode == RF69OOK_MODE_RX && readRSSI() < CSMA_LIMIT) { // if signal stronger than -100dBm is detected assume channel activity
+        setMode(RF69OOK_MODE_STANDBY);
+        return true;
+    }
+
+    return false;
+}
+
+// checks if a packet was received and/or puts transceiver in receive (ie RX or listen) mode
+bool RFM69OOK::receiveDone()
+{
+    if (_mode == RF69OOK_MODE_RX) {
+        setMode(RF69OOK_MODE_STANDBY); // enables interrupts
+        return true;
+    } else if (_mode == RF69OOK_MODE_RX) { // already in RX no payload yet
+        return false;
+    }
+
+    receiveBegin();
+    return false;
+}
+
+
 void RFM69OOK::send(const void *buffer, uint8_t size)
 {
     writeReg(REG_PACKETCONFIG2, (readReg(REG_PACKETCONFIG2) & 0xFB) |
@@ -167,8 +192,8 @@ void RFM69OOK::send(const void *buffer, uint8_t size)
     uint8_t dataModul = readReg(REG_DATAMODUL);
     writeReg(REG_DATAMODUL, RF_DATAMODUL_MODULATIONTYPE_OOK | RF_DATAMODUL_MODULATIONSHAPING_00);
 
-    while (!canSend())
-        receiveDone();
+    //while (!canSend())
+    //    receiveDone();
 
     sendFrame(buffer, size);
     writeReg(REG_DATAMODUL, dataModul);
@@ -187,8 +212,11 @@ void RFM69OOK::sendFrame(const void *buffer, uint8_t bufferSize)
 
     writeReg(REG_DIOMAPPING1, RF_DIOMAPPING1_DIO0_00); // DIO0 is "Packet Sent"
 
-    unsigned char data[RF69OOK_MAX_DATA_LEN + 2], tmp[RF69OOK_MAX_DATA_LEN + 2];
-    if (bufferSize > RF69OOK_MAX_DATA_LEN) bufferSize = RF69OOK_MAX_DATA_LEN;
+    unsigned char data[RF69OOK_MAX_DATA_LEN + 2];
+    unsigned char tmp[RF69OOK_MAX_DATA_LEN + 2];
+    if (bufferSize > RF69OOK_MAX_DATA_LEN) {
+        bufferSize = RF69OOK_MAX_DATA_LEN;
+    }
     data[0] = REG_FIFO | 0x80;
     data[1] = bufferSize;
     memcpy(data + 2, buffer, bufferSize);
@@ -205,22 +233,10 @@ void RFM69OOK::sendFrame(const void *buffer, uint8_t bufferSize)
     uint32_t txStart = millis();
     while (!getGPIO(m_gpioInt) && millis() - txStart < RF69_TX_LIMIT_MS)
         Sleep(20);
-
+    dprintf("$P waited for %\n", millis() - txStart);
     setMode(RF69OOK_MODE_STANDBY);
     dprintf("$P Finish\n");
 }
-
-bool RFM69OOK::canSend()
-{
-    if (_mode == RF69OOK_MODE_RX && PAYLOADLEN == 0
-            && readRSSI() < CSMA_LIMIT) { // if signal stronger than -100dBm is detected assume channel activity
-        setMode(RF69OOK_MODE_STANDBY);
-        return true;
-    }
-
-    return false;
-}
-
 
 // Turn the radio into transmission mode
 void RFM69OOK::transmitBegin()
@@ -335,7 +351,9 @@ void RFM69OOK::setMode(byte newMode)
 
     // waiting for mode ready is necessary when going from sleep because the FIFO may not be immediately available from previous mode
     while (_mode == RF69OOK_MODE_SLEEP
-            && (readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY) == 0x00); // Wait for ModeReady
+            && (readReg(REG_IRQFLAGS1) & RF_IRQFLAGS1_MODEREADY) == 0x00) {
+        Sleep(5);
+    }
 
     _mode = newMode;
 }
@@ -365,7 +383,9 @@ int RFM69OOK::readRSSI(bool forceTrigger)
     if (forceTrigger) {
         // RSSI trigger not needed if DAGC is in continuous mode
         writeReg(REG_RSSICONFIG, RF_RSSI_START);
-        while ((readReg(REG_RSSICONFIG) & RF_RSSI_DONE) == 0x00); // Wait for RSSI_Ready
+        while ((readReg(REG_RSSICONFIG) & RF_RSSI_DONE) == 0x00) {
+            Sleep(5);
+        }
     }
 
     rssi = -readReg(REG_RSSIVALUE);
@@ -422,7 +442,9 @@ byte RFM69OOK::readTemperature(byte calFactor)  // returns centigrade
 {
     setMode(RF69OOK_MODE_STANDBY);
     writeReg(REG_TEMP1, RF_TEMP1_MEAS_START);
-    while ((readReg(REG_TEMP1) & RF_TEMP1_MEAS_RUNNING));
+    while ((readReg(REG_TEMP1) & RF_TEMP1_MEAS_RUNNING)) {
+        Sleep(5);
+    }
     return ~readReg(REG_TEMP2) + COURSE_TEMP_COEF +
            calFactor; // 'complement' corrects the slope, rising temp = rising val
 }                                                            // COURSE_TEMP_COEF puts reading in the ballpark, user can add additional correction
@@ -430,21 +452,9 @@ byte RFM69OOK::readTemperature(byte calFactor)  // returns centigrade
 void RFM69OOK::rcCalibration()
 {
     writeReg(REG_OSC1, RF_OSC1_RCCAL_START);
-    while ((readReg(REG_OSC1) & RF_OSC1_RCCAL_DONE) == 0x00);
-}
-
-// checks if a packet was received and/or puts transceiver in receive (ie RX or listen) mode
-bool RFM69OOK::receiveDone()
-{
-    if (_mode == RF69OOK_MODE_RX && PAYLOADLEN > 0) {
-        setMode(RF69OOK_MODE_STANDBY); // enables interrupts
-        return true;
-    } else if (_mode == RF69OOK_MODE_RX) { // already in RX no payload yet
-        return false;
+    while ((readReg(REG_OSC1) & RF_OSC1_RCCAL_DONE) == 0x00) {
+        Sleep(5);
     }
-
-    receiveBegin();
-    return false;
 }
 
 bool RFM69OOK::getGPIO(int num)
@@ -465,7 +475,7 @@ bool RFM69OOK::getGPIO(int num)
     if (!gpioFile) {
         throw CHaException(CHaException::ErrBadParam, "Can't open " + gpioFileName);
     }
-    char buffer[10];
+    char buffer[3] = "0";
     if (fread(buffer, 1, 1, gpioFile.get()) != 1) {
         throw CHaException(CHaException::ErrBadParam, "Read GPIO file failed");
     }
