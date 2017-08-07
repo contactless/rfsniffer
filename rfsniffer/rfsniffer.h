@@ -59,7 +59,7 @@ class RFSniffer
         bool inverted;
 
         std::vector<std::string> enabledProtocols;
-        std::vector<std::string> enabledFeatures;
+        Json::Value enabledFeatures;
 
         RFSnifferArgs();
     } args;
@@ -83,7 +83,7 @@ class RFSniffer
     // utils
     bool waitForData(int fd, unsigned long maxusec);
     int waitForData(std::initializer_list<int> fd, unsigned long maxusec);
-    std::string composeString(const char *format, ...);
+
     void showCandidates(const std::string &path, const std::string &filePrefix);
 
     // read initial data

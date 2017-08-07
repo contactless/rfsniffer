@@ -119,13 +119,28 @@
         },
 
         "enabled_features": {
-            "type": "array",
+            "type": "object",
             "title": "Enabled features",
-            "items": {
-                "type": "string",
-                "enum": ["noolite_tx"]
-            },
-            "uniqueItems": true
+            "properties": {
+                "noolite_tx": {
+                    "type": "object",
+                    "title": "NooLite TX",
+                    "description": "NooLite transfering feature",
+                    "properties": {
+                        "addrs": {
+                            "type": "array",
+                            "title": "Adresses of transfering devices",
+                            "description": "format of addrs: from 0x0000 to 0xffff",
+                            "items": {
+                                "type": "string",
+                                "default": "0x137f"
+                            },
+                            "uniqueItems": true
+                        }
+                    },
+                    "default": {"addrs": []}
+                }
+            }
         },
 
         "devices": {

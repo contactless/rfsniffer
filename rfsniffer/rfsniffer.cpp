@@ -40,46 +40,19 @@ RFSniffer::RFSnifferArgs::RFSnifferArgs():
     inverted(false),
 
     enabledProtocols({"All"}),
-    enabledFeatures({})
+    enabledFeatures()
 {
 
 }
 
 bool RFSniffer::waitForData(int fd, unsigned long maxusec)
 {
-    fd_set fds;
-    int ret;
-    struct timeval tv;
-    tv.tv_sec = maxusec / 1000000;
-    tv.tv_usec = maxusec % 1000000;
-
-    while (1) {
-        FD_ZERO(&fds);
-        FD_SET(fd, &fds);
-        do {
-            do {
-                ret = select(fd + 1, &fds, NULL, NULL, (maxusec > 0 ? &tv : NULL));
-                if (ret == 0)
-                    return false;
-            } while (ret == -1 && errno == EINTR);
-            if (ret == -1) {
-                LOG(WARN) << "RF select() failed\n";
-                continue;
-            }
-        } while (ret == -1);
-
-        if (FD_ISSET(fd, &fds)) {
-            /* we will read later */
-            return true;
-        }
-    }
-
-    return false;
+    return waitForData({fd}, maxusec);
 }
 
 int RFSniffer::waitForData(std::initializer_list<int> fd, unsigned long maxusec)
 {
-    DPRINTF_DECLARE(dprintf, false);
+    //DPRINTF_DECLARE(dprintf, false);
 
     fd_set fds;
     int ret;
@@ -90,12 +63,14 @@ int RFSniffer::waitForData(std::initializer_list<int> fd, unsigned long maxusec)
     while (1) {
         FD_ZERO(&fds);
         for (int oneFD : fd) {
-            dprintf("$P set fd %\n", oneFD);
-            FD_SET(oneFD, &fds);
+            //dprintf("$P set fd %\n", oneFD);
+            if (oneFD >= 0) {
+                FD_SET(oneFD, &fds);
+            }
         }
         do {
             do {
-                dprintf("$P fd upper bound %\n", *std::max_element(fd.begin(), fd.end()) + 1);
+                //dprintf("$P fd upper bound %\n", *std::max_element(fd.begin(), fd.end()) + 1);
                 ret = select(*std::max_element(fd.begin(), fd.end()) + 1, &fds, NULL, NULL, (maxusec > 0 ? &tv : NULL));
                 if (ret == 0)
                     return 0;
@@ -108,9 +83,10 @@ int RFSniffer::waitForData(std::initializer_list<int> fd, unsigned long maxusec)
 
         int ret = 0;
         for (int oneFD : fd) {
-            dprintf("$P check fd %\n", oneFD);
+            //dprintf("$P check fd %\n", oneFD);
             ++ret;
-            if (FD_ISSET(oneFD, &fds)) {
+            if (oneFD >= 0 && FD_ISSET(oneFD, &fds)) {
+                //dprintf("$P Can read from % fd (% in arguments)\n", oneFD, ret);
                 return ret;
             }
         }
@@ -119,22 +95,6 @@ int RFSniffer::waitForData(std::initializer_list<int> fd, unsigned long maxusec)
     return 0;
 }
 
-
-std::string RFSniffer::composeString(const char *format, ...)
-{
-    std::vector<char> data;
-    for (int loop = 0; loop < 2; loop++) {
-        va_list args;
-        va_start (args, format);
-        int written_length = vsnprintf(
-                                 data.data(), data.size(), format, args
-                             );
-        va_end (args);
-        // plus 1 for terminal 0 symbol in the end of the string
-        data.resize(written_length + 1);
-    }
-    return data.data();
-}
 
 // usual call is showCandidates("/dev/", "spidev") - shows all files in path and beginning from filePrefix
 void RFSniffer::showCandidates(const string &path, const string &filePrefix)
@@ -166,7 +126,7 @@ void RFSniffer::readEnvironmentVariables()
         // it's somehow connected with python driver
         int spiMajorVal = spiMajor ? atoi(spiMajor) + 1 : 32766;
         int spiMinorVal = spiMinor ? atoi(spiMinor) : 0;
-        args.spiDevice = composeString("/dev/spidev%d.%d", spiMajorVal, spiMinorVal);
+        args.spiDevice = String::ComposeFormat("/dev/spidev%d.%d", spiMajorVal, spiMinorVal);
     }
 
     if (irq && atoi(irq) > 0)
@@ -175,7 +135,7 @@ void RFSniffer::readEnvironmentVariables()
 
 void RFSniffer::readCommandLineArguments(int argc, char **argv)
 {
-    // I don't know why, but signed is essential (though it should by by default??)
+    // I don't know why, but signed is essential (though it should be by default??)
     for (signed char c = ' '; c != -1; c = getopt(argc, argv, "Ds:m:l:TS:f:r:twWc:i")) {
         switch (c) {
             case ' ':
@@ -344,16 +304,7 @@ void RFSniffer::tryReadConfig()
             }
         }
 
-        auto enabledFeatures = config["enabled_features"];
-        if (!!enabledFeatures) {
-            if (!enabledFeatures.isArray())
-                throw std::runtime_error("enabled_features must be array");
-            args.enabledFeatures.clear();
-            for (int i = 0; i < (int)enabledFeatures.size(); ++i) {
-                args.enabledFeatures.push_back(enabledFeatures[i].asString());
-                //fprintf(stderr, "Enabled protocol: %s\n", args.enabledFeatures.back().c_str());
-            }
-        }
+        args.enabledFeatures = config["enabled_features"];
 
         this->configJson = config;
     }
@@ -438,7 +389,6 @@ void RFSniffer::initRFM()
         return;
 
     rfm.reset(new RFM69OOK(mySPI.get(), args.gpioInt));
-    rfm->initialize();
 
     if (args.bDumpAllRegs) {
         char *Buffer = (char *)dataBuff;
@@ -462,6 +412,8 @@ void RFSniffer::initRFM()
                       rfm->readReg(0x71));
         exit(0);
     }
+
+    rfm->initialize();
 }
 
 void RFSniffer::openLirc() throw(CHaException)
@@ -612,7 +564,7 @@ void RFSniffer::tryDumpAllLircStream()
 
 void RFSniffer::receiveForever() throw(CHaException)
 {
-    DPRINTF_DECLARE(dprintf, true);
+    DPRINTF_DECLARE(dprintf, false);
 
     dprintf("$P Start!\n");
 
@@ -685,7 +637,7 @@ void RFSniffer::receiveForever() throw(CHaException)
                     /*
                      * This strange thing is needed to lessen received trash
                      */
-                    if (0 && rfm) {
+                    if (rfm) {
                         rfm->receiveEnd();
                         usleep(10000);
                         rfm->receiveBegin();
@@ -705,7 +657,7 @@ void RFSniffer::receiveForever() throw(CHaException)
                             // if lirc is a fictive device then break
                             // if lirc is dumb device (/dev/null) consider situation as just lack of data
                             if (args.lircDevice != "/dev/null")
-                                break;
+                                return;
                         }
                     } else {
                         dprintf("$P % bytes were read from lirc device\n", resultBytes);
@@ -783,7 +735,7 @@ void RFSniffer::closeConnections()
 
 void RFSniffer::run(int argc, char **argv)
 {
-    DPrintf::globallyEnable(false);
+    DPrintf::globallyEnable(true);
     //DPrintf::setDefaultOutputStream(fopen("rfs.log", "wt"));
     DPrintf::setPrefixLength(40);
 

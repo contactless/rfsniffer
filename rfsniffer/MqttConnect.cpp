@@ -14,24 +14,22 @@ typedef std::string string;
 
 
 CMqttConnection::CMqttConnection(string Server, RFM69OOK *rfm,
-                                 Json::Value devicesConfig, const std::vector<std::string> &enabledFeatures)
+                                 Json::Value devicesConfig, Json::Value enabledFeatures)
     : mosquittopp("RFsniffer"), m_Server(Server), m_isConnected(false),
       m_RFM(rfm), m_devicesConfig(devicesConfig)
 {
     DPRINTF_DECLARE(dprintf, false);
     m_Server = Server;
 
-    m_NooLiteTxEnabled = (std::find(enabledFeatures.begin(), enabledFeatures.end(), "noolite_tx") != enabledFeatures.end());
+    this->enabledFeatures = enabledFeatures;
 
     connect(m_Server.c_str());
-    //loop_start();
 
-    dprintf("$P CMqttConnection inited, noolite_tx %s\n", (m_NooLiteTxEnabled ? "enabled" : "disabled"));
+    dprintf("$P CMqttConnection inited");
 }
 
 CMqttConnection::~CMqttConnection()
 {
-    //loop_stop(true);
 }
 
 
@@ -85,16 +83,38 @@ void CMqttConnection::on_connect(int rc)
         LOG(WARN) << "mqtt::on_connect Connection failed";
     }
 
-    if (m_NooLiteTxEnabled) {
-        for (const std::string &addr : {"0xd61"/*, "0xd62", "0xd63"*/}) {
-            CreateNooliteTxUniversal(addr);
-            string topic = String::ComposeFormat("/devices/noolite_tx_%s/controls/#", addr.c_str());
+    try {
+        if (!!enabledFeatures) {
+            if (!enabledFeatures.isObject()) {
+                throw std::runtime_error("enabled_features must be an object");
+            }
+            auto&& nooLiteTx = enabledFeatures["noolite_tx"];
+            if (!!nooLiteTx) {
+                if (!nooLiteTx.isObject()) {
+                    throw std::runtime_error("noolite_tx must be an object");
+                }
+                auto&& addrs = nooLiteTx["addrs"];
+                if (!addrs.isArray()) {
+                    throw std::runtime_error("addrs must be an object");
+                }
+                for (int i = 0; i < (int)addrs.size(); ++i) {
+                    if (!addrs[i].isString()) {
+                        throw std::runtime_error("address must be a string");
+                    }
+                    auto&& addr = addrs[i].asString();
 
-            LOG(INFO) << "subscribe to " << topic;
-            subscribe(NULL, topic.c_str());
+                    CreateNooliteTxUniversal(addr);
+                    string topic = String::ComposeFormat("/devices/noolite_tx_%s/controls/#", addr.c_str());
+                    LOG(INFO) << "subscribe to " << topic;
+                    subscribe(NULL, topic.c_str());
+                }
+
+                SendUpdate();
+            }
         }
-
-        SendUpdate();
+    }
+    catch (...) {
+        LOG(ERROR) << "CMqttConnection: failed to load enabledFeatures";
     }
 }
 
@@ -138,11 +158,14 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
         int8_t cmd = 4;
         std::string extra;
 
-        if (controlName == "state")
+        if (controlName == "state") {
             cmd = payload.IntValue() ? 2 : 0;
-        else if (controlName == "shadow_level") {
+        } else if (controlName == "level") {
             cmd = 6;
             extra = string(" level=") + payload;
+        } else if (controlName == "shadow_level") {
+            cmd = 24;
+            extra = string(" shadow_level=") + payload;
         } else if (controlName == "color") {
             cmd = 6;
             String r, g, b;
@@ -274,8 +297,6 @@ void CMqttConnection::NewMessage(String message)
         dev->set("Temperature", t);
         dev->set("Humidity", h);
     } else if (type == "nooLite") {
-        static const String shadow_level_control_name = "shadow_level";
-
         LOG(INFO) << "Msg from nooLite " << value;
 
         // nooLite:sync=80 cmd=21 type=2 t=24.6 h=39 s3=ff bat=0 addr=1492 fmt=07 crc=a2
@@ -322,9 +343,6 @@ void CMqttConnection::NewMessage(String message)
 
                 } else if (cmdInt == 0) {
                     dev->set(control_name, "0");
-                    if (dev->controlExists(shadow_level_control_name)) {
-                        dev->set(shadow_level_control_name, "0");
-                    }
                 } else if (cmdInt == 2) {
                     dev->set(control_name, "1");
                 } else if (cmdInt == 4) {
@@ -334,17 +352,17 @@ void CMqttConnection::NewMessage(String message)
             }
             case CRFProtocolNooLite::nlcmd_shadow_set_bright:
             case CRFProtocolNooLite::nlcmd_shadow_level: { // set brightness
-                static const String state_control_name = "state";
+                static const String shadow_level_control_name = "shadow_level";
+                static const String level_control_name = "level";
                 static const String rgb_control_name = "color";
-                if (values.count("level")) {
-                    if (!dev->controlExists(shadow_level_control_name)) {
-                        dev->addControl(shadow_level_control_name, CWBControl::Generic, true);
+                if (values.count("level") || values.count("shadow_level")) {
+                    const String &control_name = (values.count("level") ? level_control_name : shadow_level_control_name);
+                    const String level = values[values.count("level") ? "level" : "shadow_level"];
+                    if (!dev->controlExists(control_name)) {
+                        dev->addControl(control_name, CWBControl::Range, true);
+                        dev->setMax(control_name, "100");
                     }
-                    if (!dev->controlExists(state_control_name)) {
-                        dev->addControl(state_control_name, CWBControl::Switch, true);
-                    }
-                    dev->set(state_control_name, values["level"].IntValue() ? "1" : "0");
-                    dev->set(shadow_level_control_name, values["level"]);
+                    dev->set(control_name, level);
                 }
 
                 if (values.count("r") && values.count("g") && values.count("b")) {
@@ -391,12 +409,14 @@ void CMqttConnection::NewMessage(String message)
 
             default: {
                 const String control_name = String::ComposeFormat("cmd_%d", cmdInt);
+                if (!dev->controlExists(control_name)) {
+                    dev->addControl(control_name, CWBControl::Text, true);
+                }
                 if (values.count("data")) {
-                    if (!dev->controlExists(control_name)) {
-                        dev->addControl(control_name, CWBControl::Text, true);
-                    }
                     dev->set(control_name, values["data"]);
-
+                }
+                else {
+                    dev->set(control_name, "no_data");
                 }
                 break;
             }

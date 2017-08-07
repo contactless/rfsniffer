@@ -330,7 +330,7 @@ string CRFProtocolNooLite::DecodeData(const string
                 int level = (data - 0x23) * 10 / 12;
                 dprintf("$P data = %, level = %\n", data, level);
                 // (level % 10 == 0) must be true
-                buffer.printf("level=%d ", level);
+                buffer.printf("%s=%d ", (pack.cmd == nlcmd_shadow_level ? "level" : "shadow_level"), level);
                 break;
             }
             if (easyFmt == 3) {
@@ -430,22 +430,23 @@ string CRFProtocolNooLite::data2bits(const std::string &data)
     std::string sFmt = values["fmt"];
     std::string sFlip = values["flip"];
     //int level = (data - 0x23) * 10 / 12;
-    std::string sLevel = String::ValueOf(values["level"].IntValue() * 12 / 10 + 0x23);
-    std::string sr = values["r"];
-    uint8_t r = sr.length() ? atoi(sr) : 255;
-    std::string sg = values["g"];
-    uint8_t g = sg.length() ? atoi(sg) : 255;
-    std::string sb = values["b"];
-    uint8_t b = sb.length() ? atoi(sb) : 255;
+    std::string sLevel = values["level"];
+    std::string sShadowLevel = values["shadow_level"];
+    std::string sR = values["r"];
+    uint8_t r = sR.length() ? atoi(sR) : 255;
+    std::string sG = values["g"];
+    uint8_t g = sG.length() ? atoi(sG) : 255;
+    std::string sB = values["b"];
+    uint8_t b = sB.length() ? atoi(sB) : 255;
 
     uint16_t addr = (uint16_t)strtol(sAddr.c_str(), NULL, 16);
     uint8_t cmd = atoi(sCmd);
     uint8_t fmt = sFmt.length() ? atoi(sFmt) : 0xFF;
     bool flip = sFlip.length() ? (bool)atoi(sFlip) : !m_lastFlip[addr];
     m_lastFlip[addr] = flip;
-    uint8_t level = atoi(sLevel);
+    uint8_t level = String(!sLevel.empty() ? sLevel : sShadowLevel).IntValue() * 12 / 10 + 0x23;
 
-    std::string res = "1" + l2bits(flip, 1) + l2bits(cmd, 4);
+    std::string res = "1" + l2bits(flip, 1) + l2bits(cmd, (cmd <= 0xF ? 4 : 8));
 
     switch (cmd) {
         case nlcmd_off:             //0 – выключить нагрузку
@@ -463,8 +464,9 @@ string CRFProtocolNooLite::data2bits(const std::string &data)
             break;
 
         case nlcmd_shadow_level:        //6 – установить заданную в «Данные к команде_0» яркость
+        case nlcmd_shadow_set_bright:
             if (fmt == 0xff) {
-                if (sr.length() == 0)
+                if (sR.length() == 0)
                     fmt = 1;
                 else
                     fmt = 3;
@@ -489,10 +491,10 @@ string CRFProtocolNooLite::data2bits(const std::string &data)
                 nlcmd_temperature,      //21 – передача информации о текущей температуре и
         */
         default:
-            throw CHaException(CHaException::ErrBadParam, "usupported cmd: " + data);
+            throw CHaException(CHaException::ErrBadParam, "unsupported cmd: " + data);
     }
 
-    res += l2bits(addr, 16) + l2bits(fmt, 8) + l2bits(0/*crc*/, 8);
+    res += l2bits(addr, 16) + l2bits(((cmd <= 0xF || fmt >= 4) ? fmt : (fmt + 4)), 8) + l2bits(0/*crc*/, 8);
     uint8_t packet[100];
     size_t packetLen = sizeof(packet);
     uint8_t crc;
@@ -500,6 +502,6 @@ string CRFProtocolNooLite::data2bits(const std::string &data)
     res = res.substr(0, res.length() - 8) + l2bits(crc, 8);
     LOG(INFO) << "res=" << res;
 
-    return res; //???? remove first bit ?? TODO
+    return res;
 }
 

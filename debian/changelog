@@ -1,3 +1,10 @@
+wb-homa-rfsniffer (1.0.8) stable; urgency=medium
+
+  * Repaired noolite rx and noolite tx
+
+ -- Yuri Pechatnov <yuri.pechatnov@wirenboard.ru>  Mon, 5 Aug 2017 23:59:59 +0000
+
+
 wb-homa-rfsniffer (1.0.7) stable; urgency=medium
 
   * EV1527 (VHome, unnamed devices)

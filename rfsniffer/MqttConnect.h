@@ -7,7 +7,7 @@
 #include "../libs/libutils/strutils.h"
 
 namespace Json {
-	class Value;
+    class Value;
 };
 
 class RFM69OOK;
@@ -20,10 +20,10 @@ class CMqttConnection
     bool m_isConnected;
     CWBDeviceMap m_Devices;
     RFM69OOK *m_RFM;
-    
+
     CRFProtocolNooLite m_nooLite;
-    bool m_NooLiteTxEnabled;
-    
+    Json::Value enabledFeatures;
+
     Json::Value m_devicesConfig;
 
     strutils::String lastMessage;
@@ -33,7 +33,7 @@ class CMqttConnection
 
 
   public:
-    CMqttConnection(std::string Server, RFM69OOK *rfm, Json::Value devicesConfig, const std::vector<std::string> &enabledFeatures);
+    CMqttConnection(std::string Server, RFM69OOK *rfm, Json::Value devicesConfig, Json::Value enabledFeatures);
     ~CMqttConnection();
     void NewMessage(strutils::String message);
 
@@ -51,7 +51,7 @@ class CMqttConnection
     virtual void on_unsubscribe(int mid);
     virtual void on_log(int level, const char *str);
     virtual void on_error();
-    
+
     void CreateNooliteTxUniversal(const std::string &addr);
 
     void publishString(const std::string &path, const std::string &value);
