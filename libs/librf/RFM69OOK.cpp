@@ -313,7 +313,7 @@ bool RFM69OOK::waitGpio(int num, int timeLimitMs)
     String gpioEdgeFileName = String::ComposeFormat("/sys/class/gpio/gpio%d/edge", num);
     String gpioDirectionFileName = String::ComposeFormat("/sys/class/gpio/gpio%d/direction", num);
 
-    auto gpioFd = FdPtr(gpioFileName, O_RDONLY);
+    FdPtr gpioFd(gpioFileName, O_RDONLY);
     dprintf("$P after opening attempt (%)\n", bool(gpioFd));
 
     if (!gpioFd) {
