@@ -121,7 +121,7 @@ void DPrintf::flushStream(bool needPrintPrefix)
 }
 
 
-DPrintf &DPrintf::operator<<(EndlType pf)
+DPrintf &DPrintf::operator<<(EndlType)
 {
     prepareStream();
     (*streamPtr) << std::endl;

@@ -16,7 +16,7 @@ def generate(file_name, target=None, sources=None, compiler_flags=None, ldflags=
             f.write(target + "_LDADD = " + " ".join(ldadd) + "\n")
 
 
-debug_mode = True
+debug_mode = False
 
 common_compiler_flags = ["-pthread", "-std=c++0x"]
 

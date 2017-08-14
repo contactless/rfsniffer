@@ -80,18 +80,40 @@ bool RFM69OOK::initialize()
     const byte CONFIG[][2] = {
         // perl -pe 's/Reg_(\w\w) = (\w\w)/{0x$1, 0x$2},/g' good
         // state after wb-homa-ism-radio (recover dump)
-        {0x00, 0x66}, {0x01, 0x10}, {0x02, 0x08}, {0x03, 0x3e},
+        //~ {0x00, 0x66}, {0x01, 0x10}, {0x02, 0x08}, {0x03, 0x3e},
+        //~ {0x04, 0x80}, {0x05, 0x00}, {0x06, 0x52}, {0x07, 0x6c},
+        //~ {0x08, 0x7a}, {0x09, 0xe1}, {0x0A, 0x41}, {0x0B, 0x40},
+        //~ {0x0C, 0x02}, {0x0D, 0x92}, {0x0E, 0xf5}, {0x0F, 0x20},
+        //~ {0x10, 0x24}, {0x11, 0xff}, {0x12, 0x09}, {0x13, 0x1a},
+        //~ {0x14, 0x40}, {0x15, 0xb0}, {0x16, 0x7b}, {0x17, 0x9b},
+        //~ {0x18, 0x10}, {0x19, 0x80}, {0x1A, 0x8a}, {0x1B, 0x40},
+        //~ {0x1C, 0x80}, {0x1D, 0x06}, {0x1E, 0x10}, {0x1F, 0x00},
+        //~ {0x20, 0x00}, {0x21, 0x00}, {0x22, 0x00}, {0x23, 0x00},
+        //~ {0x24, 0x9d}, {0x25, 0x40}, {0x26, 0x90}, {0x27, 0xd9},
+        //~ {0x28, 0x64}, {0x29, 0xaa}, {0x2A, 0x00}, {0x2B, 0x00},
+        //~ {0x2C, 0x00}, {0x2D, 0x05}, {0x2E, 0x8d}, {0x2F, 0xaa},
+        //~ {0x30, 0x66}, {0x31, 0x00}, {0x32, 0x00}, {0x33, 0x00},
+        //~ {0x34, 0x00}, {0x35, 0x00}, {0x36, 0x00}, {0x37, 0x00},
+        //~ {0x38, 0x3c}, {0x39, 0x00}, {0x3A, 0x00}, {0x3B, 0x00},
+        //~ {0x3C, 0x8f}, {0x3D, 0xc2}, {0x3E, 0x00}, {0x3F, 0x00},
+        //~ {0x40, 0x00}, {0x41, 0x00}, {0x42, 0x00}, {0x43, 0x00},
+        //~ {0x44, 0x00}, {0x45, 0x00}, {0x46, 0x00}, {0x47, 0x00},
+        //~ {0x48, 0x00}, {0x49, 0x00}, {0x4A, 0x00}, {0x4B, 0x00},
+        //~ {0x4C, 0x00}, {0x4D, 0x00}, {0x4E, 0x01}, {0x4F, 0x00},
+        //~ {0x6f, 0x30}, {0x71, 0x00},
+
+        {0x00, 0x1e}, {0x01, 0x10}, {0x02, 0x68}, {0x03, 0x3e},
         {0x04, 0x80}, {0x05, 0x00}, {0x06, 0x52}, {0x07, 0x6c},
         {0x08, 0x7a}, {0x09, 0xe1}, {0x0A, 0x41}, {0x0B, 0x40},
         {0x0C, 0x02}, {0x0D, 0x92}, {0x0E, 0xf5}, {0x0F, 0x20},
         {0x10, 0x24}, {0x11, 0xff}, {0x12, 0x09}, {0x13, 0x1a},
         {0x14, 0x40}, {0x15, 0xb0}, {0x16, 0x7b}, {0x17, 0x9b},
-        {0x18, 0x10}, {0x19, 0x80}, {0x1A, 0x8a}, {0x1B, 0x40},
-        {0x1C, 0x80}, {0x1D, 0x06}, {0x1E, 0x10}, {0x1F, 0x00},
+        {0x18, 0x20}, {0x19, 0x80}, {0x1A, 0x8a}, {0x1B, 0x40},
+        {0x1C, 0x80}, {0x1D, 0x14}, {0x1E, 0x10}, {0x1F, 0x00},
         {0x20, 0x00}, {0x21, 0x00}, {0x22, 0x00}, {0x23, 0x00},
-        {0x24, 0x9d}, {0x25, 0x40}, {0x26, 0x90}, {0x27, 0xd9},
-        {0x28, 0x64}, {0x29, 0xaa}, {0x2A, 0x00}, {0x2B, 0x00},
-        {0x2C, 0x00}, {0x2D, 0x05}, {0x2E, 0x8d}, {0x2F, 0xaa},
+        {0x24, 0xae}, {0x25, 0x00}, {0x26, 0x90}, {0x27, 0xd8},
+        {0x28, 0x00}, {0x29, 0xb4}, {0x2A, 0x00}, {0x2B, 0x00},
+        {0x2C, 0x00}, {0x2D, 0x05}, {0x2E, 0x00}, {0x2F, 0xaa},
         {0x30, 0x66}, {0x31, 0x00}, {0x32, 0x00}, {0x33, 0x00},
         {0x34, 0x00}, {0x35, 0x00}, {0x36, 0x00}, {0x37, 0x00},
         {0x38, 0x3c}, {0x39, 0x00}, {0x3A, 0x00}, {0x3B, 0x00},
@@ -230,12 +252,178 @@ void RFM69OOK::sendFrame(const void *buffer, uint8_t bufferSize)
 
     // no need to wait for transmit mode to be ready since its handled by the radio
     setMode(RF69OOK_MODE_TX);
+
+
     uint32_t txStart = millis();
-    while (!getGPIO(m_gpioInt) && millis() - txStart < RF69_TX_LIMIT_MS)
-        Sleep(20);
+    if (!waitGpio(m_gpioInt, RF69_TX_LIMIT_MS)) {
+        LOG(WARN) << "Wait gpio failed. Sleep.\n";
+        Sleep(RF69_TX_LIMIT_MS);
+    }
     dprintf("$P waited for %\n", millis() - txStart);
+
     setMode(RF69OOK_MODE_STANDBY);
     dprintf("$P Finish\n");
+}
+
+
+
+
+bool RFM69OOK::waitGpio(int num, int timeLimitMs)
+{
+    struct FilePtr : std::unique_ptr<FILE, int(*)(FILE *)> {
+        FilePtr(std::string fileName, const char *mode)
+            : std::unique_ptr<FILE, int(*)(FILE *)>(fopen(fileName.c_str(), mode), fclose)
+        {}
+        operator FILE*() {
+            return get();
+        }
+    };
+
+    struct FdPtr {
+        int fd;
+        FdPtr(std::string fileName, int mode) {
+            fd = open(fileName.c_str(), mode);
+        }
+        ~FdPtr() {
+            if (*this) {
+                close(fd);
+            }
+        }
+        void operator=(FdPtr &ptr) = delete;
+
+        void operator=(FdPtr &&ptr) {
+            fd = ptr.fd;
+            ptr.fd = -1;
+        }
+
+        operator int() {
+            return fd;
+        }
+        operator bool() {
+            return fd >= 0;
+        }
+    };
+
+    DPRINTF_DECLARE(dprintf, false);
+    dprintf("$P Start\n");
+
+    const int iters = 10;
+
+    String gpioFileName = String::ComposeFormat("/sys/class/gpio/gpio%d/value", num);
+    String gpioEdgeFileName = String::ComposeFormat("/sys/class/gpio/gpio%d/edge", num);
+    String gpioDirectionFileName = String::ComposeFormat("/sys/class/gpio/gpio%d/direction", num);
+
+    auto gpioFd = FdPtr(gpioFileName, O_RDONLY);
+    dprintf("$P after opening attempt (%)\n", bool(gpioFd));
+
+    if (!gpioFd) {
+        LOG(INFO) << "Gpio is not exported. Try to export\n";
+        auto exportFile = FilePtr("/sys/class/gpio/export", "w");
+
+        if (!exportFile) {
+            throw CHaException(CHaException::ErrBadParam, "Can open neither gpio file nor export file =(");
+        }
+        fprintf(exportFile, "%s", String::ValueOf(num).c_str());
+    }
+
+    dprintf("$P (after exporting)\n");
+
+    for (int i = 0; i < iters; i++) {
+        auto file = FilePtr(gpioDirectionFileName, "w");
+        if (file) {
+            fprintf(file, "%s", "in");
+            break;
+        }
+        LOG(WARN) << "Can't open " << gpioDirectionFileName << " attempt " << i << " of " << iters << "\n";
+        if (i + 1 == iters) {
+            throw CHaException(CHaException::ErrBadParam, "Can't open " + gpioDirectionFileName);
+        }
+        Sleep(20);
+    }
+
+    for (int i = 0; i < iters; i++) {
+        auto gpioEdgeFile = FilePtr(gpioEdgeFileName, "w");
+        if (gpioEdgeFile) {
+            fprintf(gpioEdgeFile, "%s", "rising");
+            break;
+        }
+        LOG(WARN) << "Can't open " << gpioEdgeFileName << " attempt " << i << " of " << iters << "\n";
+        if (i + 1 == iters) {
+            throw CHaException(CHaException::ErrBadParam, "Can't open " + gpioEdgeFileName);
+        }
+        Sleep(20);
+    }
+
+    dprintf("$P (after setting edge)\n");
+
+    for (int i = 1; !gpioFd && i < iters; i++) {
+        gpioFd = FdPtr(gpioFileName, O_RDONLY);
+        if (gpioFd) {
+            break;
+        }
+        LOG(WARN) << "Can't open " << gpioFileName << " attempt " << i << " of " << iters << "\n";
+        Sleep(20);
+    }
+
+    dprintf("$P after attemtps of opening\n");
+
+    if (!gpioFd) {
+        throw CHaException(CHaException::ErrBadParam, "Can't open " + gpioFileName);
+    }
+
+    dprintf("$P before trying to read fd=% (max %)\n", (int)gpioFd, FD_SETSIZE);
+
+    for (int i = 0; i < 2; i++) {
+        dprintf("$P Iter %\n", i);
+
+        char buffer[3] = "0";
+
+        if (i == 1) {
+            fd_set fds;
+            struct timeval tv;
+            tv.tv_sec = timeLimitMs / 1000;
+            tv.tv_usec = (timeLimitMs % 1000) * 1000;
+
+            FD_ZERO(&fds);
+            FD_SET(gpioFd, &fds);
+
+            int ret = ::select(gpioFd + 1, &fds, NULL, NULL, &tv);
+
+            dprintf("$P after select call ret=% fd_isset=%\n", ret, FD_ISSET(gpioFd, &fds));
+
+            if (ret == -1) {
+                LOG(WARN) << "select call of gpio38/value failed"
+                    << (errno == EBADF) << (errno == EINTR) << (errno == EINVAL) << (errno == ENOMEM) << "\n";
+                Sleep(20);
+                --i;
+                continue;
+            }
+            if (!FD_ISSET(gpioFd, &fds)) {
+                return false;
+            }
+        }
+
+        dprintf("$P before lseek\n");
+
+        lseek(gpioFd, 0, SEEK_SET);
+
+        dprintf("$P before read\n");
+
+        read(gpioFd, buffer, sizeof(char));
+
+        dprintf("$P after read (%)\n", buffer);
+
+        if (i == 1) {
+            if (buffer[0] != '1') {
+                --i;
+                continue;
+            }
+            else {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 // Turn the radio into transmission mode
@@ -457,30 +645,6 @@ void RFM69OOK::rcCalibration()
     }
 }
 
-bool RFM69OOK::getGPIO(int num)
-{
-    String gpioFileName = String::ComposeFormat("/sys/class/gpio/gpio%d/value", num);
-    auto gpioFile = std::unique_ptr<FILE, int(*)(FILE *)>(fopen(gpioFileName.c_str(), "r"), fclose);
-
-    if (!gpioFile) {
-        auto exportFile = std::unique_ptr<FILE, int(*)(FILE *)>(fopen("/sys/class/gpio/export", "w"), fclose);
-
-        if (!exportFile) {
-            throw CHaException(CHaException::ErrBadParam, "Can open neither gpio file nor export file =(");
-        }
-        fprintf(exportFile.get(), "%s", String::ValueOf(num).c_str());
-
-        gpioFile.reset(fopen(gpioFileName.c_str(), "r"));
-    }
-    if (!gpioFile) {
-        throw CHaException(CHaException::ErrBadParam, "Can't open " + gpioFileName);
-    }
-    char buffer[3] = "0";
-    if (fread(buffer, 1, 1, gpioFile.get()) != 1) {
-        throw CHaException(CHaException::ErrBadParam, "Read GPIO file failed");
-    }
-    return buffer[0] == '1';
-}
 
 uint32_t RFM69OOK::getBitrate()
 {

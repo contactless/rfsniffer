@@ -80,7 +80,7 @@ void TestMqttConnection::on_message(const struct mosquitto_message *message)
 
 }
 
-void TestMqttConnection::on_subscribe(int mid, int qos_count, const int *granted_qos)
+void TestMqttConnection::on_subscribe(int mid, int, const int*)
 {
     LOG(INFO) << m_sName << "::on_subscribe " << mid;
 

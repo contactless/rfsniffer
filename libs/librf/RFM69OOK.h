@@ -140,7 +140,7 @@ class RFM69OOK
     SPI *m_spi;
     int m_gpioInt;
 
-    bool getGPIO(int num);
+    bool waitGpio(int num, int timeoutMs);
 };
 
 unsigned long millis(void);

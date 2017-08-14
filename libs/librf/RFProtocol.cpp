@@ -422,7 +422,7 @@ string CRFProtocol::ManchesterEncode(const std::string &bits, bool invert, char 
     return res;
 }
 
-bool CRFProtocol::needDump(const std::string &rawData)
+bool CRFProtocol::needDump(const std::string &)
 {
     return false;
 }
@@ -466,12 +466,12 @@ void CRFProtocol::EncodePacket(const std::string &bits, uint16_t bitrate, uint8_
 }
 
 
-string CRFProtocol::bits2timings(const std::string &bits)
+string CRFProtocol::bits2timings(const std::string &)
 {
     throw CHaException(CHaException::ErrNotImplemented, "CRFProtocol::bits2timings");
 }
 
-string CRFProtocol::data2bits(const std::string &data)
+string CRFProtocol::data2bits(const std::string &)
 {
     throw CHaException(CHaException::ErrNotImplemented, "CRFProtocol::data2bits");
 }

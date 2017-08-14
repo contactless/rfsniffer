@@ -83,7 +83,7 @@ bool SPI::setMode(uint8_t p_mode)
 
 }
 
-int SPI::xfer(uint8_t *p_txbuffer, uint8_t p_txlen, uint8_t *p_rxbuffer, uint8_t p_rxlen)
+int SPI::xfer(uint8_t *p_txbuffer, uint8_t p_txlen, uint8_t *p_rxbuffer, uint8_t)
 {
     struct spi_ioc_transfer spi_message[1];
     memset(spi_message, 0, sizeof(spi_message));

@@ -70,6 +70,7 @@ CHaException::CHaException(ErrorCodes code, string Message)
     m_Message = Message;
     m_Explanation = std::string("CHaException") + " (ErrorCodes::" +
             m_TypeDescriptions[m_code] + "): " + m_Message;
+    LOG(ERROR) << m_Explanation << "\n";
 }
 
 CHaException::CHaException(const CHaException &ex)

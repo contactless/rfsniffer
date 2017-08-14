@@ -1,5 +1,7 @@
 #include "RFProtocolNooLite.h"
 
+#include <cmath>
+
 #include "../libutils/DebugPrintf.h"
 #include "../libutils/Exception.h"
 #include "../libutils/logging.h"
@@ -327,8 +329,9 @@ string CRFProtocolNooLite::DecodeData(const string
         case nlcmd_shadow_level: {
             if (easyFmt == 1) {
                 // pc118 it's magic
-                int level = (data - 0x23) * 10 / 12;
-                dprintf("$P data = %, level = %\n", data, level);
+                int level = std::lround((data - 0x23) * (10.0 / 12.0));
+                dprintf("$P data = %, level(raw) = %\n", data, level);
+                level = std::min(100, std::max(0, level));
                 // (level % 10 == 0) must be true
                 buffer.printf("%s=%d ", (pack.cmd == nlcmd_shadow_level ? "level" : "shadow_level"), level);
                 break;
@@ -444,7 +447,7 @@ string CRFProtocolNooLite::data2bits(const std::string &data)
     uint8_t fmt = sFmt.length() ? atoi(sFmt) : 0xFF;
     bool flip = sFlip.length() ? (bool)atoi(sFlip) : !m_lastFlip[addr];
     m_lastFlip[addr] = flip;
-    uint8_t level = String(!sLevel.empty() ? sLevel : sShadowLevel).IntValue() * 12 / 10 + 0x23;
+    uint8_t level = std::lround(String(!sLevel.empty() ? sLevel : sShadowLevel).IntValue() * (12.0 / 10.0)) + 0x23;
 
     std::string res = "1" + l2bits(flip, 1) + l2bits(cmd, (cmd <= 0xF ? 4 : 8));
 

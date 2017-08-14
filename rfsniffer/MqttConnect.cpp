@@ -104,7 +104,7 @@ void CMqttConnection::on_connect(int rc)
                     auto&& addr = addrs[i].asString();
 
                     CreateNooliteTxUniversal(addr);
-                    string topic = String::ComposeFormat("/devices/noolite_tx_%s/controls/#", addr.c_str());
+                    string topic = String::ComposeFormat("/devices/noolite_tx_%s/controls/+/on", addr.c_str());
                     LOG(INFO) << "subscribe to " << topic;
                     subscribe(NULL, topic.c_str());
                 }
@@ -197,7 +197,7 @@ void CMqttConnection::on_message(const struct mosquitto_message *message)
             m_RFM->receiveBegin();
         }
     } catch (CHaException ex) {
-        LOG(ERROR) << "on_message: Exception " << ex.GetExplanation() << ")";
+        LOG(ERROR) << "on_message: Exception " << ex.GetExplanation() << "\n";
     } catch (std::exception e) {
         LOG(ERROR) << "on_message: caught exception - " << e.what();
     }
