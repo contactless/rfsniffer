@@ -507,6 +507,7 @@ void CMqttConnection::NewMessage(String message)
         const int cmd = values["cmd"].IntValue();
 
         const String devName = "ev1527_" + addr;
+        const String flipControlName = String::ComposeFormat("cmd_flip");
 
         CWBDevice *dev = m_Devices[devName];
         if (!dev)
@@ -516,7 +517,12 @@ void CMqttConnection::NewMessage(String message)
             CreateDevice(dev);
         }
 
+        if (!dev->controlExists(flipControlName)) {
+            dev->addControl(flipControlName, CWBControl::Switch, true);
+        }
+
         dev->set("cmd", cmd);
+        dev->set(flipControlName, dev->getString(flipControlName) == "1" ? "0" : "1");
         LOG(INFO) << "Msg from " << type << " " << message << ". Cmd: " << cmd;
     } else if (type == "Livolo" || type == "Raex" || type == "Rubitek" ) {
         LOG(INFO) << "Msg from remote control (Raex | Livolo | Rubitek) " << message;

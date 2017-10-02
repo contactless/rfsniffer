@@ -220,6 +220,12 @@ CRFProtocolNooLite::CPacket CRFProtocolNooLite::DecodeBitsToStruct(const string 
     if (packetLen < 5)
         return CPacket(false);
 
+    bool notZeroPacket = false;
+    for (size_t i = 0; i < packetLen; i++) {
+        notZeroPacket |= (packet[i] != 0);
+    }
+    if (!notZeroPacket)
+        return CPacket(false);
     /*
     #                        [ (FLIP) CMD  ] [           RGB          ] [   ?  ] [      ADDR     ] [ FMT  ] [ CRC  ]
     #                        1FCCCC

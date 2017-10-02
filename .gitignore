@@ -63,6 +63,7 @@ test-driver
 
 # generated files
 *.generated
+*.am
 
 # astyle: original sources
 *.orig
