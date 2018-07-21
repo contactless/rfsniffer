@@ -1,3 +1,9 @@
+wb-homa-rfsniffer (1.0.9) stable; urgency=medium
+
+  * fix dependencies on stretch
+
+ -- Evgeny Boger <boger@contactless.ru>  Sat, 21 Jul 2018 13:39:25 +0300
+
 wb-homa-rfsniffer (1.0.8) stable; urgency=medium
 
   * Repaired noolite rx and noolite tx
